@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 interface FlaskProps {
   color: string;
@@ -9,15 +9,6 @@ interface FlaskProps {
 }
 
 const Flask: React.FC<FlaskProps> = ({ color, hasIndicator, isPlaced, acidMeasured, isReceivingDrop }) => {
-  const [ripple, setRipple] = useState(false);
-
-  useEffect(() => {
-    if (isReceivingDrop) {
-      setRipple(true);
-      const timer = setTimeout(() => setRipple(false), 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isReceivingDrop]);
 
   if (!isPlaced) return null;
 

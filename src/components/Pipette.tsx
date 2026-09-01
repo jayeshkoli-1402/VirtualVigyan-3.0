@@ -104,7 +104,6 @@ const Pipette: React.FC<PipetteProps> = ({
             fill="#ffffff"
             stroke="#2563eb"
             strokeWidth={0.8}
-            boxShadow="0 1px 3px rgba(0,0,0,0.1)"
           />
           <text
             x={67}

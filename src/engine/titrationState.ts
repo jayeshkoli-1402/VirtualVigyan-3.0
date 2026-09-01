@@ -1,17 +1,17 @@
-import { DROP_SIZE_ML } from './chemistryRules';
+// ── Step definitions (erasableSyntaxOnly compliant) ──
+export const Step = {
+  SELECT: 'SELECT',
+  SETUP_STAND: 'SETUP_STAND',
+  MEASURE_ACID: 'MEASURE_ACID',
+  FILL_BURETTE: 'FILL_BURETTE',
+  ADD_INDICATOR: 'ADD_INDICATOR',
+  TITRATING: 'TITRATING',
+  ENDPOINT_MARKED: 'ENDPOINT_MARKED',
+  CALCULATION: 'CALCULATION',
+  RESULTS: 'RESULTS',
+} as const;
 
-// ── Step enum ──
-export enum Step {
-  SELECT = 'SELECT',
-  SETUP_STAND = 'SETUP_STAND',
-  MEASURE_ACID = 'MEASURE_ACID',
-  FILL_BURETTE = 'FILL_BURETTE',
-  ADD_INDICATOR = 'ADD_INDICATOR',
-  TITRATING = 'TITRATING',
-  ENDPOINT_MARKED = 'ENDPOINT_MARKED',
-  CALCULATION = 'CALCULATION',
-  RESULTS = 'RESULTS',
-}
+export type Step = (typeof Step)[keyof typeof Step];
 
 export const STEP_LABELS: Record<Step, string> = {
   [Step.SELECT]: 'Select Experiment',

@@ -25,8 +25,10 @@ import CalculationForm from './components/CalculationForm';
 import ResultsScreen from './components/ResultsScreen';
 import ExperimentSelector from './components/ExperimentSelector';
 import ConservationExperiment from './components/conservation/ConservationExperiment';
+import GenericLab from './components/GenericLab/GenericLab';
+import { getExperimentById } from './experiments';
 
-type ActiveExperiment = 'select' | 'titration' | 'conservation';
+type ActiveExperiment = 'select' | 'titration' | 'conservation' | string;
 
 const App: React.FC = () => {
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
@@ -38,6 +40,21 @@ const App: React.FC = () => {
 
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+
+  // Theme support (light / dark)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('vv_theme') as 'light' | 'dark') || 'dark';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('vv_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   // dnd-kit sensors: pointer (mouse) + touch
   const pointerSensor = useSensor(PointerSensor, {
@@ -211,14 +228,19 @@ const App: React.FC = () => {
 
   // Get experiment-specific header info
   const getHeaderInfo = () => {
-    switch (activeExperiment) {
-      case 'conservation':
-        return { subtitle: 'Conservation of Mass', color: '#059669' };
-      case 'titration':
-        return { subtitle: 'Acid-Base Titration', color: '#2563eb' };
-      default:
-        return { subtitle: 'Interactive Chemistry Lab', color: '#2563eb' };
+    if (activeExperiment === 'conservation') {
+      return { subtitle: 'Conservation of Mass', color: '#059669' };
     }
+    if (activeExperiment === 'titration') {
+      return { subtitle: 'Acid-Base Titration', color: '#2563eb' };
+    }
+    if (activeExperiment !== 'select') {
+      const engineExp = getExperimentById(activeExperiment);
+      if (engineExp) {
+        return { subtitle: engineExp.title, color: engineExp.themeColor };
+      }
+    }
+    return { subtitle: 'Interactive Chemistry Lab', color: '#2563eb' };
   };
 
   const headerInfo = getHeaderInfo();
@@ -233,7 +255,8 @@ const App: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: '#ffffff',
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)',
           position: 'sticky',
           top: 0,
           zIndex: 100,
@@ -301,40 +324,77 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Step progress — titration only */}
-        {activeExperiment === 'titration' && state.step !== Step.SELECT && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            {STEP_ORDER.map((step, i) => {
-              const isCompleted = i < currentStepIndex;
-              const isCurrent = i === currentStepIndex;
-              return (
-                <div
-                  key={step}
-                  title={STEP_LABELS[step]}
-                  style={{
-                    width: isCurrent ? 20 : 6,
-                    height: 6,
-                    borderRadius: 3,
-                    background: isCompleted
-                      ? 'var(--accent-teal)'
-                      : isCurrent
-                        ? 'linear-gradient(90deg, var(--accent-teal), var(--accent-blue))'
-                        : 'rgba(148, 163, 184, 0.15)',
-                    transition: 'all 0.3s ease',
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Step progress — titration only */}
+          {activeExperiment === 'titration' && state.step !== Step.SELECT && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              {STEP_ORDER.map((step, i) => {
+                const isCompleted = i < currentStepIndex;
+                const isCurrent = i === currentStepIndex;
+                return (
+                  <div
+                    key={step}
+                    title={STEP_LABELS[step]}
+                    style={{
+                      width: isCurrent ? 20 : 6,
+                      height: 6,
+                      borderRadius: 3,
+                      background: isCompleted
+                        ? 'var(--accent-teal)'
+                        : isCurrent
+                          ? 'linear-gradient(90deg, var(--accent-teal), var(--accent-blue))'
+                          : 'rgba(148, 163, 184, 0.15)',
+                      transition: 'all 0.3s ease',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          {/* Theme Switcher Toggle */}
+          <button
+            id="btn-toggle-theme"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 12px',
+              borderRadius: '20px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
+              color: 'var(--text-primary)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span>{theme === 'dark' ? '🌙' : '☀️'}</span>
+            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Experiment Selector */}
         {activeExperiment === 'select' && (
-          <ExperimentSelector onSelectExperiment={handleSelectExperiment} />
+          <ExperimentSelector
+            onSelectExperiment={handleSelectExperiment}
+            onSelectEngineExperiment={(id) => setActiveExperiment(id)}
+          />
         )}
+
+        {/* Engine-driven Experiments (New Architecture) */}
+        {activeExperiment !== 'select' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && (() => {
+          const engineConfig = getExperimentById(activeExperiment);
+          return engineConfig ? (
+            <GenericLab config={engineConfig} onBackToSelector={handleBackToSelector} />
+          ) : null;
+        })()}
 
         {/* Conservation Experiment */}
         {activeExperiment === 'conservation' && (

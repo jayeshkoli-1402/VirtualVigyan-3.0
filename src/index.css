@@ -38,6 +38,28 @@
   --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
 }
 
+/* ── Dark Theme Tokens ── */
+:root.dark,
+[data-theme="dark"] {
+  --bg-primary: #090d16;
+  --bg-secondary: #0f172a;
+  --bg-card: #141e33;
+  --bg-card-hover: #1e293b;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border-subtle: #1e293b;
+  --border-accent: #334155;
+
+  --glass-bg: #141e33;
+  --glass-border: #1e293b;
+
+  --shadow-card: 0 4px 14px 0 rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 8px 24px 0 rgba(0, 0, 0, 0.5);
+}
+
 /* ── Reset & Base ── */
 *, *::before, *::after {
   box-sizing: border-box;

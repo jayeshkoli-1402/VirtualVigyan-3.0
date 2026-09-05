@@ -1,0 +1,264 @@
+/**
+ * ═══════════════════════════════════════════════════════════════════
+ *  GenericLab — Main experiment renderer
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ *  Takes an ExperimentConfig and renders the complete experiment:
+ *  three-panel lab layout, calculation form, results screen.
+ *  All driven by the config — zero experiment-specific code.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+import React, { useReducer, useState, useCallback, useEffect } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
+import type { ExperimentConfig } from '../../engine/experimentConfig';
+import { createExperiment } from '../../engine/experimentRunner';
+import { validateDrop } from '../../engine/validationEngine';
+import GenericToolbox from './GenericToolbox';
+import GenericBench from './GenericBench';
+import GenericInstructions from './GenericInstructions';
+import GenericCalculation from './GenericCalculation';
+import GenericResults from './GenericResults';
+
+type GenericLabProps = {
+  config: ExperimentConfig;
+  onBackToSelector: () => void;
+};
+
+const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => {
+  const [reducer, initialState] = createExperiment(config);
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
+
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
+
+  // DnD sensors
+  const pointerSensor = useSensor(PointerSensor, {
+    activationConstraint: { distance: 5 },
+  });
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: { delay: 100, tolerance: 5 },
+  });
+  const sensors = useSensors(pointerSensor, touchSensor);
+
+  // Responsive
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+
+  // Start experiment on mount
+  useEffect(() => {
+    dispatch({ type: 'START_EXPERIMENT' });
+  }, []);
+
+  // Clear mistake messages after delay
+  useEffect(() => {
+    if (mistakeMessage) {
+      const timer = setTimeout(() => setMistakeMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [mistakeMessage]);
+
+  // Animation timers: when an animation starts, schedule its completion
+  useEffect(() => {
+    const activeAnims = Object.entries(state.animations).filter(([, v]) => v);
+    for (const [flag] of activeAnims) {
+      // Find the interaction that started this animation
+      const interaction = config.interactions.find(
+        i => i.animation?.animatingFlag === flag
+      );
+      if (interaction?.animation) {
+        const timer = setTimeout(() => {
+          dispatch({
+            type: 'ANIMATION_COMPLETE',
+            payload: { animationFlag: flag, interactionId: interaction.id },
+          });
+        }, interaction.animation.durationMs);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [state.animations, config.interactions]);
+
+  // ── Drag handlers ──
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(event.active.id as string);
+    setMistakeMessage(null);
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    setActiveDropZone(event.over ? (event.over.id as string) : null);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      setActiveDragId(null);
+      setActiveDropZone(null);
+
+      if (!over) return;
+
+      const itemId = active.id as string;
+      const zoneId = over.id as string;
+
+      // Validate the drop
+      const validation = validateDrop(config, state, itemId, zoneId);
+      if (validation && !validation.allowed) {
+        setMistakeMessage(validation.message);
+        return;
+      }
+      if (validation?.message) {
+        setMistakeMessage(validation.message);
+      }
+
+      // Dispatch to the generic reducer
+      dispatch({
+        type: 'DROP_ITEM',
+        payload: { itemId, zoneId },
+      });
+    },
+    [config, state],
+  );
+
+  // Determine current view
+  const currentStep = config.steps[state.currentStepIndex];
+  const isCalcStep = currentStep?.type === 'calculation';
+  const isResultsStep = currentStep?.type === 'results' || state.finished;
+  const isLabStep = !isCalcStep && !isResultsStep;
+
+  // Drag overlay label
+  const getDragLabel = (id: string) => {
+    const apparatus = config.apparatus.find(a => a.id === id);
+    return apparatus
+      ? { icon: apparatus.icon, label: apparatus.label }
+      : { icon: '📦', label: id };
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Calculation screen */}
+        {isCalcStep && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <GenericCalculation config={config} state={state} dispatch={dispatch} />
+          </div>
+        )}
+
+        {/* Results screen */}
+        {isResultsStep && (
+          <div style={{ flex: 1, padding: 20 }}>
+            <GenericResults
+              config={config}
+              state={state}
+              dispatch={dispatch}
+              onBackToSelector={onBackToSelector}
+            />
+          </div>
+        )}
+
+        {/* Three-panel lab layout */}
+        {isLabStep && (
+          <div
+            style={{
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: isMobile
+                ? '1fr'
+                : `${leftCollapsed ? '52px' : '200px'} 1fr ${rightCollapsed ? '52px' : '240px'}`,
+              gap: 0,
+              minHeight: 0,
+              transition: 'grid-template-columns 0.2s ease',
+            }}
+          >
+            {/* Left: Toolbox */}
+            <div style={{
+              borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
+              borderBottom: isMobile ? '1px solid var(--border-subtle)' : 'none',
+              background: '#ffffff',
+              order: isMobile ? 1 : 0,
+            }}>
+              <GenericToolbox
+                config={config}
+                state={state}
+                isCollapsed={leftCollapsed}
+                onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
+              />
+            </div>
+
+            {/* Center: Lab bench */}
+            <div style={{
+              display: 'flex',
+              padding: 8,
+              order: isMobile ? 0 : 1,
+              background: '#f8fafc',
+            }}>
+              <GenericBench
+                config={config}
+                state={state}
+                dispatch={dispatch}
+                activeDropZone={activeDropZone}
+              />
+            </div>
+
+            {/* Right: Instructions */}
+            <div style={{
+              borderLeft: isMobile ? 'none' : '1px solid var(--border-subtle)',
+              borderTop: isMobile ? '1px solid var(--border-subtle)' : 'none',
+              background: '#ffffff',
+              order: 2,
+            }}>
+              <GenericInstructions
+                config={config}
+                state={state}
+                dispatch={dispatch}
+                mistakeMessage={mistakeMessage}
+                isCollapsed={rightCollapsed}
+                onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Drag overlay */}
+        <DragOverlay>
+          {activeDragId ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 14px', borderRadius: 'var(--radius-md)',
+              background: '#ffffff', border: '1.5px solid #2563eb',
+              opacity: 0.95, cursor: 'grabbing',
+              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+            }}>
+              <span style={{ fontSize: 18 }}>{getDragLabel(activeDragId).icon}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1d4ed8' }}>
+                {getDragLabel(activeDragId).label}
+              </span>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </div>
+    </DndContext>
+  );
+};
+
+export default GenericLab;

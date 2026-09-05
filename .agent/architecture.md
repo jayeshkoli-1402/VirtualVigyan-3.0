@@ -144,3 +144,19 @@ To create a new experiment from user data:
    - Export from local folder index and include in `experiments` array.
 4. **Done!** It instantly appears in the selector and runs seamlessly in both Dark and Light modes.
 
+---
+
+## 3D Virtual Reality Architecture (WebXR & Phone VR / Cardboard)
+
+Located in `src/components/conservation/vr/`:
+1. **Additive Multi-Mode Paradigm:**
+   - Designed to run alongside 2D labs without modifying legacy workflows or breaking existing experiments.
+   - Accessible via direct launcher in `ExperimentSelector.tsx` and via in-lab toggle in `ConservationLabBench.tsx`.
+2. **Core Components:**
+   - `ConservationScene3D.ts`: Three.js procedural laboratory environment with glassware shaders, volumetric liquid transitions, digital scale with 7-segment LED canvas display, and 3D inversion kinetics.
+   - `CardboardStereoManager.ts`: Dual-viewport stereoscopic split-screen renderer (left/right eye with IPD adjustment), mobile gyroscope 360° orientation tracking via `DeviceOrientationEvent`, and central gaze-dwell reticle (1.2s circular dwell trigger) + screen-tap support for mobile Cardboard/box headsets.
+   - `WebXRControllerManager.ts`: Full 6-DOF WebXR motion controller tracking with forward raycasting pointers and haptic actuator vibration pulses for standalone headsets (Meta Quest, Pico, etc.).
+   - `VRFloatingHUD.ts`: Interactive floating 3D whiteboard in Three.js space rendering high-contrast lab objectives, chemical equations, live mass readouts, and clickable VR action buttons.
+   - `ConservationVRLab.tsx`: Fullscreen WebGL canvas orchestration layer with quick mode-switching between Desktop 3D, Phone VR (Cardboard), and WebXR.
+
+

@@ -28,12 +28,15 @@ import ConservationResults from './ConservationResults';
 import LabSafetyModal from './LabSafetyModal';
 import ChemicalHazardWarningToast from './ChemicalHazardWarningToast';
 import type { HazardWarningData } from './ChemicalHazardWarningToast';
+import ConservationVRLab from './vr/ConservationVRLab';
 
 interface ConservationExperimentProps {
   onBackToSelector: () => void;
+  initialVRMode?: boolean;
 }
 
-const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackToSelector }) => {
+const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackToSelector, initialVRMode = false }) => {
+  const [isVRMode, setIsVRMode] = useState<boolean>(initialVRMode);
   const [state, dispatch] = useReducer(conservationReducer, conservationInitialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -210,6 +213,10 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
     return labels[id] || { icon: '📦', label: id };
   };
 
+  if (isVRMode) {
+    return <ConservationVRLab onBackToLab={() => setIsVRMode(false)} />;
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -297,6 +304,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
                 state={state}
                 dispatch={dispatch}
                 activeDropZone={activeDropZone}
+                onLaunchVR={() => setIsVRMode(true)}
               />
             </div>
 

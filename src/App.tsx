@@ -231,6 +231,9 @@ const App: React.FC = () => {
     if (activeExperiment === 'conservation') {
       return { subtitle: 'Conservation of Mass', color: '#059669' };
     }
+    if (activeExperiment === 'conservation-vr') {
+      return { subtitle: '🥽 Conservation of Mass (3D VR Lab)', color: '#059669' };
+    }
     if (activeExperiment === 'titration') {
       return { subtitle: 'Acid-Base Titration', color: '#2563eb' };
     }
@@ -385,20 +388,26 @@ const App: React.FC = () => {
           <ExperimentSelector
             onSelectExperiment={handleSelectExperiment}
             onSelectEngineExperiment={(id) => setActiveExperiment(id)}
+            onSelectVR={() => setActiveExperiment('conservation-vr')}
           />
         )}
 
         {/* Engine-driven Experiments (New Architecture) */}
-        {activeExperiment !== 'select' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && (() => {
+        {activeExperiment !== 'select' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-vr' && (() => {
           const engineConfig = getExperimentById(activeExperiment);
           return engineConfig ? (
             <GenericLab config={engineConfig} onBackToSelector={handleBackToSelector} />
           ) : null;
         })()}
 
-        {/* Conservation Experiment */}
+        {/* Conservation Experiment (2D Lab) */}
         {activeExperiment === 'conservation' && (
           <ConservationExperiment onBackToSelector={handleBackToSelector} />
+        )}
+
+        {/* Conservation Experiment (3D VR Mode) */}
+        {activeExperiment === 'conservation-vr' && (
+          <ConservationExperiment initialVRMode={true} onBackToSelector={handleBackToSelector} />
         )}
 
         {/* Titration Experiment */}

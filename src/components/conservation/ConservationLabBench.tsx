@@ -11,12 +11,14 @@ interface ConservationLabBenchProps {
   state: ConservationState;
   dispatch: React.Dispatch<ConservationAction>;
   activeDropZone: string | null;
+  onLaunchVR?: () => void;
 }
 
 const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
   state,
   dispatch,
   activeDropZone,
+  onLaunchVR,
 }) => {
   // Zoom & Pan state
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
@@ -201,8 +203,34 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           </span>
         </div>
 
-        {/* Right: Inline Zoom & Pan Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {/* Right: Inline Zoom & Pan Controls + 3D VR Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {onLaunchVR && (
+            <button
+              id="btn-launch-3d-vr"
+              onClick={onLaunchVR}
+              title="Switch to 3D Virtual Reality Lab (Google Cardboard & WebXR Headsets)"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '4px 10px',
+                borderRadius: 6,
+                background: 'linear-gradient(135deg, #059669, #0284c7)',
+                color: '#ffffff',
+                border: 'none',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>🥽</span>
+              <span>3D VR Lab</span>
+            </button>
+          )}
+
           {/* Zoom buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f1f5f9', padding: '2px 4px', borderRadius: 6 }}>
             <button

@@ -14,7 +14,7 @@ Settled decisions. Do not re-litigate these unless explicitly asked by the devel
 - 2D gives precise control over liquid levels, color interpolation, and apparatus positioning without the complexity overhead of a 3D scene graph.
 - This is the **design target**, not a compromise. If asked: *"The current build is 2D by design — 3D is on our roadmap as an enhancement, not a blocker."*
 
-**Status:** Final. Do not add 3D libraries.
+**Status:** Final. Do not add 3D libraries unless requested for specialized VR modes.
 
 ---
 
@@ -165,5 +165,19 @@ Settled decisions. Do not re-litigate these unless explicitly asked by the devel
 - **Curriculum Organization:** University-level engineering chemistry practicals (such as DBATU F.Y. B.Tech) reside in `src/experiments/fy-dbatu/`, distinct from secondary school NCERT Class 9–12 practicals, while both leverage the exact same unified simulation engine.
 
 **Status:** Final.
+
+---
+
+## ADR-013: 3D Virtual Reality Lab Architecture (WebXR & Google Cardboard Phone VR)
+
+**Chose:** Three.js-powered 3D laboratory environment supporting dual execution pathways (Desktop 3D, Phone VR Cardboard stereoscopy with gyroscope head tracking & gaze-dwell, and 6-DOF WebXR motion controllers), added additively without modifying existing 2D experiments.  
+**Over:** Rewriting existing 2D experiments or depending solely on dedicated WebXR headsets (Quest/Pico).  
+**Because:**
+- **Accessibility for Indian Students:** Many students access virtual labs using mobile smartphones and budget phone headsets like Google Cardboard. Providing stereoscopic dual-viewport rendering with mobile gyroscope orientation and gaze-dwell reticles enables true VR experiences without requiring costly standalone headsets.
+- **Motion Controller Parity:** WebXR `immersive-vr` session support with 6-DOF controller tracking, raycasting pointers, and haptic actuator vibrations ensures cutting-edge immersion when accessed via high-end VR headsets.
+- **Non-Destructive Additive Design:** The legacy 2D Conservation of Mass lab and all engine experiments remain 100% untouched and functional, accessible alongside the new 3D VR mode.
+
+**Status:** Final.
+
 
 

@@ -4,6 +4,7 @@ import { getAllExperiments } from '../experiments';
 interface ExperimentSelectorProps {
   onSelectExperiment: (id: 'titration' | 'conservation') => void;
   onSelectEngineExperiment?: (id: string) => void;
+  onSelectVR?: () => void;
 }
 
 const experiments = [
@@ -37,7 +38,11 @@ const experiments = [
   },
 ];
 
-const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({ onSelectExperiment, onSelectEngineExperiment }) => {
+const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
+  onSelectExperiment,
+  onSelectEngineExperiment,
+  onSelectVR,
+}) => {
   const [category, setCategory] = React.useState<'all' | 'dbatu' | 'school'>('all');
   const engineExperiments = getAllExperiments();
 
@@ -234,6 +239,26 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({ onSelectExperim
                   >
                     {exp.difficulty}
                   </span>
+                  {exp.id === 'conservation' && (
+                    <span
+                      style={{
+                        fontSize: '0.62rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                        color: '#0d9488',
+                        background: 'rgba(13, 148, 136, 0.12)',
+                        border: '1px solid rgba(13, 148, 136, 0.3)',
+                        padding: '2px 8px',
+                        borderRadius: 4,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3,
+                      }}
+                    >
+                      🥽 3D VR Ready
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -268,12 +293,49 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({ onSelectExperim
                 fontSize: '0.82rem',
                 color: 'var(--text-secondary)',
                 lineHeight: 1.55,
-                marginBottom: 16,
+                marginBottom: 14,
                 flex: 1,
               }}
             >
               {exp.description}
             </p>
+
+            {/* Direct 3D VR Launcher on Card */}
+            {exp.id === 'conservation' && (
+              <div style={{ marginBottom: 14 }}>
+                <button
+                  id="btn-card-launch-vr"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectVR) {
+                      onSelectVR();
+                    } else {
+                      onSelectExperiment('conservation');
+                    }
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #059669, #0284c7)',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)',
+                    transition: 'transform 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                >
+                  <span>🥽</span>
+                  <span>Launch 3D VR Lab (Cardboard / WebXR)</span>
+                </button>
+              </div>
+            )}
 
             {/* Topic tag */}
             <div

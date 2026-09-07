@@ -1,15 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
-/* ── Design Tokens — Clean Lab Theme ── */
+/* ── Design Tokens — Claymorphic Science Lab ── */
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Clean light science lab palette */
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
+  --bg-primary: #f0f4f9;
+  --bg-secondary: #e6edf5;
   --bg-card: #ffffff;
   --bg-card-hover: #f8fafc;
+
+  /* Claymorphic Shadows & Highlights (Light) */
+  --clay-box-shadow: 10px 14px 28px rgba(160, 175, 200, 0.35), -6px -6px 18px rgba(255, 255, 255, 0.9), inset 2px 2px 4px rgba(255, 255, 255, 0.8), inset -3px -3px 6px rgba(160, 175, 200, 0.2);
+  --clay-card-shadow: 12px 18px 32px rgba(160, 175, 200, 0.4), -8px -8px 22px rgba(255, 255, 255, 0.95), inset 3px 3px 6px rgba(255, 255, 255, 0.9), inset -4px -4px 8px rgba(160, 175, 200, 0.25);
+  --clay-input-shadow: inset 3px 3px 7px rgba(160, 175, 200, 0.4), inset -2px -2px 5px rgba(255, 255, 255, 0.85);
+  --clay-btn-shadow: 6px 8px 18px rgba(0, 0, 0, 0.12), inset 2px 2px 4px rgba(255, 255, 255, 0.5), inset -2px -2px 4px rgba(0, 0, 0, 0.15);
+  --clay-btn-active: inset 3px 3px 7px rgba(0, 0, 0, 0.25), inset -2px -2px 5px rgba(255, 255, 255, 0.2);
 
   --text-primary: #0f172a;
   --text-secondary: #334155;
@@ -58,6 +67,13 @@
 
   --shadow-card: 0 4px 14px 0 rgba(0, 0, 0, 0.35);
   --shadow-hover: 0 8px 24px 0 rgba(0, 0, 0, 0.5);
+
+  /* Claymorphic Shadows & Highlights (Dark) */
+  --clay-box-shadow: 10px 16px 30px rgba(0, 0, 0, 0.5), -4px -4px 14px rgba(255, 255, 255, 0.03), inset 2px 2px 4px rgba(255, 255, 255, 0.08), inset -3px -3px 6px rgba(0, 0, 0, 0.4);
+  --clay-card-shadow: 14px 20px 36px rgba(0, 0, 0, 0.6), -6px -6px 18px rgba(255, 255, 255, 0.035), inset 2.5px 2.5px 5px rgba(255, 255, 255, 0.09), inset -4px -4px 8px rgba(0, 0, 0, 0.5);
+  --clay-input-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.6), inset -2px -2px 5px rgba(255, 255, 255, 0.04);
+  --clay-btn-shadow: 6px 8px 20px rgba(0, 0, 0, 0.4), inset 2px 2px 4px rgba(255, 255, 255, 0.25), inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+  --clay-btn-active: inset 3px 3px 7px rgba(0, 0, 0, 0.5), inset -2px -2px 5px rgba(255, 255, 255, 0.1);
 }
 
 /* ── Reset & Base ── */
@@ -87,6 +103,121 @@ body {
   position: relative;
   z-index: 1;
   min-height: 100vh;
+}
+
+/* ── Claymorphism Design System Classes ── */
+.clay-card {
+  background: var(--bg-card);
+  border-radius: 24px;
+  box-shadow: var(--clay-card-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:root.dark .clay-card,
+[data-theme="dark"] .clay-card {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.clay-card-sm {
+  background: var(--bg-card);
+  border-radius: 18px;
+  box-shadow: var(--clay-box-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+:root.dark .clay-card-sm,
+[data-theme="dark"] .clay-card-sm {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.clay-pill {
+  border-radius: 9999px;
+  box-shadow: var(--clay-box-shadow);
+}
+
+.clay-input {
+  border-radius: 14px;
+  background: var(--bg-secondary) !important;
+  box-shadow: var(--clay-input-shadow) !important;
+  border: 1px solid transparent !important;
+  color: var(--text-primary) !important;
+  font-family: var(--font-sans);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.clay-input:focus {
+  border-color: rgba(5, 150, 105, 0.4) !important;
+  outline: none !important;
+}
+
+.clay-btn {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border-radius: 16px;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.clay-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.clay-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+.clay-btn-emerald {
+  background: linear-gradient(145deg, #10b981, #059669);
+  color: #ffffff;
+  box-shadow: 6px 10px 22px rgba(5, 150, 105, 0.38), inset 2px 2px 4px rgba(255, 255, 255, 0.5), inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clay-btn-emerald:active:not(:disabled) {
+  box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.35), inset -2px -2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.clay-btn-blue {
+  background: linear-gradient(145deg, #38bdf8, #0284c7);
+  color: #ffffff;
+  box-shadow: 6px 10px 22px rgba(2, 132, 199, 0.38), inset 2px 2px 4px rgba(255, 255, 255, 0.5), inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clay-btn-blue:active:not(:disabled) {
+  box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.35), inset -2px -2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.clay-btn-purple {
+  background: linear-gradient(145deg, #a855f7, #7c3aed);
+  color: #ffffff;
+  box-shadow: 6px 10px 22px rgba(124, 58, 237, 0.38), inset 2px 2px 4px rgba(255, 255, 255, 0.5), inset -2px -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clay-btn-purple:active:not(:disabled) {
+  box-shadow: inset 3px 3px 7px rgba(0, 0, 0, 0.35), inset -2px -2px 4px rgba(255, 255, 255, 0.2);
+}
+
+.clay-btn-neutral {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--clay-btn-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.clay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 9999px;
+  font-weight: 700;
+  box-shadow: 3px 4px 10px rgba(0, 0, 0, 0.08), inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.6), inset -1.5px -1.5px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Utility Classes ── */

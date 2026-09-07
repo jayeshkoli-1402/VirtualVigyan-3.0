@@ -27,10 +27,18 @@ import ExperimentSelector from './components/ExperimentSelector';
 import ConservationExperiment from './components/conservation/ConservationExperiment';
 import GenericLab from './components/GenericLab/GenericLab';
 import { getExperimentById } from './experiments';
+import { AuthProvider, useAuth } from './auth/AuthContext';
+import AuthModal from './components/auth/AuthModal';
+import AdminPanel from './components/admin/AdminPanel';
+import TeacherDashboard from './components/teacher/TeacherDashboard';
 
-type ActiveExperiment = 'select' | 'titration' | 'conservation' | string;
+type ActiveExperiment = 'select' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { user, logout } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
+
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
   const [state, dispatch] = useReducer(titrationReducer, initialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
@@ -228,6 +236,12 @@ const App: React.FC = () => {
 
   // Get experiment-specific header info
   const getHeaderInfo = () => {
+    if (activeExperiment === 'admin') {
+      return { subtitle: '🛡️ Admin & Moderator Command Center', color: '#7c3aed' };
+    }
+    if (activeExperiment === 'teacher') {
+      return { subtitle: '👨‍🏫 Teacher & Faculty Portal', color: '#0284c7' };
+    }
     if (activeExperiment === 'conservation') {
       return { subtitle: 'Conservation of Mass', color: '#059669' };
     }
@@ -360,29 +374,144 @@ const App: React.FC = () => {
             id="btn-toggle-theme"
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="clay-btn clay-btn-neutral"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '5px 12px',
-              borderRadius: '20px',
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
+              padding: '6px 14px',
+              borderRadius: 20,
               fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              fontWeight: 700,
             }}
           >
             <span>{theme === 'dark' ? '🌙' : '☀️'}</span>
             <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
           </button>
+
+          {/* User Auth Profile / Login Button */}
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {user.role === 'admin' && (
+                <button
+                  id="btn-nav-admin"
+                  onClick={() => setActiveExperiment(activeExperiment === 'admin' ? 'select' : 'admin')}
+                  className={`clay-btn ${activeExperiment === 'admin' ? 'clay-btn-neutral' : 'clay-btn-purple'}`}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 14,
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  <span>🛡️</span>
+                  <span>{activeExperiment === 'admin' ? 'Browse Labs' : 'Admin Panel'}</span>
+                </button>
+              )}
+
+              {user.role === 'teacher' && (
+                <button
+                  id="btn-nav-teacher"
+                  onClick={() => setActiveExperiment(activeExperiment === 'teacher' ? 'select' : 'teacher')}
+                  className={`clay-btn ${activeExperiment === 'teacher' ? 'clay-btn-neutral' : 'clay-btn-blue'}`}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 14,
+                    fontSize: '0.78rem',
+                  }}
+                >
+                  <span>👨‍🏫</span>
+                  <span>{activeExperiment === 'teacher' ? 'Browse Labs' : 'Teacher Portal'}</span>
+                </button>
+              )}
+
+              {/* User Profile Pill */}
+              <div
+                className="clay-badge"
+                style={{
+                  padding: '4px 10px 4px 6px',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid rgba(255, 255, 255, 0.4)',
+                }}
+              >
+                <span style={{ fontSize: 18 }}>{user.avatar || '👤'}</span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  {user.name}
+                </span>
+                <span
+                  className="clay-badge"
+                  style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    padding: '2px 8px',
+                    background:
+                      user.role === 'admin'
+                        ? 'rgba(124, 58, 237, 0.18)'
+                        : user.role === 'teacher'
+                        ? 'rgba(2, 132, 199, 0.18)'
+                        : 'rgba(5, 150, 105, 0.18)',
+                    color:
+                      user.role === 'admin' ? '#a78bfa' : user.role === 'teacher' ? '#38bdf8' : '#34d399',
+                  }}
+                >
+                  {user.role}
+                </span>
+              </div>
+
+              {/* Sign Out Button */}
+              <button
+                id="btn-sign-out"
+                onClick={() => {
+                  logout();
+                  setActiveExperiment('select');
+                }}
+                title="Sign Out"
+                className="clay-btn clay-btn-neutral"
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 12,
+                  fontSize: '0.75rem',
+                }}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button
+              id="btn-open-auth-modal"
+              onClick={() => {
+                setAuthModalTab('login');
+                setAuthModalOpen(true);
+              }}
+              className="clay-btn clay-btn-emerald"
+              style={{
+                padding: '7px 18px',
+                borderRadius: 20,
+                fontSize: '0.82rem',
+                fontWeight: 800,
+              }}
+            >
+              <span>🔑</span>
+              <span>Sign In / Register</span>
+            </button>
+          )}
         </div>
       </header>
 
       {/* Main content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Admin Command Center */}
+        {activeExperiment === 'admin' && (
+          <AdminPanel
+            onLaunchExperiment={(id) => setActiveExperiment(id)}
+            onViewAsStudent={() => setActiveExperiment('select')}
+          />
+        )}
+
+        {/* Teacher Dashboard */}
+        {activeExperiment === 'teacher' && (
+          <TeacherDashboard
+            onLaunchExperiment={(id) => setActiveExperiment(id)}
+          />
+        )}
+
         {/* Experiment Selector */}
         {activeExperiment === 'select' && (
           <ExperimentSelector
@@ -393,7 +522,7 @@ const App: React.FC = () => {
         )}
 
         {/* Engine-driven Experiments (New Architecture) */}
-        {activeExperiment !== 'select' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-vr' && (() => {
+        {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-vr' && (() => {
           const engineConfig = getExperimentById(activeExperiment);
           return engineConfig ? (
             <GenericLab config={engineConfig} onBackToSelector={handleBackToSelector} />
@@ -534,7 +663,31 @@ const App: React.FC = () => {
           </DndContext>
         )}
       </main>
+
+      {/* Global Authentication & Registration Modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        initialTab={authModalTab}
+        onRoleRedirect={(role) => {
+          if (role === 'admin') {
+            setActiveExperiment('admin');
+          } else if (role === 'teacher') {
+            setActiveExperiment('teacher');
+          } else {
+            setActiveExperiment('select');
+          }
+        }}
+      />
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

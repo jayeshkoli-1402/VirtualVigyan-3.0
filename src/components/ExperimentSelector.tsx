@@ -109,7 +109,18 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
         </p>
 
         {/* Category Filter Tabs */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            background: 'var(--bg-secondary)',
+            borderRadius: 24,
+            padding: 5,
+            boxShadow: 'var(--clay-input-shadow)',
+            gap: 6,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+          }}
+        >
           {[
             { id: 'all', label: 'All Experiments' },
             { id: 'dbatu', label: '🎓 F.Y. B.Tech (DBATU)' },
@@ -120,16 +131,19 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setCategory(tab.id as 'all' | 'dbatu' | 'school')}
+                className="clay-btn"
                 style={{
-                  padding: '7px 16px',
-                  borderRadius: 20,
+                  padding: '8px 18px',
+                  borderRadius: 18,
                   fontSize: '0.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  border: active ? '1px solid var(--accent-teal)' : '1px solid var(--border-subtle)',
-                  background: active ? 'rgba(13, 148, 136, 0.15)' : 'var(--bg-card)',
-                  color: active ? 'var(--accent-teal)' : 'var(--text-secondary)',
-                  transition: 'all 0.15s ease',
+                  fontWeight: 700,
+                  background: active
+                    ? 'linear-gradient(145deg, #ffffff, var(--bg-card))'
+                    : 'transparent',
+                  color: active ? '#059669' : 'var(--text-secondary)',
+                  boxShadow: active
+                    ? '4px 6px 14px rgba(0, 0, 0, 0.08), inset 2px 2px 3px rgba(255, 255, 255, 0.9)'
+                    : 'none',
                 }}
               >
                 {tab.label}
@@ -154,31 +168,26 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
             key={exp.id}
             id={`btn-select-${exp.id}`}
             onClick={() => onSelectExperiment(exp.id)}
+            className="clay-card"
             style={{
               all: 'unset',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              padding: 24,
+              padding: 26,
               background: 'var(--bg-card)',
-              border: `1.5px solid ${exp.borderAccent}`,
-              borderRadius: 16,
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              transition: 'all 0.2s ease',
+              borderRadius: 26,
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
               position: 'relative',
               overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget;
-              el.style.transform = 'translateY(-3px)';
-              el.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.1)';
-              el.style.borderColor = exp.accentFrom;
+              el.style.transform = 'translateY(-4px) scale(1.01)';
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget;
-              el.style.transform = 'translateY(0)';
-              el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-              el.style.borderColor = exp.borderAccent;
+              el.style.transform = 'translateY(0) scale(1)';
             }}
           >
             {/* Decorative gradient bar at top */}
@@ -378,31 +387,26 @@ const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
             key={exp.id}
             id={`btn-select-${exp.id}`}
             onClick={() => onSelectEngineExperiment?.(exp.id)}
+            className="clay-card"
             style={{
               all: 'unset',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
-              padding: 24,
+              padding: 26,
               background: 'var(--bg-card)',
-              border: `1.5px solid ${exp.themeColor}40`,
-              borderRadius: 16,
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.06)',
-              transition: 'all 0.2s ease',
+              borderRadius: 26,
+              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
               position: 'relative',
               overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
               const el = e.currentTarget;
-              el.style.transform = 'translateY(-3px)';
-              el.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.1)';
-              el.style.borderColor = exp.themeColor;
+              el.style.transform = 'translateY(-4px) scale(1.01)';
             }}
             onMouseLeave={(e) => {
               const el = e.currentTarget;
-              el.style.transform = 'translateY(0)';
-              el.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)';
-              el.style.borderColor = `${exp.themeColor}40`;
+              el.style.transform = 'translateY(0) scale(1)';
             }}
           >
             {/* Gradient bar */}

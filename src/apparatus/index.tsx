@@ -847,6 +847,69 @@ const GlassRod: React.FC<ApparatusProps> = ({
 );
 
 
+// ── Matchstick / Burning Splinter ────────────────────────────────
+
+const Matchstick: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 24,
+  height = 110,
+  label,
+}) => (
+  <svg width={width} height={height} viewBox="0 0 24 110" fill="none" style={{ overflow: 'visible' }}>
+    <defs>
+      <linearGradient id="matchFlameGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#fef08a" />
+        <stop offset="50%" stopColor="#f59e0b" />
+        <stop offset="100%" stopColor="#ea580c" />
+      </linearGradient>
+    </defs>
+
+    {/* Highlight glow */}
+    {highlighted && (
+      <rect x="7" y="24" width="10" height="82" rx="3" stroke="#3b82f6" strokeWidth="4" opacity="0.5" filter="blur(2px)" />
+    )}
+
+    {/* Wooden matchstick splint */}
+    <rect x="10" y="28" width="4" height="76" rx="1" fill="#d97706" stroke="#92400e" strokeWidth="0.8" />
+    <line x1="11.5" y1="30" x2="11.5" y2="102" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+
+    {/* Charred sulfur match head */}
+    <ellipse cx="12" cy="27" rx="3.5" ry="5.5" fill="#1e293b" stroke="#0f172a" strokeWidth="0.8" />
+
+    {/* Active Flame */}
+    <g id="match-flame">
+      {/* Outer yellow/amber flame */}
+      <path
+        d="M 12 4 Q 19 14 16 23 Q 12 28 8 23 Q 5 14 12 4 Z"
+        fill="url(#matchFlameGrad)"
+        stroke="#f59e0b"
+        strokeWidth="0.8"
+      >
+        <animate attributeName="d" values="M 12 4 Q 19 14 16 23 Q 12 28 8 23 Q 5 14 12 4 Z; M 12 2 Q 18 13 15 23 Q 12 28 9 23 Q 6 13 12 2 Z; M 12 4 Q 19 14 16 23 Q 12 28 8 23 Q 5 14 12 4 Z" dur="0.5s" repeatCount="indefinite" />
+      </path>
+      {/* Inner bright orange/red flame core */}
+      <path
+        d="M 12 11 Q 15 17 14 23 Q 12 26 10 23 Q 9 17 12 11 Z"
+        fill="#ef4444"
+        opacity="0.9"
+      >
+        <animate attributeName="opacity" values="0.85;1;0.85" dur="0.3s" repeatCount="indefinite" />
+      </path>
+      {/* Blue flame base */}
+      <ellipse cx="12" cy="24" rx="2.5" ry="1.5" fill="#38bdf8" opacity="0.8" />
+    </g>
+
+    {/* Label */}
+    {label && (
+      <text x="12" y="108" textAnchor="middle" fontSize="6.5" fill="#64748b" fontFamily="var(--font-sans)">
+        {label}
+      </text>
+    )}
+  </svg>
+);
+
+
+
 // ── Test Tube Stand ──────────────────────────────────────────────
 
 const TestTubeStand: React.FC<ApparatusProps> = ({
@@ -1639,6 +1702,7 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   Dropper: DropperBottle,
   ReagentBottle,
   GlassRod,
+  Matchstick,
   OstwaldViscometer,
 
   // Heating & Temperature

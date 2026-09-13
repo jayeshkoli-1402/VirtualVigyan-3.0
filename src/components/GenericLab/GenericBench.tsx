@@ -107,7 +107,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       </div>
 
       {/* ── Active Reaction Observation Banner ── */}
-      {(state.flags['reactionStarted'] || config.steps[state.currentStepIndex]?.id === 'observe') && !state.flags['popSoundHeard'] && (
+      {config.steps[state.currentStepIndex]?.id === 'observe' && (
         <div
           style={{
             position: 'absolute',

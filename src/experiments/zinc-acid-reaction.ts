@@ -34,7 +34,7 @@ export const zincAcidReaction: ExperimentConfig = {
       initialProps: { liquidColor: '#64748b', label: 'Zn' } },
     { id: 'h2so4-bottle', component: 'ReagentBottle', label: 'Dilute H₂SO₄', icon: '🧴',
       initialProps: { liquidColor: 'rgba(56, 189, 248, 0.65)', label: 'Dil. H₂SO₄' } },
-    { id: 'matchstick', component: 'GlassRod', label: 'Burning Matchstick', icon: '🔥' },
+    { id: 'matchstick', component: 'Matchstick', label: 'Burning Matchstick', icon: '🔥' },
   ],
 
   // ── Drop Zones ──
@@ -153,8 +153,6 @@ export const zincAcidReaction: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'zincAdded', value: true },
         { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'hasZinc', value: true },
-        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'liquidLevel', value: 0.12 },
-        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.15)' },
       ],
       completesAction: 'add-zinc',
       animation: {
@@ -215,7 +213,7 @@ export const zincAcidReaction: ExperimentConfig = {
         { type: 'setFlag', key: 'gasTested', value: true },
         { type: 'setFlag', key: 'popSoundHeard', value: true },
         { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'popEffect', value: true },
-        { type: 'setVariable', key: 'gasIdentified', value: 1 },
+        { type: 'setVariable', key: '_gasIdentified', value: 1 },
       ],
       completesAction: 'test-gas',
       animation: {
@@ -233,15 +231,22 @@ export const zincAcidReaction: ExperimentConfig = {
     constants: {
       zincMass: 0.5,        // grams
       acidVolume: 10,       // mL
-      acidMolarity: 0.5,    // M (dilute)
+      acidMolarity: 1.0,    // M (dilute, in excess over Zn)
     },
     formulas: {
-      molesOfHydrogen: {
+      molesFromMass: {
         label: 'Moles of H₂ evolved',
         displayFormula: 'n(H₂) = n(Zn) = mass(Zn) / M(Zn) = 0.5 / 65.38',
         computeFn: 'molesFromMass',
         inputs: ['sampleMass', 'molarMass'],
         unit: 'mol',
+      },
+      hydrogenMolarMass: {
+        label: 'Molar Mass of Hydrogen Gas (H₂)',
+        displayFormula: 'M(H₂) = 2 × 1.008 g/mol',
+        computeFn: 'hydrogenMolarMass',
+        inputs: [],
+        unit: 'g/mol',
       },
     },
   },
@@ -249,12 +254,17 @@ export const zincAcidReaction: ExperimentConfig = {
   // ── Calculation ──
   calculation: {
     title: 'Reaction Questions & Calculations',
-    instruction: 'Calculate the theoretical yield and identify the gas based on your observations:',
+    instruction:
+      'From your lab observations, Zinc reacted with dilute Sulphuric Acid according to:\n' +
+      'Zn (s) + H₂SO₄ (aq) → ZnSO₄ (aq) + H₂ (g)↑\n\n' +
+      'The balanced equation shows a 1:1 mole ratio between Zn and H₂.\n' +
+      'Since the acid is present in excess, the theoretical moles of H₂ produced equal the moles of Zn consumed:\n\n' +
+      'n(H₂) = n(Zn) = mass(Zn) / M(Zn)',
     fields: [
       {
         id: 'molesProduced',
-        label: '1. Theoretical moles of H₂ gas produced: n = mass(Zn) / 65.38 g/mol (given mass = 0.5g)',
-        placeholder: 'e.g., 0.0076',
+        label: '1. Calculate the theoretical moles of H₂ gas produced: n(H₂) = 0.50 g / 65.38 g/mol. Enter the calculated value:',
+        placeholder: 'Enter calculated moles',
         unit: 'mol',
         expectedFormulaName: 'molesFromMass',
         tolerance: 0.001,
@@ -262,11 +272,11 @@ export const zincAcidReaction: ExperimentConfig = {
       },
       {
         id: 'gasMolarMass',
-        label: '2. Molar mass of the evolved gas H₂ (in g/mol):',
-        placeholder: 'e.g., 2.016',
+        label: '2. Calculate the molar mass of Hydrogen gas (H₂): M(H₂) = 2 × 1.008 g/mol. Enter the calculated value:',
+        placeholder: 'Enter molar mass',
         unit: 'g/mol',
         expectedFormulaName: 'hydrogenMolarMass',
-        tolerance: 0.2,
+        tolerance: 0.02,
         toleranceType: 'absolute',
       },
     ],
@@ -346,6 +356,8 @@ export const zincAcidReaction: ExperimentConfig = {
   initialVariables: {
     sampleMass: 0.5,
     molarMass: 65.38,
+    acidVolume: 10,
+    acidMolarity: 1.0,
   },
   initialFlags: {
     zincAdded: false,

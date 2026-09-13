@@ -8,14 +8,15 @@ interface StopcockControlProps {
 }
 
 /**
- * Rotatable Tap Valve System for Burette.
- * The student rotates the tap key/handle from 0° (horizontal/closed) to 90° (vertical/open).
- * Flow rate adjusts proportionally to the tap angle.
- * Supports both clicking to step rotation and dragging to rotate smoothly.
+ * Rotatable Directional Tap Valve System for Burette (Class 11 Titration).
+ * - Click Right Wing / Side: Rotates clockwise -> steps up flow: 0% -> 20% (Slow Drop) -> 50% (Fast Drop) -> 80% (Rapid Stream) -> 100% (Full Stream).
+ * - Click Left Wing / Side: Rotates counter-clockwise -> steps down flow: 100% -> 50% -> 20% -> 0% (Closed).
+ * - Drag Cork: Smooth pointer dragging rotates tap dynamically.
  */
 const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen, dispatch }) => {
-  const isDraggingRef = useRef(false);
+  const isPointerDownRef = useRef(false);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const hasMovedRef = useRef(false);
   const startOpenRef = useRef(0);
   const lastFrameRef = useRef(0);
   const animFrameRef = useRef<number>(0);
@@ -42,50 +43,90 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
 
     animFrameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animFrameRef.current);
-  }, [stopcockOpen > 0, dispatch]);
+  }, [stopcockOpen, dispatch]);
 
-  // Click handler: cycle through angles 0% -> 30% -> 60% -> 90% -> 0%
-  const handleClick = useCallback(() => {
+  const stepUpFlow = useCallback(() => {
+    if (!enabled) return;
+    let nextOpen = 0.20;
+    if (stopcockOpen === 0) nextOpen = 0.20;
+    else if (stopcockOpen < 0.35) nextOpen = 0.50;
+    else if (stopcockOpen < 0.70) nextOpen = 0.80;
+    else nextOpen = 1.00;
+
+    dispatch({ type: 'SET_STOPCOCK', payload: { open: nextOpen } });
+  }, [enabled, stopcockOpen, dispatch]);
+
+  const stepDownFlow = useCallback(() => {
     if (!enabled) return;
     let nextOpen = 0;
-    if (stopcockOpen === 0) nextOpen = 0.3;
-    else if (stopcockOpen < 0.5) nextOpen = 0.6;
-    else if (stopcockOpen < 0.9) nextOpen = 1.0;
+    if (stopcockOpen > 0.85) nextOpen = 0.50;
+    else if (stopcockOpen > 0.35) nextOpen = 0.20;
     else nextOpen = 0;
 
     dispatch({ type: 'SET_STOPCOCK', payload: { open: nextOpen } });
   }, [enabled, stopcockOpen, dispatch]);
 
-  // Drag to rotate handler
+  // Pointer event handlers supporting both seamless click and smooth drag
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!enabled) return;
-      e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      isDraggingRef.current = true;
+      e.stopPropagation();
+      isPointerDownRef.current = true;
+      hasMovedRef.current = false;
       dragStartPosRef.current = { x: e.clientX, y: e.clientY };
       startOpenRef.current = stopcockOpen;
+      try {
+        (e.currentTarget as Element).setPointerCapture(e.pointerId);
+      } catch {
+        // fallback
+      }
     },
     [enabled, stopcockOpen]
   );
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!isDraggingRef.current) return;
+      if (!isPointerDownRef.current) return;
       const deltaY = e.clientY - dragStartPosRef.current.y;
       const deltaX = e.clientX - dragStartPosRef.current.x;
 
-      // Vertical or horizontal drag rotates tap 0 to 1 (0° to 90°)
-      const dragDelta = (deltaY - deltaX) / 60;
-      const newOpen = Math.max(0, Math.min(1, startOpenRef.current + dragDelta));
-      dispatch({ type: 'SET_STOPCOCK', payload: { open: newOpen } });
+      if (!hasMovedRef.current && Math.hypot(deltaX, deltaY) > 5) {
+        hasMovedRef.current = true;
+      }
+
+      if (hasMovedRef.current) {
+        const dragDelta = (deltaY - deltaX) / 60;
+        const newOpen = Math.max(0, Math.min(1, startOpenRef.current + dragDelta));
+        dispatch({ type: 'SET_STOPCOCK', payload: { open: Math.round(newOpen * 100) / 100 } });
+      }
     },
     [dispatch]
   );
 
-  const handlePointerUp = useCallback(() => {
-    isDraggingRef.current = false;
-  }, []);
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isPointerDownRef.current) return;
+      isPointerDownRef.current = false;
+      try {
+        if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
+          (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // fallback
+      }
+
+      if (!hasMovedRef.current && enabled) {
+        const rect = (e.currentTarget as Element).getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        if (clickX >= rect.width / 2) {
+          stepUpFlow();
+        } else {
+          stepDownFlow();
+        }
+      }
+    },
+    [enabled, stepUpFlow, stepDownFlow]
+  );
 
   // Tap angle: 0deg (horizontal/closed) to 90deg (vertical/open)
   const tapAngle = stopcockOpen * 90;
@@ -93,10 +134,14 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
   // Flow status label text
   const getFlowText = () => {
     if (stopcockOpen === 0) return 'Tap Closed (0°)';
-    if (stopcockOpen < 0.35) return `Slow Drop (${Math.round(stopcockOpen * 100)}%)`;
-    if (stopcockOpen < 0.7) return `Fast Drop (${Math.round(stopcockOpen * 100)}%)`;
-    return `Full Stream (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.25) return `💧 Slow Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.60) return `💧 Fast Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.85) return `🌊 Rapid Flow (${Math.round(stopcockOpen * 100)}%)`;
+    return `🌊 Full Stream (${Math.round(stopcockOpen * 100)}%)`;
   };
+
+  const buretteX = 140;
+  const corkY = 285;
 
   return (
     <g
@@ -126,85 +171,145 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
         opacity={0.3}
       />
 
-      {/* Interactive Hit Area for Tap Handle */}
-      <circle
-        cx={140}
-        cy={285}
-        r={18}
-        fill="transparent"
-        onClick={handleClick}
+      {/* ── Stopcock Interactive Group (Supports Drag & Direct Side Clicks) ── */}
+      <g
+        id="stopcock-interactive-valve"
+        style={{ cursor: enabled ? 'pointer' : 'not-allowed', touchAction: 'none' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
-        style={{ touchAction: 'none' }}
-      />
-
-      {/* Rotatable Tap Valve Handle / Plug */}
-      <g
-        transform={`rotate(${tapAngle}, 140, 285)`}
-        style={{ transition: isDraggingRef.current ? 'none' : 'transform 0.15s ease-out' }}
       >
-        {/* Central Plug Shaft */}
-        <circle cx={140} cy={285} r={3.5} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
-
-        {/* Rotatable Tap Lever Wings / Wings of stopcock handle */}
-        <rect
-          x={126}
-          y={283.5}
-          width={28}
-          height={3}
-          rx={1.5}
-          fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
-          stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
-          strokeWidth={0.6}
+        {/* Invisible enlarged hit circle for dragging */}
+        <circle
+          cx={buretteX}
+          cy={corkY}
+          r={24}
+          fill="rgba(0, 0, 0, 0.001)"
+          style={{ pointerEvents: 'all' }}
         />
-        {/* Knob Grip Ends */}
-        <circle cx={127} cy={285} r={2.5} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
-        <circle cx={153} cy={285} r={2.5} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+
+        {/* Rotatable Tap Valve Handle / Plug */}
+        <g
+          transform={`rotate(${tapAngle}, ${buretteX}, ${corkY})`}
+          style={{ transition: isPointerDownRef.current ? 'none' : 'transform 0.18s ease-out' }}
+        >
+          {/* Central Plug Shaft */}
+          <circle cx={buretteX} cy={corkY} r={3.5} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
+
+          {/* Left Wing Lever (Close / Slow) */}
+          <rect
+            x={buretteX - 14}
+            y={corkY - 1.5}
+            width={14}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.6}
+          />
+
+          {/* Right Wing Lever (Open / Faster) */}
+          <rect
+            x={buretteX}
+            y={corkY - 1.5}
+            width={14}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.6}
+          />
+
+          {/* Knob Grip Ends */}
+          <circle cx={buretteX - 13} cy={corkY} r={2.5} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+          <circle cx={buretteX + 13} cy={corkY} r={2.5} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+        </g>
+
+        {/* Dedicated Left Wing Click Target (Rotate Counter-Clockwise -> Close / Slow down) */}
+        <rect
+          x={buretteX - 25}
+          y={corkY - 14}
+          width={25}
+          height={28}
+          fill="rgba(0, 0, 0, 0.001)"
+          style={{ cursor: enabled && stopcockOpen > 0 ? 'pointer' : 'default', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepDownFlow();
+          }}
+        />
+
+        {/* Dedicated Right Wing Click Target (Rotate Clockwise -> Open / Speed up) */}
+        <rect
+          x={buretteX}
+          y={corkY - 14}
+          width={25}
+          height={28}
+          fill="rgba(0, 0, 0, 0.001)"
+          style={{ cursor: enabled ? 'pointer' : 'default', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepUpFlow();
+          }}
+        />
       </g>
 
-      {/* Rotation direction indicator arrow */}
+      {/* Rotation direction indicator arrow / prompt when closed (Clickable) */}
       {enabled && stopcockOpen === 0 && (
-        <g opacity={0.7}>
+        <g
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepUpFlow();
+          }}
+        >
           <text
             x={172}
             y={284}
             fill="#2563eb"
             fontSize="6"
             fontFamily="var(--font-sans)"
-            fontWeight={600}
+            fontWeight={700}
           >
-            ↻ Click / Rotate Tap
+            ↻ Click Right to Open
           </text>
           <text
             x={172}
             y={292}
-            fill="var(--text-muted)"
+            fill="var(--text-muted, #64748b)"
             fontSize="5"
             fontFamily="var(--font-sans)"
           >
-            Adjust Titration Flow
+            Slow Drop (20%)
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate & Angle Readout */}
-      {stopcockOpen > 0 && (
-        <g>
+      {/* Active Flow Rate & Angle Readout (Clickable) */}
+      {enabled && stopcockOpen > 0 && (
+        <g
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (stopcockOpen < 0.9) stepUpFlow();
+            else stepDownFlow();
+          }}
+        >
           <rect
             x={168}
             y={255}
-            width={82}
-            height={17}
+            width={88}
+            height={18}
             rx={4}
             fill="#ffffff"
             stroke="#2563eb"
             strokeWidth={0.8}
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
           />
           <text
-            x={209}
-            y={266}
+            x={212}
+            y={267}
             textAnchor="middle"
             fill="#1d4ed8"
             fontSize="6.2"
@@ -223,7 +328,7 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
           fill="#dc2626"
           fontSize="5.5"
           fontFamily="var(--font-sans)"
-          fontWeight={500}
+          fontWeight={600}
         >
           🔒 Tap Locked
         </text>

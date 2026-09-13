@@ -153,11 +153,12 @@ export const zincAcidReaction: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'zincAdded', value: true },
         { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'hasZinc', value: true },
+        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'label', value: 'Zinc Granules' },
       ],
       completesAction: 'add-zinc',
       animation: {
         type: 'pour',
-        durationMs: 800,
+        durationMs: 2000,
         animatingFlag: 'isAddingZinc',
       },
     },
@@ -178,15 +179,16 @@ export const zincAcidReaction: ExperimentConfig = {
         { type: 'setFlag', key: 'reactionStarted', value: true },
         { type: 'setFlag', key: 'gasEvolving', value: true },
         { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'liquidLevel', value: 0.58 },
-        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.65)' },
+        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.45)' },
+        { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'label', value: 'Zn + Dil. H₂SO₄ (Effervescence)' },
         { type: 'setApparatusProp', apparatusId: 'test-tube', prop: 'isReacting', value: true },
       ],
       completesAction: 'pour-acid',
       animation: {
         type: 'pour',
-        durationMs: 1200,
+        durationMs: 2200,
         animatingFlag: 'isPouringAcid',
-        effectsAfterAnimation: true,
+        effectsAfterAnimation: false,
       },
     },
     // Observation step — completed by clicking "Continue" button

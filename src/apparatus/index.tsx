@@ -61,54 +61,204 @@ export type ApparatusProps = {
 // ── Generic Conical Flask ────────────────────────────────────────
 
 const ConicalFlask: React.FC<ApparatusProps> = ({
+  id = 'conical-flask',
   liquidLevel = 0,
-  liquidColor = 'rgba(224, 242, 254, 0.35)',
+  liquidColor = 'rgba(224, 242, 254, 0.45)',
   label,
   highlighted = false,
   width = 120,
   height = 140,
+  flags = {},
+  extraProps = {},
 }) => {
-  const fillHeight = 60 * liquidLevel;
-  const fillY = 110 - fillHeight;
+  const isSwirling = Boolean(flags?.swirling || extraProps?.swirling || flags?.shaking || extraProps?.shaking);
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  // Total fillable height from bottom base (y=121) up to near neck (y=56) is ~65px
+  const fillHeight = 65 * effectiveLevel;
+  const fillY = 121 - fillHeight;
+
+  // Linear interpolation for conical slope:
+  // At y=121 (bottom base), half-width is 43 (width 86).
+  // At y=48 (neck base), half-width is 15 (width 30).
+  const slopeFraction = (121 - fillY) / 73;
+  const halfW = 43 - slopeFraction * 28;
+  const gradId = `flaskLiquid-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 120 140" fill="none">
-      {/* Flask body */}
-      <path
-        d="M 45 20 L 45 50 L 15 110 Q 12 118 20 120 L 100 120 Q 108 118 105 110 L 75 50 L 75 20"
-        stroke={highlighted ? '#2563eb' : '#94a3b8'}
-        strokeWidth="2"
-        fill="rgba(255,255,255,0.1)"
-      />
-      {/* Neck */}
-      <rect x="45" y="10" width="30" height="12" rx="2"
-        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="2" fill="none" />
-      {/* Liquid */}
-      {liquidLevel > 0 && (
+    <svg width={width} height={height} viewBox="0 0 120 140" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <clipPath id={`flaskInnerClip-${id || 'def'}`}>
+          <path d="M 46 14 L 46 48 L 17 114 Q 15 122 25 122 L 95 122 Q 105 122 103 114 L 74 48 L 74 14 Z" />
+        </clipPath>
+
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="40%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+
+        <linearGradient id={`glassGleam-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+          <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.25)" />
+        </linearGradient>
+      </defs>
+
+      {/* Outer shadow / glow when highlighted */}
+      {highlighted && (
         <path
-          d={`M ${20 + (50 - fillHeight) * 0.3} ${fillY + 10}
-              L ${100 - (50 - fillHeight) * 0.3} ${fillY + 10}
-              L 100 120 Q 108 118 105 110
-              L 105 110
-              L 15 110 Q 12 118 20 120 Z`}
-          fill={liquidColor}
-          style={{ transition: 'fill 0.5s ease' }}
+          d="M 45 12 L 45 48 L 15 114 Q 13 124 25 124 L 95 124 Q 107 124 105 114 L 75 48 L 75 12 Z"
+          stroke="#3b82f6"
+          strokeWidth="6"
+          opacity="0.5"
+          filter="blur(3px)"
         />
       )}
+
+      {/* Flask Glass Back Wall */}
+      <path
+        d="M 46 14 L 46 48 L 17 114 Q 15 122 25 122 L 95 122 Q 105 122 103 114 L 74 48 L 74 14 Z"
+        fill="rgba(241, 245, 249, 0.2)"
+        stroke="#cbd5e1"
+        strokeWidth="1.5"
+      />
+
+      {/* ── Liquid Fill with Accurate Conical Geometry & Meniscus ── */}
+      <g id="flask-liquid-layer">
+        {/* Main liquid body conforming to inner glass outline */}
+        <rect
+          x="10"
+          y={fillY}
+          width="100"
+          height="130"
+          fill={`url(#${gradId})`}
+          clipPath={`url(#flaskInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'y 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            opacity: effectiveLevel > 0 ? 1 : 0,
+          }}
+        />
+
+        {/* Meniscus surface ellipse */}
+        <ellipse
+          cx="60"
+          cy={fillY}
+          rx={Math.max(1, halfW - 0.5)}
+          ry={Math.min(3, 1 + halfW * 0.05)}
+          fill="rgba(255, 255, 255, 0.3)"
+          stroke={liquidColor}
+          strokeWidth="0.8"
+          clipPath={`url(#flaskInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), rx 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease, stroke 2.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            opacity: effectiveLevel > 0 ? 0.9 : 0,
+          }}
+        />
+
+        {/* Liquid surface light reflection gleam */}
+        <ellipse
+          cx="60"
+          cy={fillY - 0.3}
+          rx={Math.max(1, halfW * 0.65)}
+          ry={Math.min(1.5, 0.6 + halfW * 0.02)}
+          fill="rgba(255, 255, 255, 0.5)"
+          clipPath={`url(#flaskInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), rx 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            opacity: effectiveLevel > 0 ? 0.7 : 0,
+          }}
+        />
+
+        {/* ── Dynamic Swirling Vortex Effect (when swirling/shaking) ── */}
+        {isSwirling && effectiveLevel > 0 && (
+          <g clipPath={`url(#flaskInnerClip-${id || 'def'})`}>
+            {/* Center vortex ring */}
+            <ellipse cx="60" cy={fillY + 6} rx={halfW * 0.45} ry={3.5} fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="1.2">
+              <animateTransform attributeName="transform" type="rotate" from={`0 60 ${fillY + 6}`} to={`360 60 ${fillY + 6}`} dur="0.6s" repeatCount="indefinite" />
+            </ellipse>
+            {/* Swirling streamlines */}
+            <path
+              d={`M ${60 - halfW * 0.5} ${fillY + 14} Q 60 ${fillY + 18} ${60 + halfW * 0.5} ${fillY + 14}`}
+              stroke="rgba(255,255,255,0.5)"
+              strokeWidth="1.2"
+              fill="none"
+            >
+              <animateTransform attributeName="transform" type="rotate" from={`0 60 ${fillY + 14}`} to={`360 60 ${fillY + 14}`} dur="0.5s" repeatCount="indefinite" />
+            </path>
+            <path
+              d={`M ${60 - halfW * 0.35} ${fillY + 28} Q 60 ${fillY + 32} ${60 + halfW * 0.35} ${fillY + 28}`}
+              stroke="rgba(255,255,255,0.4)"
+              strokeWidth="1"
+              fill="none"
+            >
+              <animateTransform attributeName="transform" type="rotate" from={`0 60 ${fillY + 28}`} to={`-360 60 ${fillY + 28}`} dur="0.6s" repeatCount="indefinite" />
+            </path>
+          </g>
+        )}
+      </g>
+
+      {/* ── Glass Front Wall & Specular Highlights ── */}
+      {/* Front outline */}
+      <path
+        d="M 46 14 L 46 48 L 17 114 Q 15 122 25 122 L 95 122 Q 105 122 103 114 L 74 48 L 74 14"
+        stroke={highlighted ? '#2563eb' : '#64748b'}
+        strokeWidth="2.2"
+        fill="none"
+      />
+
+      {/* Reinforced Glass Lip / Rim */}
+      <ellipse cx="60" cy="14" rx="15" ry="3.5" fill="rgba(241, 245, 249, 0.4)" stroke="#64748b" strokeWidth="2.2" />
+      <ellipse cx="60" cy="14" rx="12" ry="2.5" fill="rgba(255, 255, 255, 0.2)" stroke="#94a3b8" strokeWidth="1" />
+
+      {/* Specular highlight streak down left slope */}
+      <path
+        d="M 48 50 L 21 112"
+        stroke="url(#glassGleam-def)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+
+      {/* Secondary highlight along right wall */}
+      <path
+        d="M 72 50 L 99 112"
+        stroke="rgba(255,255,255,0.25)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+
+      {/* Glass base bottom bevel */}
+      <line x1="26" y1="123.5" x2="94" y2="123.5" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+
+      {/* Volume Graduations etched on glass */}
+      {[
+        { level: 0.25, label: '50mL', y: 104, x: 23, len: 9 },
+        { level: 0.5, label: '100mL', y: 88, x: 30, len: 11 },
+        { level: 0.75, label: '150mL', y: 72, x: 37, len: 11 },
+        { level: 1.0, label: '200mL', y: 56, x: 44, len: 9 },
+      ].map((g, i) => (
+        <g key={i}>
+          <line x1={g.x} y1={g.y} x2={g.x + g.len} y2={g.y} stroke="rgba(255,255,255,0.7)" strokeWidth="1" />
+          <line x1={g.x} y1={g.y} x2={g.x + g.len} y2={g.y} stroke="#64748b" strokeWidth="0.8" />
+          <text x={g.x + g.len + 3} y={g.y + 2.5} fontSize="6" fill="#64748b" fontFamily="var(--font-mono, monospace)">
+            {g.label}
+          </text>
+        </g>
+      ))}
+
       {/* Label */}
       {label && (
-        <text x="60" y="135" textAnchor="middle" fontSize="9" fill="#64748b"
-          fontFamily="var(--font-sans)">
+        <text
+          x="60"
+          y="136"
+          textAnchor="middle"
+          fontSize="9"
+          fontWeight="600"
+          fill="var(--text-secondary, #475569)"
+          fontFamily="var(--font-sans)"
+        >
           {label}
         </text>
       )}
-      {/* Graduations */}
-      {[0.25, 0.5, 0.75].map(level => (
-        <line key={level}
-          x1={18 + (1 - level) * 27} y1={110 - level * 60}
-          x2={22 + (1 - level) * 27} y2={110 - level * 60}
-          stroke="#cbd5e1" strokeWidth="1" />
-      ))}
     </svg>
   );
 };
@@ -117,40 +267,181 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
 // ── Generic Beaker ───────────────────────────────────────────────
 
 const Beaker: React.FC<ApparatusProps> = ({
+  id = 'beaker',
   liquidLevel = 0,
-  liquidColor = 'rgba(224, 242, 254, 0.35)',
+  liquidColor = 'rgba(224, 242, 254, 0.45)',
   label,
   highlighted = false,
   width = 100,
   height = 120,
+  flags = {},
+  extraProps = {},
 }) => {
-  const fillHeight = 80 * liquidLevel;
+  const isStirring = Boolean(flags?.stirring || extraProps?.stirring);
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  // Total fillable height in beaker is ~80px (from y=108 up to y=28)
+  const fillHeight = 80 * effectiveLevel;
+  const fillY = 108 - fillHeight;
+  const gradId = `beakerLiquid-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 100 120" fill="none">
-      {/* Beaker body */}
-      <path d="M 15 15 L 15 100 Q 15 110 25 110 L 75 110 Q 85 110 85 100 L 85 15"
-        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="2" fill="rgba(255,255,255,0.1)" />
-      {/* Spout */}
-      <path d="M 15 15 L 8 15 L 8 25 L 15 20" stroke="#94a3b8" strokeWidth="1.5" fill="none" />
-      {/* Liquid */}
-      {liquidLevel > 0 && (
-        <rect x="17" y={100 - fillHeight} width="66" height={fillHeight}
-          rx="2" fill={liquidColor} style={{ transition: 'fill 0.5s ease, height 0.3s ease' }} />
+    <svg width={width} height={height} viewBox="0 0 100 120" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <clipPath id={`beakerInnerClip-${id || 'def'}`}>
+          <path d="M 18 16 L 18 102 Q 18 110 26 110 L 74 110 Q 82 110 82 102 L 82 16 Z" />
+        </clipPath>
+
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="40%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+
+        <linearGradient id={`beakerGleam-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+          <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.25)" />
+        </linearGradient>
+      </defs>
+
+      {/* Outer shadow / glow when highlighted */}
+      {highlighted && (
+        <path
+          d="M 16 16 L 16 102 Q 16 112 26 112 L 74 112 Q 84 112 84 102 L 84 16"
+          stroke="#3b82f6"
+          strokeWidth="6"
+          opacity="0.5"
+          filter="blur(3px)"
+        />
       )}
-      {/* Graduations */}
-      {[25, 50, 75, 100].map((ml, i) => (
-        <g key={ml}>
-          <line x1="80" y1={100 - (i + 1) * 18} x2="85" y2={100 - (i + 1) * 18}
-            stroke="#cbd5e1" strokeWidth="1" />
-          <text x="78" y={100 - (i + 1) * 18 + 3} textAnchor="end" fontSize="7" fill="#94a3b8">
-            {ml}
-          </text>
-        </g>
-      ))}
+
+      {/* Beaker Glass Back Wall */}
+      <path
+        d="M 18 16 L 18 102 Q 18 110 26 110 L 74 110 Q 82 110 82 102 L 82 16"
+        fill="rgba(241, 245, 249, 0.2)"
+        stroke="#cbd5e1"
+        strokeWidth="1.5"
+      />
+
+      {/* ── Liquid Fill with Meniscus ── */}
+      <g id="beaker-liquid-layer">
+        {/* Main liquid body following beaker bottom curves */}
+        <rect
+          x="18"
+          y={fillY}
+          width="64"
+          height="110"
+          fill={`url(#${gradId})`}
+          clipPath={`url(#beakerInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'y 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            opacity: effectiveLevel > 0 ? 1 : 0,
+          }}
+        />
+
+        {/* Meniscus surface ellipse */}
+        <ellipse
+          cx="50"
+          cy={fillY}
+          rx="31"
+          ry="3"
+          fill="rgba(255, 255, 255, 0.3)"
+          stroke={liquidColor}
+          strokeWidth="0.8"
+          clipPath={`url(#beakerInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease, stroke 2.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            opacity: effectiveLevel > 0 ? 0.9 : 0,
+          }}
+        />
+
+        {/* Liquid surface highlight gleam */}
+        <ellipse
+          cx="50"
+          cy={fillY - 0.3}
+          rx="20"
+          ry="1.2"
+          fill="rgba(255, 255, 255, 0.45)"
+          clipPath={`url(#beakerInnerClip-${id || 'def'})`}
+          style={{
+            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            opacity: effectiveLevel > 0 ? 0.7 : 0,
+          }}
+        />
+
+        {/* ── Dynamic Magnetic Stirring Vortex & Spin Bar ── */}
+        {isStirring && (
+          <g transform="translate(50, 105)">
+            {/* Rapidly spinning PTFE magnetic stir bar */}
+            <rect x="-7" y="-2.5" width="14" height="5" rx="2.5" fill="#ffffff" stroke="#475569" strokeWidth="0.8">
+              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="0.3s" repeatCount="indefinite" />
+            </rect>
+
+            {/* Central vortex streamlines */}
+            {effectiveLevel > 0 && (
+              <g clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+                <ellipse cx="0" cy={fillY - 105 + 5} rx="12" ry="3" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2">
+                  <animateTransform attributeName="transform" type="rotate" from={`0 0 ${fillY - 105 + 5}`} to={`360 0 ${fillY - 105 + 5}`} dur="0.4s" repeatCount="indefinite" />
+                </ellipse>
+                <circle cx="0" cy={fillY - 105 + 18} r="6" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeDasharray="3 3">
+                  <animateTransform attributeName="transform" type="rotate" from={`0 0 ${fillY - 105 + 18}`} to={`-360 0 ${fillY - 105 + 18}`} dur="0.45s" repeatCount="indefinite" />
+                </circle>
+              </g>
+            )}
+          </g>
+        )}
+      </g>
+
+      {/* ── Glass Front Wall & Highlights ── */}
+      {/* Front glass outline */}
+      <path
+        d="M 18 16 L 18 102 Q 18 110 26 110 L 74 110 Q 82 110 82 102 L 82 16"
+        stroke={highlighted ? '#2563eb' : '#64748b'}
+        strokeWidth="2.2"
+        fill="none"
+      />
+
+      {/* Spout on left */}
+      <path
+        d="M 18 16 C 12 16 9 18 7 22 C 11 24 15 22 18 20"
+        stroke={highlighted ? '#2563eb' : '#64748b'}
+        strokeWidth="2"
+        fill="rgba(241, 245, 249, 0.3)"
+      />
+
+      {/* Glass left specular highlight streak */}
+      <line x1="22" y1="24" x2="22" y2="100" stroke="url(#beakerGleam-def)" strokeWidth="2.2" strokeLinecap="round" />
+      {/* Glass right specular edge */}
+      <line x1="78" y1="24" x2="78" y2="100" stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeLinecap="round" />
+
+      {/* Beaker Rim */}
+      <line x1="18" y1="16" x2="82" y2="16" stroke="#64748b" strokeWidth="2.2" strokeLinecap="round" />
+
+      {/* Volume Graduations */}
+      {[25, 50, 75, 100].map((ml, i) => {
+        const y = 108 - (i + 1) * 19;
+        return (
+          <g key={ml}>
+            <line x1="74" y1={y} x2={82} y2={y} stroke="rgba(255,255,255,0.7)" strokeWidth="1" />
+            <line x1="74" y1={y} x2={82} y2={y} stroke="#64748b" strokeWidth="0.8" />
+            <text x="71" y={y + 2.5} textAnchor="end" fontSize="6.5" fill="#64748b" fontFamily="var(--font-mono, monospace)">
+              {ml}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Label */}
       {label && (
-        <text x="50" y="118" textAnchor="middle" fontSize="9" fill="#64748b"
-          fontFamily="var(--font-sans)">
+        <text
+          x="50"
+          y="118"
+          textAnchor="middle"
+          fontSize="9"
+          fontWeight="600"
+          fill="var(--text-secondary, #475569)"
+          fontFamily="var(--font-sans)"
+        >
           {label}
         </text>
       )}
@@ -162,6 +453,7 @@ const Beaker: React.FC<ApparatusProps> = ({
 // ── Generic Test Tube ────────────────────────────────────────────
 
 const TestTube: React.FC<ApparatusProps> = ({
+  id = 'test-tube',
   liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.55)',
   label,
@@ -185,23 +477,24 @@ const TestTube: React.FC<ApparatusProps> = ({
   const maxFill = 150;
   const fillHeight = maxFill * effectiveLevel;
   const liquidTopY = 195 - fillHeight;
+  const gradId = `ttLiquidGrad-${id || 'def'}`;
 
   return (
     <svg width={width} height={height} viewBox="0 0 76 230" fill="none" style={{ overflow: 'visible' }}>
       <defs>
         {/* Glass reflection gradient */}
-        <linearGradient id="glassStreak" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={`ttGlassStreak-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
           <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
         </linearGradient>
 
         {/* Liquid depth gradient */}
-        <linearGradient id="liquidGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={liquidColor} stopOpacity="0.9" />
-          <stop offset="30%" stopColor={liquidColor} stopOpacity="0.75" />
-          <stop offset="85%" stopColor={liquidColor} stopOpacity="0.9" />
-          <stop offset="100%" stopColor="#0284c7" stopOpacity="0.85" />
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
+          <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.95" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="1" />
         </linearGradient>
 
         {/* Zinc metallic gradient */}
@@ -242,8 +535,8 @@ const TestTube: React.FC<ApparatusProps> = ({
                 Q 53 213 53 192
                 L 53 ${liquidTopY}
                 Z`}
-            fill="url(#liquidGrad)"
-            style={{ transition: 'all 0.4s ease' }}
+            fill={`url(#${gradId})`}
+            style={{ transition: 'd 2.0s cubic-bezier(0.25, 1, 0.5, 1), fill 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
           />
           {/* Curved Meniscus surface */}
           <ellipse
@@ -252,9 +545,10 @@ const TestTube: React.FC<ApparatusProps> = ({
             rx="15"
             ry="3.5"
             fill="rgba(255, 255, 255, 0.4)"
-            stroke="#0284c7"
+            stroke={liquidColor}
             strokeWidth="0.8"
             opacity="0.85"
+            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
           />
           {/* Liquid highlight line */}
           <line
@@ -263,6 +557,7 @@ const TestTube: React.FC<ApparatusProps> = ({
             x2="50"
             y2={liquidTopY + 2}
             stroke="rgba(255, 255, 255, 0.6)"
+            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
             strokeWidth="1"
           />
         </g>
@@ -353,7 +648,7 @@ const TestTube: React.FC<ApparatusProps> = ({
       />
 
       {/* Glass left specular highlight streak */}
-      <line x1="25" y1="24" x2="25" y2="188" stroke="url(#glassStreak)" strokeWidth="2" strokeLinecap="round" />
+      <line x1="25" y1="24" x2="25" y2="188" stroke={`url(#ttGlassStreak-${id || 'def'})`} strokeWidth="2" strokeLinecap="round" />
       {/* Glass right specular edge */}
       <line x1="51" y1="24" x2="51" y2="188" stroke="rgba(255,255,255,0.3)" strokeWidth="1" strokeLinecap="round" />
 
@@ -424,53 +719,545 @@ const TestTube: React.FC<ApparatusProps> = ({
 
 
 
-// ── Generic Burette (simplified) ─────────────────────────────────
+// ── Standard 50 mL Calibrated Burette (Matching Class 11 Titration Lab) ──
 
 const BuretteSVG: React.FC<ApparatusProps> = ({
+  id = 'burette',
   liquidLevel = 1,
-  liquidColor = 'rgba(224, 242, 254, 0.5)',
+  liquidColor = 'rgba(37, 99, 235, 0.35)',
   label,
   highlighted = false,
-  width = 50,
-  height = 200,
+  width = 90,
+  height = 280,
+  flags = {},
+  variables = {},
+  extraProps = {},
 }) => {
-  const tubeTop = 20;
-  const tubeBottom = 160;
-  const tubeHeight = tubeBottom - tubeTop;
-  const fillHeight = tubeHeight * liquidLevel;
+  const [localOpen, setLocalOpen] = React.useState(0);
+  const isPointerDownRef = React.useRef(false);
+  const dragStartRef = React.useRef({ x: 0, y: 0 });
+  const hasMovedRef = React.useRef(false);
+  const startOpenRef = React.useRef(0);
+
+  const parentOpen = (extraProps?.stopcockOpen as number | undefined) ?? (variables.stopcockOpen ?? undefined);
+  const stopcockOpen = parentOpen !== undefined ? parentOpen : localOpen;
+  const isTitrating = Boolean(
+    stopcockOpen > 0 ||
+    flags?.isTitrating ||
+    extraProps?.isTitrating ||
+    flags?.titrating ||
+    extraProps?.titrating
+  );
+
+  const handleSetOpen = React.useCallback((openVal: number) => {
+    const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
+    setLocalOpen(clamped);
+    if (typeof extraProps?.onSetStopcock === 'function') {
+      (extraProps.onSetStopcock as (v: number) => void)(clamped);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: clamped, id } }));
+    }
+  }, [extraProps, id]);
+
+  const stepUpFlow = React.useCallback(() => {
+    let nextOpen = 0.20;
+    if (stopcockOpen === 0) nextOpen = 0.20;
+    else if (stopcockOpen < 0.35) nextOpen = 0.50;
+    else if (stopcockOpen < 0.70) nextOpen = 0.80;
+    else nextOpen = 1.00;
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
+
+  const stepDownFlow = React.useCallback(() => {
+    let nextOpen = 0;
+    if (stopcockOpen > 0.85) nextOpen = 0.50;
+    else if (stopcockOpen > 0.35) nextOpen = 0.20;
+    else nextOpen = 0;
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
+
+  const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    isPointerDownRef.current = true;
+    hasMovedRef.current = false;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    startOpenRef.current = stopcockOpen;
+    try {
+      (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    } catch {
+      // fallback
+    }
+  }, [stopcockOpen]);
+
+  const handlePointerMove = React.useCallback((e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return;
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+    if (!hasMovedRef.current && Math.hypot(deltaX, deltaY) > 5) {
+      hasMovedRef.current = true;
+    }
+    if (hasMovedRef.current) {
+      const dragDelta = (deltaY - deltaX) / 60;
+      const newOpen = Math.max(0, Math.min(1, startOpenRef.current + dragDelta));
+      handleSetOpen(newOpen);
+    }
+  }, [handleSetOpen]);
+
+  const handlePointerUp = React.useCallback((e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+    try {
+      if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
+        (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // fallback
+    }
+    if (!hasMovedRef.current) {
+      const rect = (e.currentTarget as Element).getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX >= rect.width / 2) {
+        stepUpFlow();
+      } else {
+        stepDownFlow();
+      }
+    }
+  }, [stepUpFlow, stepDownFlow]);
+
+  const currentVolume =
+    (variables.volumeAdded ?? 0) +
+    (variables.buretteReading ?? 0) +
+    (variables.kohVolume ?? 0) +
+    (variables.naohVolume ?? 0) +
+    (variables.volumeA ?? 0) +
+    (variables.volumeB ?? 0) +
+    (variables.stdEdtaVolume ?? 0) +
+    (variables.sampleEdtaVolume ?? 0) +
+    (variables.thiosulphateVolume ?? 0);
+  const maxVolume = 50;
+  const hasVolumeVar =
+    variables.volumeAdded !== undefined ||
+    variables.buretteReading !== undefined ||
+    variables.kohVolume !== undefined ||
+    variables.naohVolume !== undefined ||
+    variables.volumeA !== undefined ||
+    variables.volumeB !== undefined ||
+    variables.stdEdtaVolume !== undefined ||
+    variables.sampleEdtaVolume !== undefined ||
+    variables.thiosulphateVolume !== undefined;
+
+  const effectiveLevel = hasVolumeVar
+    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
+    : Math.max(0, Math.min(1, liquidLevel));
+
+  // Visual parameters matching Class 11 Burette (scaled for 90x280 viewBox)
+  const buretteX = 40;
+  const buretteWidth = 18;
+  const buretteTop = 20;
+  const buretteHeight = 180;
+  const buretteBottom = buretteTop + buretteHeight; // y = 200
+  const liquidTop = buretteBottom - buretteHeight * effectiveLevel;
+  const tapAngle = stopcockOpen * 90;
+
+  const getFlowText = () => {
+    if (stopcockOpen === 0) return 'Tap Closed (0°)';
+    if (stopcockOpen <= 0.25) return `💧 Slow Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.60) return `💧 Fast Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.85) return `🌊 Rapid Flow (${Math.round(stopcockOpen * 100)}%)`;
+    return `🌊 Full Stream (${Math.round(stopcockOpen * 100)}%)`;
+  };
+
+  // Graduation marks: 1 mL, 5 mL, and 10 mL bold
+  const graduations = [];
+  for (let ml = 0; ml <= 50; ml += 5) {
+    const y = buretteTop + (ml / 50) * buretteHeight;
+    const isLarge = ml % 10 === 0;
+    graduations.push(
+      <g key={ml}>
+        <line
+          x1={buretteX - buretteWidth / 2 - (isLarge ? 6 : 3.5)}
+          y1={y}
+          x2={buretteX - buretteWidth / 2}
+          y2={y}
+          stroke="#475569"
+          strokeWidth={isLarge ? 0.9 : 0.6}
+        />
+        {isLarge && (
+          <text
+            x={buretteX - buretteWidth / 2 - 8}
+            y={y + 2.5}
+            textAnchor="end"
+            fill="#334155"
+            fontSize="6"
+            fontFamily="var(--font-mono, monospace)"
+            fontWeight={700}
+          >
+            {ml}
+          </text>
+        )}
+      </g>
+    );
+  }
+
+  for (let ml = 0; ml <= 50; ml += 1) {
+    if (ml % 5 !== 0) {
+      const y = buretteTop + (ml / 50) * buretteHeight;
+      graduations.push(
+        <line
+          key={`s-${ml}`}
+          x1={buretteX - buretteWidth / 2 - 2}
+          y1={y}
+          x2={buretteX - buretteWidth / 2}
+          y2={y}
+          stroke="#94a3b8"
+          strokeWidth={0.4}
+        />
+      );
+    }
+  }
 
   return (
-    <svg width={width} height={height} viewBox="0 0 50 200" fill="none">
-      {/* Funnel top */}
-      <path d="M 15 15 L 20 20 L 30 20 L 35 15" stroke="#94a3b8" strokeWidth="1.5" fill="none" />
-      {/* Main tube */}
-      <rect x="20" y={tubeTop} width="10" height={tubeHeight}
-        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5"
-        fill="rgba(255,255,255,0.1)" rx="1" />
-      {/* Liquid */}
-      {liquidLevel > 0 && (
-        <rect x="21" y={tubeBottom - fillHeight} width="8" height={fillHeight}
-          fill={liquidColor} rx="0.5"
-          style={{ transition: 'height 0.3s ease, y 0.3s ease' }} />
+    <svg width={width} height={height} viewBox="0 0 90 280" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={`buretteLiquidGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={liquidColor} stopOpacity="0.85" />
+          <stop offset="35%" stopColor={liquidColor} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={liquidColor} stopOpacity="0.95" />
+        </linearGradient>
+
+        <linearGradient id={`buretteGlassGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+          <stop offset="40%" stopColor="rgba(255,255,255,0.05)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
+        </linearGradient>
+      </defs>
+
+      {/* Upper Glass Rim */}
+      <ellipse
+        cx={buretteX}
+        cy={buretteTop}
+        rx={buretteWidth / 2}
+        ry={2}
+        fill="#ffffff"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth={1}
+      />
+
+      {/* Main Glass Barrel Cylinder */}
+      <rect
+        x={buretteX - buretteWidth / 2}
+        y={buretteTop}
+        width={buretteWidth}
+        height={buretteHeight}
+        fill="rgba(241, 245, 249, 0.25)"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth={1.2}
+      />
+
+      {/* Glass Tapered Lower Neck */}
+      <polygon
+        points={`${buretteX - buretteWidth / 2},${buretteBottom} ${buretteX + buretteWidth / 2},${buretteBottom} ${buretteX + 4},${buretteBottom + 12} ${buretteX - 4},${buretteBottom + 12}`}
+        fill="rgba(241, 245, 249, 0.3)"
+        stroke="#94a3b8"
+        strokeWidth={1}
+      />
+
+      {/* ── Liquid Column in Burette ── */}
+      {effectiveLevel > 0 && (
+        <g id="burette-liquid">
+          {/* Main Liquid Body in Cylinder */}
+          <rect
+            x={buretteX - buretteWidth / 2 + 0.8}
+            y={liquidTop}
+            width={buretteWidth - 1.6}
+            height={buretteBottom - liquidTop}
+            fill={`url(#buretteLiquidGrad-${id || 'def'})`}
+            style={{ transition: 'y 0.15s linear, height 0.15s linear' }}
+          />
+
+          {/* Liquid filling Lower Tapered Neck & Stopcock & Tip */}
+          <polygon
+            points={`${buretteX - buretteWidth / 2 + 0.8},${buretteBottom} ${buretteX + buretteWidth / 2 - 0.8},${buretteBottom} ${buretteX + 3.5},${buretteBottom + 12} ${buretteX - 3.5},${buretteBottom + 12}`}
+            fill={liquidColor}
+          />
+          <rect
+            x={buretteX - 4}
+            y={buretteBottom + 12}
+            width={8}
+            height={8}
+            fill={liquidColor}
+          />
+          <polygon
+            points={`${buretteX - 2.5},${buretteBottom + 20} ${buretteX + 2.5},${buretteBottom + 20} ${buretteX + 0.8},${buretteBottom + 36} ${buretteX - 0.8},${buretteBottom + 36}`}
+            fill={liquidColor}
+          />
+
+          {/* Fluid Dynamics: Realistic Concave Liquid Meniscus Curve */}
+          <path
+            d={`M ${buretteX - buretteWidth / 2 + 0.8} ${liquidTop} Q ${buretteX} ${liquidTop + 2.5} ${buretteX + buretteWidth / 2 - 0.8} ${liquidTop}`}
+            fill="none"
+            stroke="rgba(29, 78, 216, 0.7)"
+            strokeWidth={1}
+            style={{ transition: 'd 0.15s linear' }}
+          />
+        </g>
       )}
-      {/* Stopcock area */}
-      <rect x="17" y="162" width="16" height="6" rx="2"
-        fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-      {/* Tip */}
-      <line x1="25" y1="168" x2="25" y2="180" stroke="#94a3b8" strokeWidth="1.5" />
-      {/* Graduations */}
-      {[0, 10, 20, 30, 40, 50].map(ml => {
-        const yPos = tubeTop + (ml / 50) * tubeHeight;
-        return (
-          <g key={ml}>
-            <line x1="30" y1={yPos} x2="34" y2={yPos} stroke="#cbd5e1" strokeWidth="0.8" />
-            <text x="36" y={yPos + 3} fontSize="6" fill="#94a3b8">{ml}</text>
-          </g>
-        );
-      })}
+
+      {/* Stopcock Valve Barrel Housing (y: buretteBottom + 12 .. buretteBottom + 20) */}
+      <rect
+        x={buretteX - 5.5}
+        y={buretteBottom + 12}
+        width={11}
+        height={8}
+        rx={1.5}
+        fill="#cbd5e1"
+        stroke="#64748b"
+        strokeWidth={1}
+      />
+
+      {/* ── INTERACTIVE ROTATABLE STOPCOCK / CORK VALVE WITH DIRECTIONAL WINGS ── */}
+      <g
+        id="stopcock-interactive-valve"
+        style={{ cursor: 'pointer', touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {/* Invisible enlarged hit circle for dragging */}
+        <circle cx={buretteX} cy={buretteBottom + 16} r={22} fill="rgba(0,0,0,0.001)" />
+
+        {/* Rotatable Cork Key / Handle */}
+        <g
+          transform={`rotate(${tapAngle}, ${buretteX}, ${buretteBottom + 16})`}
+          style={{ transition: isPointerDownRef.current ? 'none' : 'transform 0.18s ease-out' }}
+        >
+          {/* Central plug */}
+          <circle cx={buretteX} cy={buretteBottom + 16} r={3} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
+          {/* Left Wing Lever (Close / Slow) */}
+          <rect
+            x={buretteX - 10}
+            y={buretteBottom + 14.5}
+            width={10}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.7}
+          />
+          {/* Right Wing Lever (Open / Faster) */}
+          <rect
+            x={buretteX}
+            y={buretteBottom + 14.5}
+            width={10}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.7}
+          />
+          {/* Grip knobs */}
+          <circle cx={buretteX - 9} cy={buretteBottom + 16} r={2.4} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+          <circle cx={buretteX + 9} cy={buretteBottom + 16} r={2.4} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+        </g>
+
+        {/* Dedicated Left Wing Click Target (Rotate Counter-Clockwise -> Close / Slow down) */}
+        <rect
+          x={buretteX - 22}
+          y={buretteBottom + 4}
+          width={22}
+          height={24}
+          fill="rgba(0,0,0,0.001)"
+          style={{ cursor: stopcockOpen > 0 ? 'pointer' : 'default', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepDownFlow();
+          }}
+        />
+
+        {/* Dedicated Right Wing Click Target (Rotate Clockwise -> Open / Speed up) */}
+        <rect
+          x={buretteX}
+          y={buretteBottom + 4}
+          width={22}
+          height={24}
+          fill="rgba(0,0,0,0.001)"
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepUpFlow();
+          }}
+        />
+      </g>
+
+      {/* Interactive Guide / Direction Label when closed (Clickable) */}
+      {stopcockOpen === 0 && (
+        <g
+          transform={`translate(${buretteX + 14}, ${buretteBottom + 14})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSetOpen(0.20);
+          }}
+        >
+          <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
+            ↻ Click Right to Open
+          </text>
+          <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
+            Slow Drop (20%)
+          </text>
+        </g>
+      )}
+
+      {/* Active Flow Rate Badge when open (Clickable) */}
+      {stopcockOpen > 0 && (
+        <g
+          transform={`translate(${buretteX + 14}, ${buretteBottom + 8})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            let nextOpen = 0;
+            if (stopcockOpen < 0.35) nextOpen = 0.50;
+            else if (stopcockOpen < 0.70) nextOpen = 0.80;
+            else if (stopcockOpen < 0.95) nextOpen = 1.00;
+            else nextOpen = 0;
+            handleSetOpen(nextOpen);
+          }}
+        >
+          <rect x="-2" y="-7" width="62" height="13" rx="3" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
+          <text x="29" y="2" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
+            {getFlowText()}
+          </text>
+        </g>
+      )}
+
+      {/* Tapered Glass Delivery Tip / Nozzle (y: buretteBottom + 20 .. buretteBottom + 36) */}
+      <polygon
+        points={`${buretteX - 3},${buretteBottom + 20} ${buretteX + 3},${buretteBottom + 20} ${buretteX + 1},${buretteBottom + 36} ${buretteX - 1},${buretteBottom + 36}`}
+        fill="rgba(241, 245, 249, 0.35)"
+        stroke="#94a3b8"
+        strokeWidth={0.8}
+      />
+
+      {/* Glass Sheen Highlights along barrel */}
+      <line
+        x1={buretteX - buretteWidth / 2 + 2}
+        y1={buretteTop}
+        x2={buretteX - buretteWidth / 2 + 2}
+        y2={buretteBottom + 10}
+        stroke="#ffffff"
+        strokeWidth={1.5}
+        opacity={0.75}
+      />
+
+      {/* Volumetric Scale Graduations */}
+      {graduations}
+
+      {/* ── Dynamic Droplet Flow / Jet Stream from Tip ── */}
+      {isTitrating && (
+        <g id="burette-flow-stream">
+          {stopcockOpen > 0.80 ? (
+            <g>
+              <line
+                x1={buretteX}
+                y1={buretteBottom + 36}
+                x2={buretteX}
+                y2={buretteBottom + 65}
+                stroke={liquidColor}
+                strokeWidth={2.4}
+                strokeLinecap="round"
+              />
+              <path
+                d={`M ${buretteX - 0.8} ${buretteBottom + 38} Q ${buretteX + 0.8} ${buretteBottom + 50} ${buretteX} ${buretteBottom + 64}`}
+                stroke="#ffffff"
+                strokeWidth={0.6}
+                opacity={0.7}
+                fill="none"
+              />
+            </g>
+          ) : stopcockOpen > 0.55 ? (
+            <g>
+              <line
+                x1={buretteX}
+                y1={buretteBottom + 36}
+                x2={buretteX}
+                y2={buretteBottom + 58}
+                stroke={liquidColor}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+              <circle cx={buretteX} cy={buretteBottom + 60} r={1.6} fill={liquidColor}>
+                <animate attributeName="cy" values={`${buretteBottom + 40};${buretteBottom + 65}`} dur="0.25s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4" dur="0.25s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          ) : stopcockOpen > 0.25 ? (
+            <g>
+              <circle cx={buretteX} cy={buretteBottom + 40} r={1.6} fill={liquidColor}>
+                <animate attributeName="cy" values={`${buretteBottom + 36};${buretteBottom + 65}`} dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4" dur="0.32s" repeatCount="indefinite" />
+              </circle>
+              <circle cx={buretteX} cy={buretteBottom + 40} r={1.4} fill={liquidColor}>
+                <animate attributeName="cy" values={`${buretteBottom + 36};${buretteBottom + 65}`} dur="0.32s" begin="0.16s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4" dur="0.32s" begin="0.16s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          ) : (
+            /* Level 1: Gentle Deliberate Single Droplet Falling Calmly (0.9s duration) */
+            <g>
+              <ellipse cx={buretteX} cy={buretteBottom + 37} rx={1.2} ry={1.5} fill={liquidColor} opacity={0.9}>
+                <animate attributeName="ry" values="0.8;1.8;0.8" dur="0.9s" repeatCount="indefinite" />
+              </ellipse>
+              <circle cx={buretteX} cy={buretteBottom + 40} r={1.4} fill={liquidColor}>
+                <animate attributeName="cy" values={`${buretteBottom + 38};${buretteBottom + 65}`} dur="0.9s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;1;0.2" dur="0.9s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* ── Live Floating Volume Readout Badge (Matching Class 11 Lab) ── */}
+      {hasVolumeVar && (
+        <g transform={`translate(${buretteX + buretteWidth / 2 + 6}, ${Math.min(Math.max(liquidTop, buretteTop + 8), buretteBottom - 8)})`}>
+          <rect
+            x={0}
+            y={-8}
+            width={48}
+            height={16}
+            rx={3.5}
+            fill="#ffffff"
+            stroke="#2563eb"
+            strokeWidth={0.9}
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x={24}
+            y={3}
+            textAnchor="middle"
+            fill="#1d4ed8"
+            fontSize="8"
+            fontFamily="var(--font-mono, monospace)"
+            fontWeight={700}
+          >
+            {currentVolume.toFixed(1)} mL
+          </text>
+        </g>
+      )}
+
+      {/* Label */}
       {label && (
-        <text x="25" y="195" textAnchor="middle" fontSize="8" fill="#64748b"
-          fontFamily="var(--font-sans)">
+        <text
+          x={buretteX}
+          y={buretteBottom + 52}
+          textAnchor="middle"
+          fontSize="7.5"
+          fontWeight="700"
+          fill="#475569"
+          fontFamily="var(--font-sans)"
+        >
           {label}
         </text>
       )}
@@ -482,37 +1269,61 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
 // ── Generic Pipette ──────────────────────────────────────────────
 
 const PipetteSVG: React.FC<ApparatusProps> = ({
+  id = 'pipette',
   liquidLevel = 0,
   liquidColor = 'rgba(224, 242, 254, 0.5)',
   label,
   highlighted = false,
-  width = 30,
-  height = 140,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 30 140" fill="none">
-    {/* Bulb top */}
-    <ellipse cx="15" cy="15" rx="8" ry="10"
-      stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5" fill="#f1f5f9" />
-    {/* Shaft */}
-    <rect x="13" y="25" width="4" height="90"
-      stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1" fill="rgba(255,255,255,0.1)" />
-    {/* Liquid in shaft */}
-    {liquidLevel > 0 && (
-      <rect x="13.5" y={115 - liquidLevel * 88} width="3" height={liquidLevel * 88}
-        fill={liquidColor} style={{ transition: 'height 0.5s ease' }} />
-    )}
-    {/* Graduation mark */}
-    <line x1="17" y1="70" x2="20" y2="70" stroke="#cbd5e1" strokeWidth="0.8" />
-    {/* Tip */}
-    <path d="M 14 115 L 15 125 L 16 115" stroke="#94a3b8" strokeWidth="1" fill="none" />
-    {label && (
-      <text x="15" y="135" textAnchor="middle" fontSize="7" fill="#64748b"
-        fontFamily="var(--font-sans)">
-        {label}
-      </text>
-    )}
-  </svg>
-);
+  width = 40,
+  height = 160,
+}) => {
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const fillH = effectiveLevel * 105;
+  const fillY = 145 - fillH;
+  const gradId = `pipetteLiquid-${id || 'def'}`;
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 40 160" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="1" />
+        </linearGradient>
+      </defs>
+
+      {/* Bulb - realistic rubber bulb look */}
+      <path d="M 12 35 C 8 35 5 25 5 15 C 5 5 12 0 20 0 C 28 0 35 5 35 15 C 35 25 32 35 28 35"
+        fill="#ef4444" stroke="#dc2626" strokeWidth="1" />
+      <path d="M 15 8 C 12 10 10 15 10 20" stroke="#ffffff" strokeWidth="1" opacity="0.4" fill="none" />
+
+      {/* Shaft */}
+      <rect x="18" y="35" width="4" height="110"
+        stroke={highlighted ? '#3b82f6' : '#94a3b8'} strokeWidth="1.2" fill="rgba(255,255,255,0.15)" />
+
+      {/* Liquid in shaft with meniscus */}
+      {effectiveLevel > 0 && (
+        <g>
+          <rect x="18.5" y={fillY} width="3" height={fillH}
+            fill={`url(#${gradId})`} style={{ transition: 'height 2.0s cubic-bezier(0.25, 1, 0.5, 1), y 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
+          <ellipse cx="20" cy={fillY} rx="1.5" ry="0.6" fill="rgba(255,255,255,0.5)" style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
+        </g>
+      )}
+
+      {/* Graduation mark */}
+      <line x1="22" y1="70" x2="26" y2="70" stroke="#ef4444" strokeWidth="1" />
+
+      {/* Tip */}
+      <path d="M 18 145 L 20 155 L 22 145" stroke="#94a3b8" strokeWidth="1.2" fill="#cbd5e1" />
+
+      {label && (
+        <text x="20" y="158" textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748b"
+          fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Bunsen Burner ────────────────────────────────────────────────
@@ -558,70 +1369,50 @@ const BunsenBurner: React.FC<ApparatusProps> = ({
 // ── Dropper Bottle ───────────────────────────────────────────────
 
 const DropperBottle: React.FC<ApparatusProps> = ({
+  id = 'dropper',
   liquidColor = 'rgba(224, 242, 254, 0.5)',
   label,
   highlighted = false,
   width = 40,
   height = 80,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 40 80" fill="none">
-    {/* Bottle body */}
-    <rect x="8" y="30" width="24" height="35" rx="3"
-      stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5"
-      fill="rgba(255,255,255,0.1)" />
-    {/* Liquid */}
-    <rect x="10" y="40" width="20" height="23" rx="2" fill={liquidColor} />
-    {/* Neck */}
-    <rect x="15" y="22" width="10" height="10" rx="1"
-      stroke="#94a3b8" strokeWidth="1" fill="none" />
-    {/* Dropper cap */}
-    <path d="M 16 22 L 18 12 Q 20 8 22 12 L 24 22"
-      fill="#475569" stroke="#334155" strokeWidth="1" />
-    {/* Tip */}
-    <path d="M 19 65 L 20 72 L 21 65" stroke="#94a3b8" strokeWidth="1" fill="none" />
-    {label && (
-      <text x="20" y="78" textAnchor="middle" fontSize="7" fill="#64748b"
-        fontFamily="var(--font-sans)">
-        {label}
-      </text>
-    )}
-  </svg>
-);
-
-
-// ── Reagent Bottle ───────────────────────────────────────────────
-
-const ReagentBottle: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.7,
-  liquidColor = 'rgba(224, 242, 254, 0.5)',
-  label,
-  highlighted = false,
-  width = 50,
-  height = 90,
 }) => {
-  const fillHeight = 40 * liquidLevel;
+  const gradId = `dropperLiquid-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 50 90" fill="none">
-      {/* Body */}
-      <rect x="8" y="30" width="34" height="45" rx="4"
+    <svg width={width} height={height} viewBox="0 0 40 80" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+      </defs>
+
+      {/* Bottle body */}
+      <rect x="8" y="30" width="24" height="35" rx="4"
         stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5"
-        fill="rgba(255,255,255,0.1)" />
-      {/* Liquid */}
-      {liquidLevel > 0 && (
-        <rect x="10" y={73 - fillHeight} width="30" height={fillHeight}
-          rx="3" fill={liquidColor}
-          style={{ transition: 'height 0.3s ease' }} />
-      )}
+        fill="rgba(241,245,249,0.2)" />
+
+      {/* Liquid with meniscus */}
+      <g>
+        <rect x="9.5" y="40" width="21" height="23" rx="3" fill={`url(#${gradId})`} style={{ transition: 'fill 2.2s ease' }} />
+        <ellipse cx="20" cy="40" rx="10.5" ry="2" fill="rgba(255,255,255,0.3)" stroke={liquidColor} strokeWidth="0.5" style={{ transition: 'all 2.0s ease' }} />
+      </g>
+
+      {/* Glass highlights */}
+      <line x1="11" y1="34" x2="11" y2="60" stroke="rgba(255,255,255,0.4)" strokeWidth="1" strokeLinecap="round" />
+
       {/* Neck */}
-      <rect x="18" y="20" width="14" height="12" rx="2"
-        stroke="#94a3b8" strokeWidth="1.5" fill="none" />
-      {/* Cap */}
-      <rect x="16" y="14" width="18" height="8" rx="3" fill="#475569" />
-      {/* Label on bottle */}
+      <rect x="15" y="22" width="10" height="10" rx="1"
+        stroke="#94a3b8" strokeWidth="1" fill="none" />
+      {/* Dropper cap */}
+      <path d="M 16 22 L 18 12 Q 20 8 22 12 L 24 22"
+        fill="#475569" stroke="#334155" strokeWidth="1" />
+      {/* Tip */}
+      <path d="M 19 65 L 20 72 L 21 65" stroke="#94a3b8" strokeWidth="1" fill="none" />
+
       {label && (
-        <text x="25" y="55" textAnchor="middle" fontSize="7" fill="#64748b"
-          fontWeight="600" fontFamily="var(--font-sans)">
+        <text x="20" y="78" textAnchor="middle" fontSize="7" fontWeight="600" fill="#64748b"
+          fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -630,24 +1421,631 @@ const ReagentBottle: React.FC<ApparatusProps> = ({
 };
 
 
-// ── Retort Stand ─────────────────────────────────────────────────
+// ── Reagent Bottle ───────────────────────────────────────────────
+
+const ReagentBottle: React.FC<ApparatusProps> = ({
+  id = 'reagent-bottle',
+  liquidLevel = 0.7,
+  liquidColor = 'rgba(224, 242, 254, 0.5)',
+  label,
+  highlighted = false,
+  width = 50,
+  height = 90,
+}) => {
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const fillHeight = 40 * effectiveLevel;
+  const fillY = 73 - fillHeight;
+  const gradId = `reagentLiquid-${id || 'def'}`;
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 50 90" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="50%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+      </defs>
+
+      {/* Body Back Wall */}
+      <rect x="8" y="30" width="34" height="45" rx="5"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5"
+        fill="rgba(241,245,249,0.2)" />
+
+      {/* Liquid with Meniscus */}
+      {effectiveLevel > 0 && (
+        <g id="reagent-liquid">
+          <rect x="9.5" y={fillY} width="31" height={fillHeight}
+            rx="4" fill={`url(#${gradId})`}
+            style={{ transition: 'height 0.3s ease' }} />
+          <ellipse cx="25" cy={fillY} rx="15" ry="2.2" fill="rgba(255,255,255,0.3)" stroke={liquidColor} strokeWidth="0.6" />
+        </g>
+      )}
+
+      {/* Front Glass Highlights */}
+      <line x1="11" y1="34" x2="11" y2="70" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="39" y1="34" x2="39" y2="70" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" strokeLinecap="round" />
+
+      {/* Neck */}
+      <rect x="18" y="20" width="14" height="12" rx="2"
+        stroke="#94a3b8" strokeWidth="1.5" fill="rgba(241,245,249,0.2)" />
+
+      {/* Stopper / Cap */}
+      <rect x="16" y="14" width="18" height="8" rx="2.5" fill="#475569" stroke="#334155" strokeWidth="1" />
+      <rect x="19" y="16" width="12" height="4" rx="1.5" fill="#64748b" />
+
+      {/* Label Plaque */}
+      {label && (
+        <g transform="translate(10, 44)">
+          <rect x="0" y="0" width="30" height="18" rx="2" fill="rgba(255,255,255,0.92)" stroke="#cbd5e1" strokeWidth="0.8" />
+          <text x="15" y="12" textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#1e293b" fontFamily="var(--font-sans)">
+            {label}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+};
+
+// ── Retort Stand (Stand Base + Rod + Clamp) ──────────────────────
 
 const RetortStand: React.FC<ApparatusProps> = ({
+  width = 140,
+  height = 300,
+}) => {
+  return (
+    <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible', opacity: 0.38, transition: 'opacity 0.3s ease' }}>
+      <defs>
+        <linearGradient id="metalStandGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="35%" stopColor="#94a3b8" />
+          <stop offset="65%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#334155" />
+        </linearGradient>
+        <linearGradient id="metalBaseGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#64748b" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+      </defs>
+      {/* Heavy Cast Iron Retort Base */}
+      <rect x="25" y="278" width="90" height="12" rx="4" fill="url(#metalBaseGrad)" stroke="#1e293b" strokeWidth="1.2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.35))" />
+      <rect x="27" y="279" width="86" height="2" rx="1" fill="rgba(255,255,255,0.25)" />
+      {/* Vertical Stainless Steel Rod */}
+      <rect x="42" y="10" width="7" height="270" rx="3.5" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+      {/* Upper Boss Head Clamp */}
+      <rect x="38" y="55" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+      <circle cx="49" cy="62" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+      <path d="M 53 58 L 72 58 L 78 54 L 78 68 L 72 64 L 53 64 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+      {/* Lower Boss Head Clamp */}
+      <rect x="38" y="180" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+      <circle cx="49" cy="187" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+      <path d="M 53 183 L 72 183 L 78 179 L 78 193 L 72 189 L 53 189 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+    </svg>
+  );
+};
+
+// ── Burette Stand (Retort Stand + Burette Assembly) ───────────────
+
+const BuretteStand: React.FC<ApparatusProps> = ({
+  id = 'burette-stand',
+  liquidLevel = 1,
+  liquidColor = 'rgba(37, 99, 235, 0.45)',
+  label = '50 mL Burette',
   highlighted = false,
-  width = 60,
-  height = 200,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 60 200" fill="none">
-    {/* Base plate */}
-    <rect x="5" y="185" width="50" height="8" rx="2"
-      fill="#64748b" stroke={highlighted ? '#2563eb' : '#475569'} strokeWidth="1.5" />
-    {/* Vertical rod */}
-    <rect x="28" y="10" width="4" height="178" rx="1"
-      fill="#94a3b8" stroke="#64748b" strokeWidth="1" />
-    {/* Top cap */}
-    <circle cx="30" cy="10" r="4" fill="#64748b" />
-  </svg>
-);
+  width = 140,
+  height = 300,
+  flags = {},
+  variables = {},
+  extraProps = {},
+}) => {
+  const [localOpen, setLocalOpen] = React.useState(0);
+  const isPointerDownRef = React.useRef(false);
+  const dragStartRef = React.useRef({ x: 0, y: 0 });
+  const hasMovedRef = React.useRef(false);
+  const startOpenRef = React.useRef(0);
+
+  const parentOpen = (extraProps?.stopcockOpen as number | undefined) ?? (variables.stopcockOpen ?? undefined);
+  const stopcockOpen = parentOpen !== undefined ? parentOpen : localOpen;
+  const isTitrating = Boolean(
+    stopcockOpen > 0 ||
+    flags?.isTitrating ||
+    extraProps?.isTitrating ||
+    flags?.titrating ||
+    extraProps?.titrating
+  );
+
+  const handleSetOpen = React.useCallback((openVal: number) => {
+    const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
+    setLocalOpen(clamped);
+    if (typeof extraProps?.onSetStopcock === 'function') {
+      (extraProps.onSetStopcock as (v: number) => void)(clamped);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: clamped, id } }));
+    }
+  }, [extraProps, id]);
+
+  const stepUpFlow = React.useCallback(() => {
+    let nextOpen = 0.20;
+    if (stopcockOpen === 0) nextOpen = 0.20;
+    else if (stopcockOpen < 0.35) nextOpen = 0.50;
+    else if (stopcockOpen < 0.70) nextOpen = 0.80;
+    else nextOpen = 1.00;
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
+
+  const stepDownFlow = React.useCallback(() => {
+    let nextOpen = 0;
+    if (stopcockOpen > 0.85) nextOpen = 0.50;
+    else if (stopcockOpen > 0.35) nextOpen = 0.20;
+    else nextOpen = 0;
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
+
+  const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    isPointerDownRef.current = true;
+    hasMovedRef.current = false;
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    startOpenRef.current = stopcockOpen;
+    try {
+      (e.currentTarget as Element).setPointerCapture(e.pointerId);
+    } catch {
+      // fallback
+    }
+  }, [stopcockOpen]);
+
+  const handlePointerMove = React.useCallback((e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return;
+    const deltaX = e.clientX - dragStartRef.current.x;
+    const deltaY = e.clientY - dragStartRef.current.y;
+    if (!hasMovedRef.current && Math.hypot(deltaX, deltaY) > 5) {
+      hasMovedRef.current = true;
+    }
+    if (hasMovedRef.current) {
+      const dragDelta = (deltaY - deltaX) / 60;
+      const newOpen = Math.max(0, Math.min(1, startOpenRef.current + dragDelta));
+      handleSetOpen(newOpen);
+    }
+  }, [handleSetOpen]);
+
+  const handlePointerUp = React.useCallback((e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return;
+    isPointerDownRef.current = false;
+    try {
+      if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
+        (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // fallback
+    }
+    if (!hasMovedRef.current) {
+      const rect = (e.currentTarget as Element).getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX >= rect.width / 2) {
+        stepUpFlow();
+      } else {
+        stepDownFlow();
+      }
+    }
+  }, [stepUpFlow, stepDownFlow]);
+
+  const currentVolume =
+    (variables.volumeAdded ?? 0) +
+    (variables.buretteReading ?? 0) +
+    (variables.kohVolume ?? 0) +
+    (variables.naohVolume ?? 0) +
+    (variables.volumeA ?? 0) +
+    (variables.volumeB ?? 0) +
+    (variables.stdEdtaVolume ?? 0) +
+    (variables.sampleEdtaVolume ?? 0) +
+    (variables.thiosulphateVolume ?? 0);
+  const maxVolume = 50;
+  const hasVolumeVar =
+    variables.volumeAdded !== undefined ||
+    variables.buretteReading !== undefined ||
+    variables.kohVolume !== undefined ||
+    variables.naohVolume !== undefined ||
+    variables.volumeA !== undefined ||
+    variables.volumeB !== undefined ||
+    variables.stdEdtaVolume !== undefined ||
+    variables.sampleEdtaVolume !== undefined ||
+    variables.thiosulphateVolume !== undefined;
+
+  const effectiveLevel = hasVolumeVar
+    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
+    : Math.max(0, Math.min(1, liquidLevel));
+
+  // Burette tube coordinates (in 140x300 viewBox, matching Class 11 Burette.tsx proportions)
+  const buretteX = 72;
+  const buretteWidth = 16;
+  const tubeTop = 22;
+  const tubeHeight = 180;
+  const tubeBottom = tubeTop + tubeHeight; // y = 202
+  const liquidTopY = tubeBottom - tubeHeight * effectiveLevel;
+  const gradId = `bstandLiquid-${id || 'def'}`;
+  const tapAngle = stopcockOpen * 90;
+
+  const getFlowText = () => {
+    if (stopcockOpen === 0) return 'Tap Closed (0°)';
+    if (stopcockOpen <= 0.25) return `💧 Slow Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.60) return `💧 Fast Drop (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.85) return `🌊 Rapid Flow (${Math.round(stopcockOpen * 100)}%)`;
+    return `🌊 Full Stream (${Math.round(stopcockOpen * 100)}%)`;
+  };
+
+  // 0 to 50 mL graduations every 5 mL and 1 mL
+  const graduations = [];
+  for (let ml = 0; ml <= 50; ml += 5) {
+    const y = tubeTop + (ml / 50) * tubeHeight;
+    const isLarge = ml % 10 === 0;
+    graduations.push(
+      <g key={ml}>
+        <line
+          x1={buretteX - buretteWidth / 2 - (isLarge ? 6 : 3.5)}
+          y1={y}
+          x2={buretteX - buretteWidth / 2}
+          y2={y}
+          stroke="#475569"
+          strokeWidth={isLarge ? 0.9 : 0.6}
+        />
+        {isLarge && (
+          <text
+            x={buretteX - buretteWidth / 2 - 8}
+            y={y + 2.5}
+            textAnchor="end"
+            fill="#334155"
+            fontSize="6"
+            fontFamily="var(--font-mono, monospace)"
+            fontWeight={700}
+          >
+            {ml}
+          </text>
+        )}
+      </g>
+    );
+  }
+
+  for (let ml = 0; ml <= 50; ml += 1) {
+    if (ml % 5 !== 0) {
+      const y = tubeTop + (ml / 50) * tubeHeight;
+      graduations.push(
+        <line
+          key={`s-${ml}`}
+          x1={buretteX - buretteWidth / 2 - 2}
+          y1={y}
+          x2={buretteX - buretteWidth / 2}
+          y2={y}
+          stroke="#94a3b8"
+          strokeWidth={0.4}
+        />
+      );
+    }
+  }
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor={liquidColor} stopOpacity="0.85" />
+          <stop offset="35%" stopColor={liquidColor} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={liquidColor} stopOpacity="0.95" />
+        </linearGradient>
+
+        <linearGradient id="bstandMetal" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="35%" stopColor="#94a3b8" />
+          <stop offset="65%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#334155" />
+        </linearGradient>
+
+        <linearGradient id="bstandBaseMetal" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#64748b" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+      </defs>
+
+      {/* ── 1. Retort Stand Base & Rod (Subtle Translucent Background) ── */}
+      <g id="bstand-hardware" opacity="0.38" style={{ transition: 'opacity 0.3s ease' }}>
+        <rect x="25" y="278" width="90" height="12" rx="4" fill="url(#bstandBaseMetal)" stroke="#1e293b" strokeWidth="1.2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.35))" />
+        <rect x="27" y="279" width="86" height="2" rx="1" fill="rgba(255,255,255,0.25)" />
+        <rect x="42" y="10" width="7" height="270" rx="3.5" fill="url(#bstandMetal)" stroke="#334155" strokeWidth="0.8" />
+
+        {/* ── Dual Burette Clamp Boss Heads ── */}
+        <rect x="38" y="55" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+        <circle cx="49" cy="62" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+        <path d="M 53 58 L 72 58 L 78 54 L 78 68 L 72 64 L 53 64 Z" fill="url(#bstandMetal)" stroke="#334155" strokeWidth="0.8" />
+
+        <rect x="38" y="150" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+        <circle cx="49" cy="157" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+        <path d="M 53 153 L 72 153 L 78 149 L 78 163 L 72 159 L 53 159 Z" fill="url(#bstandMetal)" stroke="#334155" strokeWidth="0.8" />
+      </g>
+
+      {/* ── 3. Calibrated 50 mL Glass Burette (Centered at x=72) ── */}
+      {/* Top Funnel / Flared Rim */}
+      <ellipse cx={buretteX} cy={tubeTop} rx={buretteWidth / 2} ry={2.2} fill="#ffffff" stroke="#94a3b8" strokeWidth={1} />
+
+      {/* Burette Glass Body Back Wall */}
+      <rect
+        x={buretteX - buretteWidth / 2}
+        y={tubeTop}
+        width={buretteWidth}
+        height={tubeHeight}
+        fill="rgba(241, 245, 249, 0.25)"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth={1.2}
+      />
+
+      {/* Glass Tapered Lower Neck */}
+      <polygon
+        points={`${buretteX - buretteWidth / 2},${tubeBottom} ${buretteX + buretteWidth / 2},${tubeBottom} ${buretteX + 4},${tubeBottom + 14} ${buretteX - 4},${tubeBottom + 14}`}
+        fill="rgba(241, 245, 249, 0.3)"
+        stroke="#94a3b8"
+        strokeWidth={1}
+      />
+
+      {/* ── Dynamic Liquid Column & Concave Meniscus ── */}
+      {effectiveLevel > 0 && (
+        <g id="burette-stand-liquid">
+          {/* Main barrel column */}
+          <rect
+            x={buretteX - buretteWidth / 2 + 0.8}
+            y={liquidTopY}
+            width={buretteWidth - 1.6}
+            height={tubeBottom - liquidTopY}
+            fill={`url(#${gradId})`}
+            style={{ transition: 'height 0.2s linear, y 0.2s linear' }}
+          />
+
+          {/* Liquid filling neck, stopcock & nozzle */}
+          <polygon
+            points={`${buretteX - buretteWidth / 2 + 0.8},${tubeBottom} ${buretteX + buretteWidth / 2 - 0.8},${tubeBottom} ${buretteX + 3.5},${tubeBottom + 14} ${buretteX - 3.5},${tubeBottom + 14}`}
+            fill={liquidColor}
+          />
+          <rect x={buretteX - 4} y={tubeBottom + 14} width={8} height={10} fill={liquidColor} />
+          <polygon
+            points={`${buretteX - 2.5},${tubeBottom + 24} ${buretteX + 2.5},${tubeBottom + 24} ${buretteX + 1},${tubeBottom + 40} ${buretteX - 1},${tubeBottom + 40}`}
+            fill={liquidColor}
+          />
+
+          {/* Realistic Concave Meniscus Curve */}
+          <path
+            d={`M ${buretteX - buretteWidth / 2 + 0.8} ${liquidTopY} Q ${buretteX} ${liquidTopY + 2.5} ${buretteX + buretteWidth / 2 - 0.8} ${liquidTopY}`}
+            fill="none"
+            stroke="rgba(29, 78, 216, 0.7)"
+            strokeWidth={1}
+            style={{ transition: 'd 0.2s linear' }}
+          />
+        </g>
+      )}
+
+      {/* Glass Front Wall Specular Highlights */}
+      <line x1={buretteX - buretteWidth / 2 + 2} y1={tubeTop + 2} x2={buretteX - buretteWidth / 2 + 2} y2={tubeBottom + 12} stroke="#ffffff" strokeWidth={1.4} opacity={0.8} strokeLinecap="round" />
+      <line x1={buretteX + buretteWidth / 2 - 2} y1={tubeTop + 2} x2={buretteX + buretteWidth / 2 - 2} y2={tubeBottom + 12} stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} strokeLinecap="round" />
+
+      {/* Volumetric Scale Graduations */}
+      {graduations}
+
+      {/* ── 4. Ground Glass Stopcock Housing Barrel (y = tubeBottom + 14 .. tubeBottom + 24) ── */}
+      <rect
+        x={buretteX - 6}
+        y={tubeBottom + 14}
+        width={12}
+        height={10}
+        rx={1.8}
+        fill="#cbd5e1"
+        stroke="#64748b"
+        strokeWidth={1}
+      />
+
+      {/* ── INTERACTIVE ROTATABLE STOPCOCK / CORK VALVE WITH DIRECTIONAL WINGS ── */}
+      <g
+        id="burette-stand-interactive-cork"
+        style={{ cursor: 'pointer', touchAction: 'none' }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        {/* Invisible enlarged hit circle for dragging */}
+        <circle cx={buretteX} cy={tubeBottom + 19} r={24} fill="rgba(0,0,0,0.001)" />
+
+        {/* Rotatable Cork Key Handle */}
+        <g
+          transform={`rotate(${tapAngle}, ${buretteX}, ${tubeBottom + 19})`}
+          style={{ transition: isPointerDownRef.current ? 'none' : 'transform 0.18s ease-out' }}
+        >
+          {/* Central plug */}
+          <circle cx={buretteX} cy={tubeBottom + 19} r={3.2} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
+          {/* Left Wing Lever (Close / Slow) */}
+          <rect
+            x={buretteX - 11}
+            y={tubeBottom + 17.5}
+            width={11}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.7}
+          />
+          {/* Right Wing Lever (Open / Faster) */}
+          <rect
+            x={buretteX}
+            y={tubeBottom + 17.5}
+            width={11}
+            height={3}
+            rx={1.5}
+            fill={stopcockOpen > 0 ? '#2563eb' : '#475569'}
+            stroke={stopcockOpen > 0 ? '#1d4ed8' : '#334155'}
+            strokeWidth={0.7}
+          />
+          {/* Grip knobs */}
+          <circle cx={buretteX - 10} cy={tubeBottom + 19} r={2.6} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+          <circle cx={buretteX + 10} cy={tubeBottom + 19} r={2.6} fill={stopcockOpen > 0 ? '#1d4ed8' : '#334155'} />
+        </g>
+
+        {/* Dedicated Left Wing Click Target (Rotate Counter-Clockwise -> Close / Slow down) */}
+        <rect
+          x={buretteX - 25}
+          y={tubeBottom + 5}
+          width={25}
+          height={28}
+          fill="rgba(0,0,0,0.001)"
+          style={{ cursor: stopcockOpen > 0 ? 'pointer' : 'default', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepDownFlow();
+          }}
+        />
+
+        {/* Dedicated Right Wing Click Target (Rotate Clockwise -> Open / Speed up) */}
+        <rect
+          x={buretteX}
+          y={tubeBottom + 5}
+          width={25}
+          height={28}
+          fill="rgba(0,0,0,0.001)"
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            stepUpFlow();
+          }}
+        />
+      </g>
+
+      {/* Interactive Guide / Direction Label when closed (Clickable) */}
+      {stopcockOpen === 0 && (
+        <g
+          transform={`translate(${buretteX + 16}, ${tubeBottom + 14})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleSetOpen(0.20);
+          }}
+        >
+          <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
+            ↻ Click Right to Open
+          </text>
+          <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
+            Slow Drop (20%)
+          </text>
+        </g>
+      )}
+
+      {/* Active Flow Rate Badge when open (Clickable to cycle/step) */}
+      {stopcockOpen > 0 && (
+        <g
+          transform={`translate(${buretteX + 16}, ${tubeBottom + 10})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            let nextOpen = 0;
+            if (stopcockOpen < 0.35) nextOpen = 0.50;
+            else if (stopcockOpen < 0.70) nextOpen = 0.80;
+            else if (stopcockOpen < 0.95) nextOpen = 1.00;
+            else nextOpen = 0;
+            handleSetOpen(nextOpen);
+          }}
+        >
+          <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
+          <text x="29" y="2.5" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
+            {getFlowText()}
+          </text>
+        </g>
+      )}
+
+      {/* ── 5. Fine Tapered Jet Delivery Nozzle / Tip (y = tubeBottom + 24 .. tubeBottom + 40) ── */}
+      <polygon
+        points={`${buretteX - 3.5},${tubeBottom + 24} ${buretteX + 3.5},${tubeBottom + 24} ${buretteX + 1},${tubeBottom + 40} ${buretteX - 1},${tubeBottom + 40}`}
+        fill="rgba(241, 245, 249, 0.4)"
+        stroke="#64748b"
+        strokeWidth={0.8}
+      />
+
+      {/* ── 6. Active Titration Stream & Droplet Flow from Tip ── */}
+      {isTitrating && (
+        <g transform={`translate(${buretteX}, ${tubeBottom + 40})`}>
+          {stopcockOpen > 0.80 ? (
+            <g>
+              <line x1="0" y1="0" x2="0" y2="35" stroke={liquidColor} strokeWidth="2.4" strokeLinecap="round" opacity="0.95" />
+              <path d="M -0.8 2 Q 0.8 15 0 32" stroke="#ffffff" strokeWidth="0.6" opacity="0.7" fill="none" />
+            </g>
+          ) : stopcockOpen > 0.55 ? (
+            <g>
+              <line x1="0" y1="0" x2="0" y2="28" stroke={liquidColor} strokeWidth="1.8" strokeLinecap="round" opacity="0.85" />
+              <circle cx="0" cy="30" r="1.6" fill={liquidColor}>
+                <animate attributeName="cy" values="0;36" dur="0.25s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.4" dur="0.25s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          ) : stopcockOpen > 0.25 ? (
+            <g>
+              <circle cx="0" cy="8" rx="1.5" ry="1.5" fill={liquidColor}>
+                <animate attributeName="cy" values="0;36" dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.9;0.4" dur="0.32s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="0" cy="20" r="1.3" fill={liquidColor}>
+                <animate attributeName="cy" values="0;36" dur="0.32s" begin="0.16s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.9;0.4" dur="0.32s" begin="0.16s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          ) : (
+            /* Level 1: Gentle Deliberate Single Droplet Falling Slowly (0.9s duration) */
+            <g>
+              <ellipse cx="0" cy="2" rx="1.2" ry="1.5" fill={liquidColor} opacity="0.9">
+                <animate attributeName="ry" values="0.8;1.8;0.8" dur="0.9s" repeatCount="indefinite" />
+              </ellipse>
+              <circle cx="0" cy="6" r="1.4" fill={liquidColor}>
+                <animate attributeName="cy" values="2;36" dur="0.9s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;1;0.2" dur="0.9s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* ── Live Floating Volume Readout Badge (Matching Class 11 Lab) ── */}
+      {hasVolumeVar && (
+        <g transform={`translate(${buretteX + buretteWidth / 2 + 8}, ${Math.min(Math.max(liquidTopY, tubeTop + 8), tubeBottom - 8)})`}>
+          <rect
+            x={0}
+            y={-8}
+            width={48}
+            height={16}
+            rx={3.5}
+            fill="#ffffff"
+            stroke="#2563eb"
+            strokeWidth={0.9}
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
+          />
+          <text
+            x={24}
+            y={3}
+            textAnchor="middle"
+            fill="#1d4ed8"
+            fontSize="7.5"
+            fontFamily="var(--font-mono, monospace)"
+            fontWeight={700}
+          >
+            {currentVolume.toFixed(1)} mL
+          </text>
+        </g>
+      )}
+
+      {/* Burette Label Plaque */}
+      {label && (
+        <g transform={`translate(${buretteX}, 6)`}>
+          <rect x="-35" y="0" width="70" height="13" rx="2.5" fill="rgba(255,255,255,0.92)" stroke="#cbd5e1" strokeWidth="0.8" />
+          <text x="0" y="9" textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#1e293b" fontFamily="var(--font-sans)">
+            {label}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Digital Balance ──────────────────────────────────────────────
@@ -656,29 +2054,50 @@ const DigitalBalanceSVG: React.FC<ApparatusProps> = ({
   label,
   highlighted = false,
   width = 120,
-  height = 60,
+  height = 70,
   extraProps,
 }) => {
   const reading = (extraProps?.['reading'] as number) ?? 0;
   const displayValue = reading > 0 ? reading.toFixed(2) : '0.00';
 
   return (
-    <svg width={width} height={height} viewBox="0 0 120 60" fill="none">
-      {/* Base */}
-      <rect x="5" y="35" width="110" height="20" rx="4"
-        fill="#e2e8f0" stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5" />
-      {/* Weighing pan */}
-      <rect x="20" y="28" width="80" height="8" rx="2"
-        fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
-      {/* Display */}
-      <rect x="30" y="8" width="60" height="18" rx="3" fill="#0f172a" />
-      <text x="60" y="21" textAnchor="middle" fontSize="11" fill="#22d3ee"
-        fontFamily="var(--font-mono)" fontWeight="600">
-        {displayValue} g
+    <svg width={width} height={height} viewBox="0 0 120 70" fill="none">
+      <defs>
+        <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f1f5f9" />
+          <stop offset="100%" stopColor="#cbd5e1" />
+        </linearGradient>
+      </defs>
+
+      {/* Base with depth */}
+      <rect x="5" y="40" width="110" height="22" rx="4"
+        fill="url(#balanceGrad)" stroke={highlighted ? '#3b82f6' : '#94a3b8'} strokeWidth="1.5" />
+      <rect x="5" y="40" width="110" height="4" rx="2" fill="rgba(255,255,255,0.5)" />
+
+      {/* Weighing pan - stainless steel look */}
+      <rect x="20" y="32" width="80" height="10" rx="2"
+        fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
+      <line x1="22" y1="33" x2="98" y2="33" stroke="#ffffff" strokeWidth="0.5" />
+
+      {/* Control Panel area */}
+      <rect x="15" y="10" width="90" height="28" rx="4" fill="#334155" />
+
+      {/* Display - LED look */}
+      <rect x="25" y="14" width="70" height="20" rx="3" fill="#0f172a" />
+      <text x="60" y="29" textAnchor="middle" fontSize="13" fill="#4ade80"
+        fontFamily="var(--font-mono, monospace)" fontWeight="700">
+        {displayValue} <tspan fontSize="8">g</tspan>
       </text>
+
+      {/* Buttons */}
+      <circle cx="25" cy="54" r="3" fill="#94a3b8" />
+      <text x="25" y="63" textAnchor="middle" fontSize="5" fill="#475569" fontWeight="700">TARE</text>
+
+      <circle cx="95" cy="54" r="3" fill="#94a3b8" />
+      <text x="95" y="63" textAnchor="middle" fontSize="5" fill="#475569" fontWeight="700">UNIT</text>
+
       {label && (
-        <text x="60" y="58" textAnchor="middle" fontSize="7" fill="#64748b"
-          fontFamily="var(--font-sans)">
+        <text x="60" y="68" textAnchor="middle" fontSize="8.5" fontWeight="700" fill="#475569">
           {label}
         </text>
       )}
@@ -1034,85 +2453,116 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
 // ── Ostwald Viscometer ────────────────────────────────────────────
 
 const OstwaldViscometer: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.5,
-  liquidColor = 'rgba(56, 189, 248, 0.65)',
+  liquidLevel = 0,
+  liquidColor = 'rgba(56, 189, 248, 0.7)',
   label = "Ostwald's Viscometer",
   highlighted = false,
-  width = 130,
-  height = 240,
+  width = 140,
+  height = 280,
   variables = {},
 }) => {
-  const strokeColor = highlighted ? '#2563eb' : '#94a3b8';
-  const flowProgress = variables.flowProgress ?? 0; // 0 = at upper mark, 1 = drained to lower mark
-  const liquidY = 55 + flowProgress * 65; // upper mark at 55, lower mark at 120
+  const strokeColor = highlighted ? '#3b82f6' : '#1e293b';
+  const flowProgress = variables.flowProgress ?? 0;
+
+  // Relative coordinates in a 140x280 viewBox
+  const leftX = 40;
+  const rightX = 100;
+  const topY = 20;
+  const bulbAY = 210; // Left arm bulb
+  const bulbBY = 80;  // Right arm bulb
+  const upperMarkY = 55;
+  const lowerMarkY = 105;
+
+  // Liquid level animation in Bulk B (Right arm)
+  const arm2LiquidY = upperMarkY + (flowProgress * (lowerMarkY - upperMarkY));
 
   return (
-    <svg width={width} height={height} viewBox="0 0 130 240" fill="none">
-      <defs>
-        <linearGradient id="viscoGlass" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
-          <stop offset="30%" stopColor="rgba(255,255,255,0.08)" />
-          <stop offset="70%" stopColor="rgba(255,255,255,0.02)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.3)" />
-        </linearGradient>
-      </defs>
-
-      {/* Viscometer U-Tube Outline */}
-      {/* Left wide arm with lower bulb (Bulb B) */}
+    <svg width={width} height={height} viewBox="0 0 140 280" fill="none" style={{ overflow: 'visible' }}>
+      {/* ── Glass Body (High visibility) ── */}
       <path
-        d="M 32 20 L 32 135 C 15 145 15 175 32 185 L 32 200 C 32 220 95 220 95 200 L 95 130 C 112 120 112 75 95 65 L 95 20"
+        d={`
+          /* Outer path */
+          M ${leftX-8} ${topY} L ${leftX-8} 185
+          C ${leftX-8} 185 ${leftX-20} 185 ${leftX-20} 210
+          C ${leftX-20} 235 ${leftX+20} 235 ${leftX+20} 210
+          C ${leftX+20} 185 ${leftX+8} 185 ${leftX+8} 220
+          C ${leftX+8} 270 ${rightX+8} 270 ${rightX+8} 220
+          L ${rightX+8} 105
+          C ${rightX+8} 105 ${rightX+16} 105 ${rightX+16} 80
+          C ${rightX+16} 55 ${rightX-16} 55 ${rightX-16} 80
+          C ${rightX-16} 105 ${rightX-8} 105 ${rightX-8} 105
+          L ${rightX-8} ${topY}
+          L ${rightX+8} ${topY}
+
+          /* Return path (Inner wall) */
+          M ${rightX-6} ${topY}
+          L ${rightX-6} 80
+          C ${rightX-6} 65 ${rightX+12} 65 ${rightX+12} 80
+          C ${rightX+12} 100 ${rightX+4} 100 ${rightX+4} 105
+          L ${rightX+4} 220
+          C ${rightX+4} 265 ${leftX+4} 265 ${leftX+4} 210
+          C ${leftX+4} 190 ${leftX+16} 190 ${leftX+16} 210
+          C ${leftX+16} 230 ${leftX-16} 230 ${leftX-16} 210
+          C ${leftX-16} 190 ${leftX-4} 190 ${leftX-4} 185
+          L ${leftX-4} ${topY}
+        `}
         stroke={strokeColor}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M 44 20 L 44 135 C 32 145 32 175 44 185 L 44 195 C 44 208 83 208 83 195 L 83 130 C 97 122 97 73 83 65 L 83 20"
-        stroke={strokeColor}
-        strokeWidth="2"
-        fill="url(#viscoGlass)"
+        strokeWidth="2.5"
+        fill="rgba(241, 245, 249, 0.4)"
       />
 
-      {/* Liquid in Viscometer */}
+      {/* ── Liquid Layer ── */}
       {liquidLevel > 0 && (
-        <g opacity="0.9">
-          {/* Lower reservoir bulb liquid */}
+        <g>
+          {/* Left Arm Pool */}
           <path
-            d="M 32 150 C 20 158 20 172 32 180 L 32 198 C 32 214 95 214 95 198 L 95 135 L 83 135 L 83 195 C 83 204 44 204 44 195 L 44 182 C 34 174 34 160 44 152 Z"
+            d={`
+              M ${leftX-7} 150 L ${leftX-7} 185
+              C ${leftX-7} 185 ${leftX-19} 185 ${leftX-19} 210
+              C ${leftX-19} 234 ${leftX+19} 234 ${leftX+19} 210
+              C ${leftX+19} 185 ${leftX+7} 185 ${leftX+7} 220
+              C ${leftX+7} 269 ${rightX-7} 269 ${rightX-7} 220
+              L ${rightX-7} 150 Z
+            `}
             fill={liquidColor}
           />
-          {/* Upper capillary arm liquid based on flow progress */}
+
+          {/* Right Arm Bulb B animation */}
           {flowProgress < 1 && (
             <path
-              d={`M 83 ${liquidY} C 97 ${liquidY + 10} 97 120 83 125 L 95 125 C 112 118 112 ${liquidY + 10} 95 ${liquidY} Z`}
+              d={`
+                M ${rightX} ${arm2LiquidY}
+                C ${rightX+14} ${arm2LiquidY+5} ${rightX+14} 100 ${rightX} 103
+                C ${rightX-14} 100 ${rightX-14} ${arm2LiquidY+5} ${rightX} ${arm2LiquidY} Z
+              `}
               fill={liquidColor}
             />
           )}
+
+          {/* Capillary Fill */}
+          <rect x={rightX-3} y="105" width="6" height="120" fill={liquidColor} opacity="0.7" />
         </g>
       )}
 
-      {/* Upper Fiducial Mark (Mark C) */}
-      <line x1="80" y1="55" x2="98" y2="55" stroke="#ef4444" strokeWidth="2.5" />
-      <text x="102" y="58" fontSize="8" fontWeight="700" fill="#ef4444">Upper Mark</text>
+      {/* ── Marks & Labels (High Contrast) ── */}
+      <line x1={rightX-15} y1={upperMarkY} x2={rightX+15} y2={upperMarkY} stroke="#dc2626" strokeWidth="3" />
+      <text x={rightX+18} y={upperMarkY+4} fontSize="14" fontWeight="900" fill="#dc2626">C</text>
 
-      {/* Lower Fiducial Mark (Mark D) */}
-      <line x1="80" y1="125" x2="98" y2="125" stroke="#ef4444" strokeWidth="2.5" />
-      <text x="102" y="128" fontSize="8" fontWeight="700" fill="#ef4444">Lower Mark</text>
+      <line x1={rightX-15} y1={lowerMarkY} x2={rightX+15} y2={lowerMarkY} stroke="#dc2626" strokeWidth="3" />
+      <text x={rightX+18} y={lowerMarkY+4} fontSize="14" fontWeight="900" fill="#dc2626">D</text>
 
-      {/* Bulb labels */}
-      <text x="89" y="93" textAnchor="middle" fontSize="9" fontWeight="600" fill="#475569">Bulb A</text>
-      <text x="38" y="167" textAnchor="middle" fontSize="9" fontWeight="600" fill="#475569">Bulb B</text>
+      <text x={leftX} y={bulbAY+4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#1e293b">BULK A</text>
+      <text x={rightX} y={bulbBY+4} textAnchor="middle" fontSize="10" fontWeight="900" fill="#1e293b">BULK B</text>
 
-      {/* Capillary indicator */}
-      <text x="89" y="170" textAnchor="middle" fontSize="7.5" fill="#64748b" fontStyle="italic">Capillary</text>
+      {/* Capillary Line */}
+      <line x1={rightX} y1="108" x2={rightX} y2="222" stroke="#1e293b" strokeWidth="1.2" strokeDasharray="3 3" />
 
       {/* Glass highlights */}
-      <path d="M 35 25 L 35 130" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M 86 25 L 86 50" stroke="rgba(255,255,255,0.6)" strokeWidth="1" strokeLinecap="round" />
+      <line x1={leftX-5} y1="30" x2={leftX-5} y2="175" stroke="#ffffff" strokeWidth="2.5" opacity="0.6" />
 
       {/* Label */}
       {label && (
-        <text x="65" y="235" textAnchor="middle" fontSize="9" fontWeight="600" fill="#334155">
+        <text x="70" y="275" textAnchor="middle" fontSize="13" fontWeight="900" fill="#0f172a">
           {label}
         </text>
       )}
@@ -1200,63 +2650,83 @@ const PHMeter: React.FC<ApparatusProps> = ({
 
   return (
     <svg width={width} height={height} viewBox="0 0 160 140" fill="none">
-      {/* Instrument housing */}
+      <defs>
+        <linearGradient id="phBodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+        <filter id="lcdGlow">
+          <feGaussianBlur stdDeviation="1.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+
+      {/* Instrument housing with depth */}
       <rect
         x="15"
-        y="30"
+        y="32"
         width="130"
         height="90"
         rx="8"
-        fill="#1e293b"
-        stroke={highlighted ? '#2563eb' : '#475569'}
+        fill="url(#phBodyGrad)"
+        stroke={highlighted ? '#3b82f6' : '#475569'}
         strokeWidth="2.5"
       />
       {/* Front panel bevel */}
-      <rect x="22" y="38" width="116" height="50" rx="4" fill="#0f172a" stroke="#334155" strokeWidth="1" />
+      <rect x="22" y="38" width="116" height="52" rx="4" fill="#0f172a" stroke="#334155" strokeWidth="1" />
 
-      {/* LCD Screen */}
-      <rect x="30" y="44" width="70" height="36" rx="3" fill="#042f2e" stroke="#0d9488" strokeWidth="1" />
+      {/* LCD Screen with glow */}
+      <rect x="30" y="44" width="70" height="38" rx="3" fill="#042f2e" stroke="#14b8a6" strokeWidth="1" />
       <text
         x="65"
-        y="69"
+        y="70"
         textAnchor="middle"
         fontFamily="var(--font-mono, monospace)"
-        fontSize="17"
+        fontSize="18"
         fontWeight="800"
         fill="#2dd4bf"
+        filter="url(#lcdGlow)"
       >
         {currentPH}
       </text>
-      <text x="35" y="52" fontSize="6.5" fill="#5eead4" fontWeight="600">pH</text>
-      <text x="88" y="75" fontSize="6.5" fill="#99f6e4">{temp.toFixed(1)}°C</text>
+      <text x="35" y="52" fontSize="7" fill="#5eead4" fontWeight="800">pH</text>
+      <text x="88" y="77" fontSize="7" fill="#99f6e4" fontWeight="600">{temp.toFixed(1)}°C</text>
 
       {/* Secondary indicators */}
-      <circle cx="115" cy="52" r="3.5" fill={isCalibrated ? '#10b981' : '#f59e0b'} />
-      <text x="122" y="54" fontSize="6.5" fill="#94a3b8">CAL</text>
-      <circle cx="115" cy="67" r="3.5" fill="#38bdf8" />
-      <text x="122" y="69" fontSize="6.5" fill="#94a3b8">ATC</text>
+      <g transform="translate(112, 48)">
+        <circle cx="0" cy="4" r="3.5" fill={isCalibrated ? '#10b981' : '#f59e0b'} />
+        <text x="7" y="6.5" fontSize="7" fill="#94a3b8" fontWeight="600">CAL</text>
+        <circle cx="0" cy="18" r="3.5" fill="#38bdf8" />
+        <text x="7" y="20.5" fontSize="7" fill="#94a3b8" fontWeight="600">ATC</text>
+      </g>
 
-      {/* Control knobs */}
-      <circle cx="45" cy="103" r="8" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-      <circle cx="45" cy="103" r="3" fill="#94a3b8" />
-      <text x="45" y="117" textAnchor="middle" fontSize="6" fill="#94a3b8">CAL 4</text>
+      {/* Control knobs - stylized */}
+      {[
+        { x: 45, label: 'CAL 4' },
+        { x: 80, label: 'CAL 9' },
+        { x: 115, label: 'TEMP' },
+      ].map((knob) => (
+        <g key={knob.label} transform={`translate(${knob.x}, 105)`}>
+          <circle r="9" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
+          <rect x="-1" y="-7" width="2" height="5" fill="#cbd5e1" rx="0.5" />
+          <text y="14" textAnchor="middle" fontSize="6.5" fill="#94a3b8" fontWeight="700">{knob.label}</text>
+        </g>
+      ))}
 
-      <circle cx="80" cy="103" r="8" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-      <circle cx="80" cy="103" r="3" fill="#94a3b8" />
-      <text x="80" y="117" textAnchor="middle" fontSize="6" fill="#94a3b8">CAL 9</text>
-
-      <circle cx="115" cy="103" r="8" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-      <circle cx="115" cy="103" r="3" fill="#94a3b8" />
-      <text x="115" y="117" textAnchor="middle" fontSize="6" fill="#94a3b8">TEMP</text>
-
-      {/* Glass Electrode Probe attachment */}
-      <path d="M 145 60 C 158 60 158 90 152 110" stroke="#0f172a" strokeWidth="2.5" fill="none" />
-      <rect x="148" y="105" width="8" height="28" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1" />
-      <circle cx="152" cy="133" r="3" fill="#38bdf8" stroke="#0284c7" strokeWidth="1" />
+      {/* Glass Electrode Probe attachment - much more detailed */}
+      <path d="M 145 65 C 165 65 165 95 152 110" stroke="#1e293b" strokeWidth="3" fill="none" />
+      <g transform="translate(148, 105)">
+        <rect width="10" height="32" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1.2" />
+        {/* Glass electrode internal structure */}
+        <rect x="3" y="5" width="4" height="22" fill="#f1f5f9" opacity="0.3" />
+        {/* Blue reference bulb */}
+        <circle cx="5" cy="32" r="4.5" fill="#38bdf8" stroke="#0284c7" strokeWidth="1.2" />
+        <circle cx="3.5" cy="30.5" r="1.5" fill="#ffffff" opacity="0.6" />
+      </g>
 
       {/* Label */}
       {label && (
-        <text x="80" y="135" textAnchor="middle" fontSize="9" fontWeight="600" fill="#334155">
+        <text x="80" y="136" textAnchor="middle" fontSize="10" fontWeight="700" fill="#334155" letterSpacing="0.02em">
           {label}
         </text>
       )}
@@ -1278,57 +2748,81 @@ const ConductivityBridge: React.FC<ApparatusProps> = ({
 
   return (
     <svg width={width} height={height} viewBox="0 0 160 140" fill="none">
-      {/* Main console body */}
+      <defs>
+        <linearGradient id="condBodyGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#1e293b" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+      </defs>
+
+      {/* Main console body with perspective */}
       <rect
         x="15"
-        y="30"
+        y="32"
         width="130"
         height="90"
         rx="8"
-        fill="#0f172a"
-        stroke={highlighted ? '#2563eb' : '#38bdf8'}
+        fill="url(#condBodyGrad)"
+        stroke={highlighted ? '#3b82f6' : '#38bdf8'}
         strokeWidth="2.5"
       />
       {/* Front bezel */}
-      <rect x="22" y="38" width="116" height="46" rx="4" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+      <rect x="22" y="38" width="116" height="48" rx="4" fill="#111827" stroke="#1e293b" strokeWidth="1.2" />
 
-      {/* LED Readout */}
-      <rect x="30" y="44" width="76" height="34" rx="3" fill="#172554" stroke="#1d4ed8" strokeWidth="1" />
+      {/* LED Readout - blue digital look */}
+      <rect x="30" y="45" width="80" height="34" rx="3" fill="#081431" stroke="#2563eb" strokeWidth="1" />
       <text
-        x="68"
-        y="68"
+        x="70"
+        y="70"
         textAnchor="middle"
         fontFamily="var(--font-mono, monospace)"
-        fontSize="16"
-        fontWeight="800"
+        fontSize="18"
+        fontWeight="900"
         fill="#60a5fa"
+        style={{ textShadow: '0 0 5px rgba(96, 165, 250, 0.5)' }}
       >
         {conductance}
       </text>
-      <text x="96" y="74" textAnchor="end" fontSize="6" fill="#93c5fd" fontWeight="600">{unit}</text>
-      <text x="35" y="52" fontSize="6.5" fill="#bfdbfe">COND</text>
+      <text x="106" y="76" textAnchor="end" fontSize="6.5" fill="#93c5fd" fontWeight="800">{unit}</text>
+      <text x="35" y="52" fontSize="7" fill="#bfdbfe" fontWeight="800">CONDUCTANCE</text>
 
-      {/* Range switch & knob */}
-      <circle cx="120" cy="60" r="10" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
-      <line x1="120" y1="60" x2="126" y2="54" stroke="#60a5fa" strokeWidth="2" />
-      <text x="120" y="78" textAnchor="middle" fontSize="6" fill="#94a3b8">RANGE</text>
+      {/* Range switch & knob - detailed */}
+      <g transform="translate(122, 62)">
+        <circle r="11" fill="#334155" stroke="#475569" strokeWidth="2" />
+        <line y1="-11" y2="-7" stroke="#cbd5e1" strokeWidth="1.5" />
+        <line x1="11" x2="7" transform="rotate(45)" stroke="#cbd5e1" strokeWidth="1" />
+        <line x1="11" x2="7" transform="rotate(90)" stroke="#cbd5e1" strokeWidth="1" />
+        <path d="M 0 0 L 8 -5" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" />
+        <text y="18" textAnchor="middle" fontSize="6.5" fill="#94a3b8" fontWeight="700">RANGE</text>
+      </g>
 
       {/* Bottom tuning dials */}
-      <circle cx="50" cy="102" r="7" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
-      <text x="50" y="116" textAnchor="middle" fontSize="6" fill="#94a3b8">NULL</text>
+      <g transform="translate(45, 105)">
+        <circle r="8" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
+        <rect x="-1" y="-6" width="2" height="4" fill="#60a5fa" />
+        <text y="14" textAnchor="middle" fontSize="6.5" fill="#94a3b8" fontWeight="700">NULL</text>
+      </g>
 
-      <circle cx="95" cy="102" r="7" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
-      <text x="95" y="116" textAnchor="middle" fontSize="6" fill="#94a3b8">CELL CONST</text>
+      <g transform="translate(90, 105)">
+        <circle r="8" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
+        <rect x="-1" y="-6" width="2" height="4" fill="#60a5fa" />
+        <text y="14" textAnchor="middle" fontSize="6.5" fill="#94a3b8" fontWeight="700">CONST</text>
+      </g>
 
-      {/* Cable to conductivity cell */}
-      <path d="M 140 70 C 154 70 156 100 152 115" stroke="#475569" strokeWidth="2" fill="none" />
-      <rect x="149" y="115" width="6" height="20" rx="1" fill="#cbd5e1" stroke="#475569" strokeWidth="1" />
-      {/* Platinum plates */}
-      <rect x="148" y="130" width="8" height="3" fill="#1e293b" />
+      {/* Conductivity Cell - more accurate structure */}
+      <path d="M 140 75 C 160 75 160 100 152 115" stroke="#334155" strokeWidth="3" fill="none" />
+      <g transform="translate(148, 115)">
+        {/* Glass envelope */}
+        <rect width="10" height="28" rx="2" fill="rgba(255,255,255,0.15)" stroke="#475569" strokeWidth="1" />
+        {/* Platinum electrodes */}
+        <line x1="3" y1="20" x2="7" y2="20" stroke="#1e293b" strokeWidth="3" />
+        <line x1="3" y1="25" x2="7" y2="25" stroke="#1e293b" strokeWidth="3" />
+        <line x1="5" y1="2" x2="5" y2="20" stroke="#475569" strokeWidth="0.8" />
+      </g>
 
       {/* Label */}
       {label && (
-        <text x="80" y="135" textAnchor="middle" fontSize="9" fontWeight="600" fill="#334155">
+        <text x="80" y="136" textAnchor="middle" fontSize="10" fontWeight="700" fill="#334155" letterSpacing="0.02em">
           {label}
         </text>
       )}
@@ -1342,47 +2836,67 @@ const MagneticStirrer: React.FC<ApparatusProps> = ({
   label = 'Magnetic Stirrer',
   highlighted = false,
   width = 130,
-  height = 90,
+  height = 95,
   flags = {},
 }) => {
   const isStirring = flags.stirring ?? false;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 130 90" fill="none">
-      {/* Ceramic top plate */}
+    <svg width={width} height={height} viewBox="0 0 130 95" fill="none">
+      <defs>
+        <linearGradient id="stirBodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+      </defs>
+
+      {/* Ceramic top plate with highlight */}
       <rect
         x="15"
-        y="20"
+        y="18"
         width="100"
-        height="18"
+        height="20"
         rx="3"
-        fill="#f8fafc"
-        stroke={highlighted ? '#2563eb' : '#cbd5e1'}
+        fill="#ffffff"
+        stroke={highlighted ? '#3b82f6' : '#cbd5e1'}
         strokeWidth="2"
       />
-      {/* Magnetic stir bar in center of plate */}
-      <rect x="57" y="26" width="16" height="6" rx="3" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
-      {isStirring && (
-        <g opacity="0.6">
-          <circle cx="65" cy="29" r="10" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3 3" />
-        </g>
-      )}
+      <rect x="17" y="20" width="96" height="3" rx="1" fill="#f8fafc" />
+
+      {/* Magnetic stir bar with spin animation visual hint */}
+      <g transform="translate(65, 28)">
+        <rect x="-8" y="-3" width="16" height="6" rx="3" fill="#ffffff" stroke="#94a3b8" strokeWidth="1" />
+        {isStirring && (
+          <g>
+            <circle r="12" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6">
+              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="0.5s" repeatCount="indefinite" />
+            </circle>
+            <circle r="6" fill="#38bdf8" opacity="0.2">
+              <animate attributeName="r" values="5;8;5" dur="1s" repeatCount="indefinite" />
+            </circle>
+          </g>
+        )}
+      </g>
 
       {/* Heavy base body */}
-      <rect x="18" y="38" width="94" height="42" rx="4" fill="#334155" stroke="#1e293b" strokeWidth="2" />
+      <rect x="18" y="38" width="94" height="45" rx="4" fill="url(#stirBodyGrad)" stroke="#0f172a" strokeWidth="2" />
 
-      {/* Speed control knob */}
-      <circle cx="45" cy="58" r="9" fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
-      <line x1="45" y1="58" x2="51" y2="53" stroke="#38bdf8" strokeWidth="2" />
-      <text x="45" y="74" textAnchor="middle" fontSize="6" fill="#cbd5e1">SPEED</text>
+      {/* Speed control knob - textured */}
+      <g transform="translate(45, 60)">
+        <circle r="10" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
+        <path d="M 0 0 L 0 -8" stroke={isStirring ? '#38bdf8' : '#cbd5e1'} strokeWidth="2.5" strokeLinecap="round" transform={isStirring ? "rotate(135)" : "rotate(0)"} />
+        <text y="18" textAnchor="middle" fontSize="7" fontWeight="700" fill="#cbd5e1">SPEED</text>
+      </g>
 
       {/* Heat switch & pilot indicator */}
-      <circle cx="85" cy="54" r="3.5" fill={isStirring ? '#10b981' : '#ef4444'} />
-      <text x="85" y="65" textAnchor="middle" fontSize="6" fill="#cbd5e1">POWER</text>
+      <g transform="translate(85, 60)">
+        <circle r="4" fill={isStirring ? '#10b981' : '#ef4444'} style={{ filter: isStirring ? 'drop-shadow(0 0 3px #10b981)' : 'none' }} />
+        <text y="18" textAnchor="middle" fontSize="7" fontWeight="700" fill="#cbd5e1">POWER</text>
+      </g>
 
       {/* Label */}
       {label && (
-        <text x="65" y="87" textAnchor="middle" fontSize="8" fontWeight="600" fill="#64748b">
+        <text x="65" y="92" textAnchor="middle" fontSize="10" fontWeight="700" fill="#475569" letterSpacing="0.02em">
           {label}
         </text>
       )}
@@ -1393,44 +2907,71 @@ const MagneticStirrer: React.FC<ApparatusProps> = ({
 // ── Graduated Measuring Cylinder ─────────────────────────────────
 
 const MeasuringCylinder: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.6,
+  id = 'measuring-cylinder',
+  liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.65)',
   label = '100 mL Cylinder',
   highlighted = false,
   width = 70,
   height = 220,
 }) => {
-  const strokeColor = highlighted ? '#2563eb' : '#94a3b8';
-  const fillHeight = 140 * liquidLevel;
-  const fillY = 185 - fillHeight;
+  const strokeColor = highlighted ? '#2563eb' : '#64748b';
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const fillHeight = 148 * effectiveLevel;
+  const fillY = 192 - fillHeight;
+  const gradId = `cylLiquid-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 70 220" fill="none">
+    <svg width={width} height={height} viewBox="0 0 70 220" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="50%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+
+        <linearGradient id={`cylGlass-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+          <stop offset="40%" stopColor="rgba(255,255,255,0.05)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
+        </linearGradient>
+      </defs>
+
       {/* Hexagonal / Circular Base */}
-      <path d="M 12 195 L 58 195 L 64 210 L 6 210 Z" fill="#94a3b8" stroke="#64748b" strokeWidth="1.5" />
+      <path d="M 12 196 L 58 196 L 64 210 L 6 210 Z" fill="#94a3b8" stroke="#64748b" strokeWidth="1.5" />
+      <line x1="8" y1="197" x2="62" y2="197" stroke="rgba(255,255,255,0.5)" strokeWidth="1" />
 
-      {/* Cylinder Glass Tube */}
-      <rect x="22" y="35" width="26" height="160" stroke={strokeColor} strokeWidth="2" fill="rgba(255,255,255,0.12)" />
-      {/* Spout on left */}
-      <path d="M 22 35 L 14 30 L 22 40" stroke={strokeColor} strokeWidth="2" fill="none" />
+      {/* Cylinder Glass Back */}
+      <rect x="22" y="35" width="26" height="158" rx="2" stroke="#cbd5e1" strokeWidth="1.5" fill="rgba(241,245,249,0.2)" />
 
-      {/* Liquid Fill */}
-      {liquidLevel > 0 && (
-        <g>
-          <rect x="23" y={fillY} width="24" height={fillHeight} fill={liquidColor} />
+      {/* ── Liquid Fill with Meniscus ── */}
+      {effectiveLevel > 0 && (
+        <g id="cylinder-liquid">
+          <rect x="23" y={fillY} width="24" height={fillHeight} rx="1" fill={`url(#${gradId})`} style={{ transition: 'height 2.0s cubic-bezier(0.25, 1, 0.5, 1), y 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
           {/* Meniscus */}
-          <ellipse cx="35" cy={fillY} rx="12" ry="3" fill={liquidColor} stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+          <ellipse cx="35" cy={fillY} rx="11.8" ry="2.6" fill="rgba(255,255,255,0.3)" stroke={liquidColor} strokeWidth="0.8" style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
+          <ellipse cx="35" cy={fillY - 0.2} rx="7.5" ry="1.2" fill="rgba(255,255,255,0.45)" style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
         </g>
       )}
 
+      {/* Cylinder Glass Front & Spout */}
+      <rect x="22" y="35" width="26" height="158" rx="2" stroke={strokeColor} strokeWidth="2.2" fill="none" />
+      {/* Spout on left */}
+      <path d="M 22 35 C 16 35 13 32 10 30 C 14 36 18 39 22 41" stroke={strokeColor} strokeWidth="2" fill="rgba(241,245,249,0.3)" />
+
+      {/* Glass reflections */}
+      <line x1="25" y1="40" x2="25" y2="190" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="45" y1="40" x2="45" y2="190" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" strokeLinecap="round" />
+
       {/* Graduation Lines */}
       {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => {
-        const y = 185 - i * 14;
+        const y = 190 - i * 14.5;
         return (
           <g key={i}>
-            <line x1="22" y1={y} x2={i % 2 === 0 ? '33' : '28'} y2={y} stroke="#64748b" strokeWidth="1" />
+            <line x1="22" y1={y} x2={i % 2 === 0 ? '33' : '28'} y2={y} stroke="rgba(255,255,255,0.7)" strokeWidth="1" />
+            <line x1="22" y1={y} x2={i % 2 === 0 ? '33' : '28'} y2={y} stroke="#64748b" strokeWidth="0.8" />
             {i % 2 === 0 && (
-              <text x="36" y={y + 3} fontSize="6" fill="#64748b" fontFamily="monospace">
+              <text x="35" y={y + 2.5} fontSize="6" fill="#64748b" fontFamily="var(--font-mono, monospace)">
                 {i * 10}
               </text>
             )}
@@ -1438,12 +2979,9 @@ const MeasuringCylinder: React.FC<ApparatusProps> = ({
         );
       })}
 
-      {/* Glass reflections */}
-      <line x1="25" y1="40" x2="25" y2="185" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
-
       {/* Label */}
       {label && (
-        <text x="35" y="217" textAnchor="middle" fontSize="8" fontWeight="600" fill="#334155">
+        <text x="35" y="218" textAnchor="middle" fontSize="8" fontWeight="600" fill="#334155" fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -1454,53 +2992,96 @@ const MeasuringCylinder: React.FC<ApparatusProps> = ({
 // ── Volumetric Flask (250 mL) ────────────────────────────────────
 
 const VolumetricFlask: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.5,
+  id = 'volumetric-flask',
+  liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.65)',
   label = '250 mL Volumetric Flask',
   highlighted = false,
   width = 110,
   height = 180,
 }) => {
-  const strokeColor = highlighted ? '#2563eb' : '#94a3b8';
-  const fillHeight = 70 * liquidLevel;
-  const fillY = 155 - fillHeight;
+  const strokeColor = highlighted ? '#2563eb' : '#64748b';
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  // Total fillable height in volumetric flask is ~130px (from y=158 up to y=28)
+  const fillHeight = 130 * effectiveLevel;
+  const fillY = 158 - fillHeight;
+  const gradId = `volFlaskLiquid-${id || 'def'}`;
+  const clipId = `volFlaskClip-${id || 'def'}`;
+
+  // Approximate half-width at fillY for meniscus
+  const halfW = fillY < 84 ? 4.5 : 4.5 + Math.sin(((158 - fillY) / 74) * Math.PI) * 28;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 110 180" fill="none">
+    <svg width={width} height={height} viewBox="0 0 110 180" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <clipPath id={clipId}>
+          <path d="M 51 25 L 51 84 C 27 104 20 135 27 155 Q 32 159 55 159 Q 78 159 83 155 C 90 135 83 104 59 84 L 59 25 Z" />
+        </clipPath>
+
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="50%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+      </defs>
+
       {/* Stopper */}
       <polygon points="50,12 60,12 58,28 52,28" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
       <ellipse cx="55" cy="12" rx="7" ry="3" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
 
-      {/* Flask Body */}
+      {/* Flask Glass Back Wall */}
+      <path
+        d="M 50 25 L 50 85 C 25 105 18 135 25 155 Q 30 160 55 160 Q 80 160 85 155 C 92 135 85 105 60 85 L 60 25 Z"
+        stroke="#cbd5e1"
+        strokeWidth="1.5"
+        fill="rgba(241, 245, 249, 0.2)"
+      />
+
+      {/* ── Liquid Fill via Inner Clip Path & Meniscus ── */}
+      {effectiveLevel > 0 && (
+        <g id="vol-flask-liquid">
+          <rect
+            x="15"
+            y={fillY}
+            width="80"
+            height={fillHeight + 10}
+            fill={`url(#${gradId})`}
+            clipPath={`url(#${clipId})`}
+            style={{ transition: 'height 2.0s cubic-bezier(0.25, 1, 0.5, 1), y 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+          />
+          {/* Meniscus surface */}
+          <ellipse
+            cx="55"
+            cy={fillY}
+            rx={Math.max(2, halfW)}
+            ry={fillY < 84 ? 1 : 2.6}
+            fill="rgba(255, 255, 255, 0.3)"
+            stroke={liquidColor}
+            strokeWidth="0.8"
+            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+          />
+        </g>
+      )}
+
+      {/* Flask Body Outline */}
       <path
         d="M 50 25 L 50 85 C 25 105 18 135 25 155 Q 30 160 55 160 Q 80 160 85 155 C 92 135 85 105 60 85 L 60 25 Z"
         stroke={strokeColor}
-        strokeWidth="2.5"
-        fill="rgba(255,255,255,0.1)"
+        strokeWidth="2.2"
+        fill="none"
       />
 
-      {/* Liquid */}
-      {liquidLevel > 0 && (
-        <path
-          d={`M ${30 + (55 - fillY) * 0.15} ${fillY}
-              C ${20} 135 ${25} 155 35 158
-              L 75 158
-              C 85 155 ${90} 135 ${80 - (55 - fillY) * 0.15} ${fillY} Z`}
-          fill={liquidColor}
-        />
-      )}
-
-      {/* Graduation ring mark */}
+      {/* Graduation ring mark etched on neck */}
       <line x1="48" y1="65" x2="62" y2="65" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 1" />
       <text x="66" y="67" fontSize="6.5" fill="#ef4444" fontWeight="700">250 mL</text>
 
       {/* Glass highlights */}
-      <path d="M 52 30 L 52 80" stroke="rgba(255,255,255,0.5)" strokeWidth="1" />
+      <path d="M 52 30 L 52 80" stroke="rgba(255,255,255,0.5)" strokeWidth="1" strokeLinecap="round" />
       <path d="M 28 140 A 25 25 0 0 0 45 155" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
 
       {/* Label */}
       {label && (
-        <text x="55" y="174" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#334155">
+        <text x="55" y="174" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#334155" fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -1511,52 +3092,89 @@ const VolumetricFlask: React.FC<ApparatusProps> = ({
 // ── BOD Incubation Bottle ────────────────────────────────────────
 
 const BODBottle: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.8,
+  id = 'bod-bottle',
+  liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.65)',
   label = 'BOD Bottle (300 mL)',
   highlighted = false,
   width = 100,
   height = 170,
 }) => {
-  const strokeColor = highlighted ? '#2563eb' : '#94a3b8';
-  const fillHeight = 90 * liquidLevel;
-  const fillY = 145 - fillHeight;
+  const strokeColor = highlighted ? '#2563eb' : '#64748b';
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const fillHeight = 104 * effectiveLevel;
+  const fillY = 146 - fillHeight;
+  const gradId = `bodLiquid-${id || 'def'}`;
+  const clipId = `bodClip-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 100 170" fill="none">
+    <svg width={width} height={height} viewBox="0 0 100 170" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <clipPath id={clipId}>
+          <rect x="28" y="38" width="44" height="110" rx="6" />
+        </clipPath>
+
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="50%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+      </defs>
+
       {/* Ground glass penny-head stopper */}
       <rect x="44" y="8" width="12" height="16" rx="2" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
       <ellipse cx="50" cy="8" rx="10" ry="4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1.5" />
 
       {/* Flared funnel-shaped mouth */}
-      <path d="M 40 24 L 60 24 L 56 38 L 44 38 Z" fill="rgba(255,255,255,0.15)" stroke={strokeColor} strokeWidth="2" />
+      <path d="M 40 24 L 60 24 L 56 38 L 44 38 Z" fill="rgba(241,245,249,0.3)" stroke={strokeColor} strokeWidth="1.8" />
 
-      {/* Bottle Body */}
+      {/* Bottle Body Back Wall */}
       <rect
         x="26"
         y="38"
         width="48"
         height="110"
         rx="8"
-        fill="rgba(255,255,255,0.1)"
-        stroke={strokeColor}
-        strokeWidth="2.5"
+        fill="rgba(241,245,249,0.2)"
+        stroke="#cbd5e1"
+        strokeWidth="1.5"
       />
 
-      {/* Liquid Fill */}
-      {liquidLevel > 0 && (
-        <g>
-          <rect x="28" y={fillY} width="44" height={fillHeight} rx="4" fill={liquidColor} />
-          <ellipse cx="50" cy={fillY} rx="22" ry="4" fill={liquidColor} stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+      {/* ── Liquid Fill with Meniscus ── */}
+      {effectiveLevel > 0 && (
+        <g id="bod-liquid">
+          <rect
+            x="26"
+            y={fillY}
+            width="48"
+            height={fillHeight + 5}
+            fill={`url(#${gradId})`}
+            clipPath={`url(#${clipId})`}
+            style={{ transition: 'height 2.0s cubic-bezier(0.25, 1, 0.5, 1), y 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+          />
+          <ellipse cx="50" cy={fillY} rx="21.5" ry="3" fill="rgba(255,255,255,0.3)" stroke={liquidColor} strokeWidth="0.8" style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }} />
         </g>
       )}
 
+      {/* Bottle Body Outline */}
+      <rect
+        x="26"
+        y="38"
+        width="48"
+        height="110"
+        rx="8"
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2.2"
+      />
+
       {/* Glass highlights */}
-      <line x1="30" y1="45" x2="30" y2="140" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="30" y1="44" x2="30" y2="140" stroke="rgba(255,255,255,0.45)" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="70" y1="44" x2="70" y2="140" stroke="rgba(255,255,255,0.2)" strokeWidth="0.8" strokeLinecap="round" />
 
       {/* Label */}
       {label && (
-        <text x="50" y="162" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#334155">
+        <text x="50" y="162" textAnchor="middle" fontSize="8" fontWeight="600" fill="#334155" fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -1567,50 +3185,28 @@ const BODBottle: React.FC<ApparatusProps> = ({
 // ── Constant Temperature Water Bath ──────────────────────────────
 
 const WaterBath: React.FC<ApparatusProps> = ({
-  label = 'Thermostatic Water Bath',
+  label = 'Constant Temperature Water Bath',
   highlighted = false,
-  width = 160,
-  height = 120,
-  variables = {},
+  width = 130,
+  height = 90,
 }) => {
-  const temp = variables.temperature ?? 60.0;
+  const strokeColor = highlighted ? '#2563eb' : '#64748b';
 
   return (
-    <svg width={width} height={height} viewBox="0 0 160 120" fill="none">
-      {/* Outer steel tank */}
-      <rect
-        x="15"
-        y="25"
-        width="130"
-        height="75"
-        rx="6"
-        fill="#334155"
-        stroke={highlighted ? '#2563eb' : '#64748b'}
-        strokeWidth="2.5"
-      />
-
-      {/* Inner warm water cavity */}
-      <rect x="22" y="32" width="86" height="58" rx="4" fill="rgba(56, 189, 248, 0.4)" stroke="#0284c7" strokeWidth="1.5" />
-
-      {/* Concentric reduction ring opening */}
-      <ellipse cx="65" cy="34" rx="28" ry="6" fill="#475569" stroke="#94a3b8" strokeWidth="1" />
-      <ellipse cx="65" cy="34" rx="18" ry="4" fill="#334155" stroke="#cbd5e1" strokeWidth="1" />
-
-      {/* Subtle steam vapors */}
-      <path d="M 55 26 Q 58 18 55 12" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-      <path d="M 68 28 Q 72 20 68 14" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" fill="none" />
-
-      {/* Control panel on right */}
-      <rect x="114" y="32" width="24" height="58" rx="3" fill="#0f172a" stroke="#475569" strokeWidth="1" />
-      <text x="126" y="46" textAnchor="middle" fontSize="6.5" fill="#38bdf8" fontFamily="monospace" fontWeight="700">
-        {temp.toFixed(0)}°C
-      </text>
-      <circle cx="126" cy="60" r="3" fill="#10b981" />
-      <circle cx="126" cy="74" r="5" fill="#334155" stroke="#64748b" strokeWidth="1" />
+    <svg width={width} height={height} viewBox="0 0 130 90" fill="none" style={{ overflow: 'visible' }}>
+      {/* Outer Basin */}
+      <rect x="10" y="25" width="110" height="55" rx="6" fill="#e2e8f0" stroke={strokeColor} strokeWidth="2" />
+      {/* Inner Chamber with Water */}
+      <rect x="15" y="30" width="100" height="46" rx="4" fill="rgba(56, 189, 248, 0.25)" stroke="#94a3b8" strokeWidth="1" />
+      {/* Water line shimmer */}
+      <line x1="16" y1="36" x2="114" y2="36" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeDasharray="6 3" />
+      {/* Thermometer / Heater Well */}
+      <rect x="22" y="10" width="6" height="60" rx="2" fill="#ef4444" opacity="0.85" />
+      <text x="32" y="20" fontSize="7" fontWeight="700" fill="#ef4444">30°C</text>
 
       {/* Label */}
       {label && (
-        <text x="80" y="112" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#334155">
+        <text x="65" y="75" textAnchor="middle" fontSize="8" fontWeight="600" fill="#334155" fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -1621,47 +3217,88 @@ const WaterBath: React.FC<ApparatusProps> = ({
 // ── Specific Gravity Bottle (Pycnometer) ──────────────────────────
 
 const SpecificGravityBottle: React.FC<ApparatusProps> = ({
-  liquidLevel = 0.9,
+  id = 'sp-gr-bottle',
+  liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.65)',
   label = '25 mL Sp. Gr. Bottle',
   highlighted = false,
   width = 80,
   height = 120,
 }) => {
-  const strokeColor = highlighted ? '#2563eb' : '#94a3b8';
-  const fillHeight = 55 * liquidLevel;
-  const fillY = 95 - fillHeight;
+  const strokeColor = highlighted ? '#2563eb' : '#64748b';
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const fillHeight = 65 * effectiveLevel;
+  const fillY = 98 - fillHeight;
+  const gradId = `spGrLiquid-${id || 'def'}`;
+  const clipId = `spGrClip-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 80 120" fill="none">
+    <svg width={width} height={height} viewBox="0 0 80 120" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <clipPath id={clipId}>
+          <path d="M 36 30 L 36 45 C 22 55 18 75 22 95 Q 24 99 40 99 Q 56 99 58 95 C 62 75 58 55 44 45 L 44 30 Z" />
+        </clipPath>
+
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="50%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+      </defs>
+
       {/* Capillary Stopper */}
       <rect x="37" y="10" width="6" height="24" rx="1" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1.5" />
       {/* Central fine capillary bore */}
       <line x1="40" y1="10" x2="40" y2="34" stroke="#ef4444" strokeWidth="0.8" />
       <ellipse cx="40" cy="10" rx="4" ry="2" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1" />
 
-      {/* Bottle Flask Body */}
+      {/* Bottle Flask Body Back Wall */}
+      <path
+        d="M 36 30 L 36 45 C 22 55 18 75 22 95 Q 24 100 40 100 Q 56 100 58 95 C 62 75 58 55 44 45 L 44 30 Z"
+        stroke="#cbd5e1"
+        strokeWidth="1.5"
+        fill="rgba(241,245,249,0.2)"
+      />
+
+      {/* ── Liquid with Clip Path ── */}
+      {effectiveLevel > 0 && (
+        <g id="pycnometer-liquid">
+          <rect
+            x="16"
+            y={fillY}
+            width="48"
+            height={fillHeight + 10}
+            fill={`url(#${gradId})`}
+            clipPath={`url(#${clipId})`}
+            style={{ transition: 'height 2.0s cubic-bezier(0.25, 1, 0.5, 1), y 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+          />
+          <ellipse
+            cx="40"
+            cy={fillY}
+            rx={fillY < 45 ? 3.8 : 17}
+            ry={fillY < 45 ? 1 : 2.5}
+            fill="rgba(255,255,255,0.3)"
+            stroke={liquidColor}
+            strokeWidth="0.6"
+            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+          />
+        </g>
+      )}
+
+      {/* Bottle Outline */}
       <path
         d="M 36 30 L 36 45 C 22 55 18 75 22 95 Q 24 100 40 100 Q 56 100 58 95 C 62 75 58 55 44 45 L 44 30 Z"
         stroke={strokeColor}
         strokeWidth="2"
-        fill="rgba(255,255,255,0.12)"
+        fill="none"
       />
 
-      {/* Liquid */}
-      {liquidLevel > 0 && (
-        <path
-          d={`M ${24 + (95 - fillY) * 0.15} ${fillY}
-              C 20 80 22 95 30 98
-              L 50 98
-              C 58 95 60 80 ${56 - (95 - fillY) * 0.15} ${fillY} Z`}
-          fill={liquidColor}
-        />
-      )}
+      {/* Glass highlights */}
+      <path d="M 23 75 Q 21 88 30 96" stroke="rgba(255,255,255,0.45)" strokeWidth="1.2" fill="none" />
 
       {/* Label */}
       {label && (
-        <text x="40" y="114" textAnchor="middle" fontSize="7.5" fontWeight="600" fill="#334155">
+        <text x="40" y="114" textAnchor="middle" fontSize="7.5" fontWeight="600" fill="#334155" fontFamily="var(--font-sans)">
           {label}
         </text>
       )}
@@ -1721,6 +3358,7 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   // Mechanical / Support
   MagneticStirrer,
   RetortStand,
+  BuretteStand,
   TestTubeStand,
 
   // Sealing

@@ -16,6 +16,8 @@ interface LabBenchProps {
 }
 
 const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) => {
+  const [isSwirling, setIsSwirling] = React.useState(false);
+  const [isStirring, setIsStirring] = React.useState(false);
   const flaskColor = getFlaskColor(state.volumeAdded, state.hasIndicator);
   const stopcockEnabled = canOperateStopcock(state).allowed && state.step === Step.TITRATING;
 
@@ -23,8 +25,77 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
     <div
       id="lab-bench"
       className="glass-card"
-      style={{ padding: '12px', overflow: 'hidden', flex: 1 }}
+      style={{ padding: '12px', overflow: 'hidden', flex: 1, position: 'relative' }}
     >
+      {/* Interactive Workbench Action Bar (Shake/Swirl & Stir buttons) */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 16,
+          left: 16,
+          zIndex: 35,
+          display: 'flex',
+          gap: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)',
+          border: '1.5px solid var(--border-subtle, #e2e8f0)',
+          borderRadius: 10,
+          padding: '5px 8px',
+          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
+        }}
+      >
+        {/* Shake / Swirl Flask button */}
+        <button
+          type="button"
+          id="btn-shake-flask"
+          onClick={() => setIsSwirling(prev => !prev)}
+          title="Continuously shake & swirl the conical flask for complete mixing"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 6,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: isSwirling ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
+            background: isSwirling ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f8fafc',
+            color: isSwirling ? '#ffffff' : '#334155',
+            boxShadow: isSwirling ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
+          <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
+        </button>
+
+        {/* Stir Solution button */}
+        <button
+          type="button"
+          id="btn-stir-solution"
+          onClick={() => setIsStirring(prev => !prev)}
+          title="Toggle rapid magnetic stirring and liquid vortex mixing"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 6,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: isStirring ? '1.5px solid #059669' : '1px solid #cbd5e1',
+            background: isStirring ? 'linear-gradient(135deg, #059669, #047857)' : '#f8fafc',
+            color: isStirring ? '#ffffff' : '#334155',
+            boxShadow: isStirring ? '0 2px 8px rgba(5, 150, 105, 0.35)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
+          <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
+        </button>
+      </div>
       <svg
         viewBox="0 0 280 420"
         width="100%"
@@ -185,6 +256,8 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           isPlaced={state.flaskPlaced}
           acidMeasured={state.acidMeasured}
           isReceivingDrop={state.stopcockOpen > 0}
+          volumeAdded={state.volumeAdded}
+          isSwirling={isSwirling || isStirring}
         />
 
         {/* Animated Pipette filling at HCl bottle */}
@@ -225,6 +298,56 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
             {/* Status text */}
             <rect x={15} y={0} width={85} height={18} rx={4} fill="#ffffff" stroke="#2563eb" strokeWidth={0.5} />
             <text x={57} y={12} textAnchor="middle" fill="#1d4ed8" fontSize="6" fontFamily="var(--font-mono)">Pouring NaOH...</text>
+          </g>
+        )}
+
+        {/* Animated Indicator Dropper with EXACTLY 2 Discrete Drops */}
+        {state.isAddingIndicator && (
+          <g transform="translate(140, 240)" id="dropper-indicator-overlay">
+            {/* Dropper Pipette Body */}
+            <g transform="translate(-10, -50)">
+              {/* Rubber bulb */}
+              <ellipse cx={10} cy={6} rx={7} ry={9} fill="#dc2626" stroke="#991b1b" strokeWidth={0.8} />
+              <rect x={7} y={13} width={6} height={3} fill="#475569" rx={0.5} />
+              {/* Glass stem */}
+              <rect x={8} y={16} width={4} height={38} rx={0.5} fill="rgba(241, 245, 249, 0.35)" stroke="#94a3b8" strokeWidth={0.6} />
+              {/* Internal indicator liquid column */}
+              <rect x={8.5} y={24} width={3} height={30} fill="rgba(236, 72, 153, 0.75)" />
+              {/* Tapered glass jet nozzle */}
+              <polygon points="8,54 12,54 10.5,62 9.5,62" fill="rgba(241, 245, 249, 0.4)" stroke="#94a3b8" strokeWidth={0.5} />
+            </g>
+
+            {/* DROP 1: Exactly 1st Drop (starts 0.2s, falls to surface at y=100) */}
+            <ellipse cx={0} cy={14} rx={1.8} ry={2.6} fill="rgba(236, 72, 153, 0.9)">
+              <animate attributeName="cy" values="14;14;96" keyTimes="0;0.12;0.45" dur="2s" fill="freeze" />
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.08;0.44;0.46" dur="2s" fill="freeze" />
+            </ellipse>
+            {/* Ripple from Drop 1 */}
+            <ellipse cx={0} cy={96} rx={0} ry={0} fill="none" stroke="rgba(236, 72, 153, 0.8)" strokeWidth={1}>
+              <animate attributeName="rx" values="0;0;14;18" keyTimes="0;0.45;0.65;0.75" dur="2s" fill="freeze" />
+              <animate attributeName="ry" values="0;0;3.5;4.5" keyTimes="0;0.45;0.65;0.75" dur="2s" fill="freeze" />
+              <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.44;0.46;0.75" dur="2s" fill="freeze" />
+            </ellipse>
+
+            {/* DROP 2: Exactly 2nd Drop (starts 1.0s, falls to surface at y=100) */}
+            <ellipse cx={0} cy={14} rx={1.8} ry={2.6} fill="rgba(236, 72, 153, 0.9)">
+              <animate attributeName="cy" values="14;14;96" keyTimes="0;0.55;0.82" dur="2s" fill="freeze" />
+              <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.50;0.54;0.81;0.83" dur="2s" fill="freeze" />
+            </ellipse>
+            {/* Ripple from Drop 2 */}
+            <ellipse cx={0} cy={96} rx={0} ry={0} fill="none" stroke="rgba(236, 72, 153, 0.8)" strokeWidth={1}>
+              <animate attributeName="rx" values="0;0;14;18" keyTimes="0;0.82;0.94;1.0" dur="2s" fill="freeze" />
+              <animate attributeName="ry" values="0;0;3.5;4.5" keyTimes="0;0.82;0.94;1.0" dur="2s" fill="freeze" />
+              <animate attributeName="opacity" values="0;0;0.9;0" keyTimes="0;0.81;0.83;1.0" dur="2s" fill="freeze" />
+            </ellipse>
+
+            {/* Clean Status Badge */}
+            <g transform="translate(18, -35)">
+              <rect x={0} y={0} width={105} height={18} rx={4} fill="#ffffff" stroke="#ec4899" strokeWidth={0.8} filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))" />
+              <text x={52} y={12} textAnchor="middle" fill="#db2777" fontSize="5.8" fontFamily="var(--font-mono)" fontWeight={600}>
+                Adding 2 Drops Indicator...
+              </text>
+            </g>
           </g>
         )}
 

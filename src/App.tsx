@@ -172,9 +172,10 @@ const AppContent: React.FC = () => {
         return;
       }
 
-      // Indicator → flask
+      // Indicator → flask (Animate exactly 2 drops into flask)
       if (zoneId === DROP_ZONES.FLASK_ZONE && itemId === DRAG_ITEMS.INDICATOR) {
-        dispatch({ type: 'ADD_INDICATOR' });
+        dispatch({ type: 'ADD_INDICATOR_START' });
+        setTimeout(() => dispatch({ type: 'ADD_INDICATOR_END' }), 2000);
         return;
       }
     },

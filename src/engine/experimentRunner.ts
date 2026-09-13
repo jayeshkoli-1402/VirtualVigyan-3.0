@@ -17,6 +17,7 @@ import type {
   InteractionEffect,
   ConditionConfig,
 } from './experimentConfig';
+import { computeFormula } from './chemistryLib';
 
 // ── Condition Evaluation ─────────────────────────────────────────
 
@@ -440,14 +441,98 @@ export function createExperimentReducer(
         const maxFlowRate = state.variables['maxFlowRate'] ?? 0.5; // mL/s default
         const deltaSeconds = action.payload.deltaMs / 1000;
         const flowAmount = stopcockOpen * maxFlowRate * deltaSeconds;
-        const currentVolume = state.variables['volumeAdded'] ?? 0;
-        const newVolume = Math.round((currentVolume + flowAmount) * 1000) / 1000;
+        const newVariables = { ...state.variables };
+        const currentVolume = newVariables['volumeAdded'] ?? 0;
+        newVariables['volumeAdded'] = Math.round((currentVolume + flowAmount) * 1000) / 1000;
+
+        // Automatically increment specific experiment titration volume variables if they exist in variables
+        const titrationKeys = [
+          'kohVolume',
+          'stdEdtaVolume',
+          'sampleEdtaVolume',
+          'volumeA',
+          'volumeB',
+          'thiosulphateVolume',
+          'naohVolume',
+          'buretteReading',
+        ];
+        for (const key of titrationKeys) {
+          if (newVariables[key] !== undefined) {
+            newVariables[key] = Math.round(((newVariables[key] as number) + flowAmount) * 1000) / 1000;
+          }
+        }
 
         return {
           ...state,
-          variables: { ...state.variables, volumeAdded: newVolume },
+          variables: newVariables,
           flags: { ...state.flags, isDropAnimating: stopcockOpen > 0 },
         };
+      }
+
+      case 'TICK': {
+        const { deltaMs } = action.payload;
+        const deltaSeconds = deltaMs / 1000;
+        let newState = { ...state };
+        let changed = false;
+
+        if (config.continuousUpdates) {
+          for (const update of config.continuousUpdates) {
+            if (evaluateCondition(update.condition, state)) {
+              // Apply increments
+              if (update.increments) {
+                const newVariables = { ...newState.variables };
+                for (const [key, amountPerSec] of Object.entries(update.increments)) {
+                  const current = newVariables[key] ?? 0;
+                  // Don't increment if already at bounds (optional, but good for progress bars)
+                  newVariables[key] = Math.round((current + amountPerSec * deltaSeconds) * 10000) / 10000;
+                }
+                newState = { ...newState, variables: newVariables };
+                changed = true;
+              }
+
+              // Check condition met events
+              if (update.onConditionMet) {
+                for (const event of update.onConditionMet) {
+                  if (evaluateCondition(event.condition, newState)) {
+                    newState = applyEffects(newState, event.effects);
+                    changed = true;
+                  }
+                }
+              }
+
+              // Apply custom function update
+              if (update.customFn) {
+                const newVal = computeFormula(update.customFn, newState.variables);
+                // Map custom function results to specific state variables
+                let targetVar: string | null = null;
+                if (update.customFn === 'phTitrationCurve') targetVar = 'pH';
+                if (update.customFn === 'conductometricCurve') targetVar = 'conductance';
+
+                if (targetVar) {
+                  newState = {
+                    ...newState,
+                    variables: { ...newState.variables, [targetVar]: newVal }
+                  };
+                  changed = true;
+
+                  // Sync to apparatus props if needed (e.g., pH meter display)
+                  if (targetVar === 'pH' && newState.placedApparatus['ph-meter']) {
+                    newState = applyEffects(newState, [{
+                      type: 'setApparatusProp', apparatusId: 'ph-meter', prop: 'variables', value: { pH: newVal }
+                    }]);
+                  }
+                  if (targetVar === 'conductance' && newState.placedApparatus['conductivity-bridge']) {
+                    newState = applyEffects(newState, [{
+                      type: 'setApparatusProp', apparatusId: 'conductivity-bridge', prop: 'variables', value: { conductance: newVal }
+                    }]);
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        return changed ? newState : state;
       }
 
       // ── Animation Complete ──
@@ -460,10 +545,12 @@ export function createExperimentReducer(
           animations: { ...state.animations, [animationFlag]: false },
         };
 
-        // Find the interaction and apply deferred effects
+        // Find the interaction and apply deferred effects only if they were deferred
         const interaction = config.interactions.find(i => i.id === interactionId);
         if (interaction) {
-          newState = applyEffects(newState, interaction.effects);
+          if (interaction.animation?.effectsAfterAnimation) {
+            newState = applyEffects(newState, interaction.effects);
+          }
 
           if (interaction.completesAction &&
               !newState.completedActions.includes(interaction.completesAction)) {

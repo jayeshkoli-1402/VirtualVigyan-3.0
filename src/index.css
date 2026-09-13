@@ -414,6 +414,36 @@ body {
   to { transform: translateX(-50%) translateY(80px); opacity: 0; }
 }
 
+/* ── Interactive Lab Animations: Shake / Swirl & Magnetic Stirrer ── */
+@keyframes flaskShakeSwirl {
+  0% { transform: rotate(0deg) translateY(0); }
+  20% { transform: rotate(2.8deg) translate(2px, -1px); }
+  40% { transform: rotate(-2.5deg) translate(-2px, 1px); }
+  60% { transform: rotate(2deg) translate(1.5px, 0); }
+  80% { transform: rotate(-1.8deg) translate(-1.5px, -0.5px); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+
+@keyframes apparatusSwirl {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  25% { transform: translate(-48%, -51%) rotate(2.2deg); }
+  50% { transform: translate(-50%, -50%) rotate(0deg); }
+  75% { transform: translate(-52%, -49%) rotate(-2.2deg); }
+  100% { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes spinBarRapid {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes dropperHover {
+  0% { transform: translateY(-16px); opacity: 0; }
+  15% { transform: translateY(0); opacity: 1; }
+  85% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-16px); opacity: 0; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .toast {

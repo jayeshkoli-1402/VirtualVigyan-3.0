@@ -29,6 +29,20 @@ export const conductometricTitration: ExperimentConfig = {
   // ── Apparatus ──
   apparatus: [
     {
+      id: 'burette',
+      component: 'Burette',
+      label: '50 mL Calibrated Burette',
+      icon: '🧪',
+      initialProps: { liquidLevel: 0, width: 90, height: 280, label: '50 mL Burette' },
+    },
+    {
+      id: 'naoh-titrant',
+      component: 'ReagentBottle',
+      label: '0.1 N NaOH Titrant',
+      icon: '🧴',
+      initialProps: { liquidColor: 'rgba(224, 242, 254, 0.7)', label: '0.1 N NaOH' },
+    },
+    {
       id: 'conductivity-bridge',
       component: 'ConductivityBridge',
       label: 'Digital Conductivity Bridge',
@@ -50,13 +64,6 @@ export const conductometricTitration: ExperimentConfig = {
       initialProps: { liquidLevel: 0, width: 110, height: 130 },
     },
     {
-      id: 'micro-burette',
-      component: 'Burette',
-      label: 'Micro-Burette (0.1 N NaOH)',
-      icon: '📏',
-      initialProps: { liquidLevel: 0.9, liquidColor: 'rgba(56, 189, 248, 0.65)' },
-    },
-    {
       id: 'hcl-sample',
       component: 'ReagentBottle',
       label: '10 mL Unknown HCl',
@@ -75,18 +82,35 @@ export const conductometricTitration: ExperimentConfig = {
   // ── Drop Zones ──
   dropZones: [
     {
+      id: 'clamp-zone',
+      label: 'Clamp Burette on Retort Stand',
+      accepts: ['burette'],
+      position: { x: 50, y: 30 },
+      size: { width: 22, height: 44 },
+      rejectMessage: 'Mount the 50 mL burette onto the retort stand clamp.',
+    },
+    {
+      id: 'burette-top-zone',
+      label: 'Fill Burette with 0.1 N NaOH',
+      accepts: ['naoh-titrant'],
+      position: { x: 50, y: 12 },
+      size: { width: 18, height: 20 },
+      rejectMessage: 'Pour 0.1 N NaOH titrant into the top of the burette.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'burette' },
+    },
+    {
       id: 'bath-zone',
       label: 'Place Vessel in Water Bath',
       accepts: ['beaker'],
-      position: { x: 50, y: 56 },
+      position: { x: 50, y: 62 },
       size: { width: 24, height: 35 },
-      rejectMessage: 'Immerse the conductivity beaker into the thermostatic water bath.',
+      rejectMessage: 'Immerse the conductivity beaker into the thermostatic water bath beneath the burette.',
     },
     {
       id: 'beaker-zone',
       label: 'Into Conductivity Vessel',
-      accepts: ['hcl-sample', 'cond-water', 'micro-burette'],
-      position: { x: 50, y: 44 },
+      accepts: ['hcl-sample', 'cond-water'],
+      position: { x: 50, y: 50 },
       size: { width: 18, height: 26 },
       rejectMessage: 'Add reagent into the conductivity beaker.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'beaker' },
@@ -96,29 +120,48 @@ export const conductometricTitration: ExperimentConfig = {
   // ── Bench ──
   bench: {
     backgroundElements: [
-      { component: 'RetortStand', position: { x: 50, y: 38 }, scale: 1.0 },
+      {
+        component: 'RetortStand',
+        position: { x: 50, y: 38 },
+        scale: 1.0,
+        props: { label: 'Retort Stand' },
+      },
     ],
   },
 
   // ── Steps ──
   steps: [
     {
+      id: 'setup-stand',
+      label: '1. Mount Burette',
+      instruction: 'Drag the 50 mL Burette from the toolbox and clamp it onto the retort stand.',
+      requiredActions: ['place-burette'],
+      type: 'lab',
+    },
+    {
+      id: 'fill-burette',
+      label: '2. Fill Burette with NaOH',
+      instruction: 'Drag the 0.1 N NaOH bottle to the top of the burette to fill it up to the 0.0 mL mark.',
+      requiredActions: ['fill-burette'],
+      type: 'lab',
+    },
+    {
       id: 'setup-vessel',
-      label: '1. Equilibrate Vessel',
+      label: '3. Equilibrate Vessel',
       instruction: 'Drag the conductivity beaker into the water bath to ensure temperature equilibration at 25°C.',
       requiredActions: ['place-vessel'],
       type: 'lab',
     },
     {
       id: 'add-acid-water',
-      label: '2. Add Acid & Pure Water',
+      label: '4. Add Acid & Pure Water',
       instruction: 'Add 10 mL HCl sample followed by 40 mL conductivity water into the beaker.',
       requiredActions: ['add-diluted-acid'],
       type: 'lab',
     },
     {
       id: 'initial-conductance',
-      label: '3. Record Initial Conductance',
+      label: '5. Record Initial Conductance',
       instruction: 'Conductivity cell is immersed. Observe high initial conductance (~8.40 mS/cm) due to highly mobile H⁺ ions.',
       requiredActions: [],
       advanceMode: 'button',
@@ -126,15 +169,15 @@ export const conductometricTitration: ExperimentConfig = {
     },
     {
       id: 'titrate-naoh',
-      label: '4. Add NaOH Incrementally',
-      instruction: 'Add NaOH in small increments. Conductance steadily decreases to a minimum (2.10 mS/cm) at 10.0 mL, then increases sharply.',
+      label: '6. Add NaOH Incrementally',
+      instruction: 'Click the right wing of the burette cork to add 0.1 N NaOH drop-by-drop. Conductance steadily decreases to a minimum (2.10 mS/cm) at 10.0 mL, then increases sharply.',
       requiredActions: ['titrate-alkali'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'calculation',
-      label: '5. Calculations & Graph',
+      label: '7. Calculations & Graph',
       instruction: 'Calculate the normality and concentration of HCl from the V-curve minimum intersection point.',
       requiredActions: ['calculation-submitted'],
       advanceMode: 'button',
@@ -142,7 +185,7 @@ export const conductometricTitration: ExperimentConfig = {
     },
     {
       id: 'results',
-      label: '6. Final Score & Viva',
+      label: '8. Final Score & Viva',
       instruction: 'Review your laboratory performance and scoring evaluation.',
       requiredActions: [],
       type: 'results',
@@ -151,6 +194,29 @@ export const conductometricTitration: ExperimentConfig = {
 
   // ── Interactions ──
   interactions: [
+    {
+      id: 'inter-place-burette',
+      trigger: { type: 'drop', source: 'burette', target: 'clamp-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'burette', zoneId: 'clamp-zone' },
+        { type: 'setFlag', key: 'burettePlaced', value: true },
+      ],
+      completesAction: 'place-burette',
+    },
+    {
+      id: 'inter-fill-burette',
+      trigger: { type: 'drop', source: 'naoh-titrant', target: 'burette-top-zone' },
+      conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
+      blockMessage: 'Clamp the burette on the retort stand before filling it.',
+      effects: [
+        { type: 'setFlag', key: 'buretteFilled', value: true },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidLevel', value: 1.0 },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.7)' },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'label', value: '0.1 N NaOH Burette' },
+      ],
+      completesAction: 'fill-burette',
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
+    },
     {
       id: 'inter-place-vessel',
       trigger: { type: 'drop', source: 'beaker', target: 'bath-zone' },
@@ -161,134 +227,94 @@ export const conductometricTitration: ExperimentConfig = {
       completesAction: 'place-vessel',
     },
     {
-      id: 'inter-add-acid-water',
+      id: 'inter-add-hcl',
       trigger: { type: 'drop', source: 'hcl-sample', target: 'beaker-zone' },
       conditions: [{ type: 'flag', key: 'vesselPlaced', equals: true }],
       blockMessage: 'Place the vessel in the water bath first.',
       effects: [
-        { type: 'setFlag', key: 'acidDiluted', value: true },
-        { type: 'setVariable', key: 'conductance', value: 8.40 },
-        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.55 },
-        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.6)' },
-        { type: 'setApparatusProp', apparatusId: 'conductivity-bridge', prop: 'variables', value: { conductance: 8.40 } },
+        { type: 'setFlag', key: 'acidAdded', value: true },
+        { type: 'setVariable', key: 'conductance', value: 8.4 },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.25 },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.55)' },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'label', value: '10 mL HCl Sample' },
       ],
       completesAction: 'add-diluted-acid',
-      animation: { type: 'pour', durationMs: 800, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 1800, animatingFlag: 'isPouring' },
     },
     {
-      id: 'inter-titrate-alkali',
-      trigger: { type: 'drop', source: 'micro-burette', target: 'beaker-zone' },
-      conditions: [{ type: 'flag', key: 'acidDiluted', equals: true }],
-      blockMessage: 'Add diluted acid to the conductivity vessel first.',
+      id: 'inter-titrate-cond',
+      trigger: { type: 'drop', source: 'burette', target: 'beaker-zone' },
+      conditions: [{ type: 'flag', key: 'acidAdded', equals: true }],
+      blockMessage: 'Add HCl sample before titrating with NaOH.',
       effects: [
-        { type: 'setFlag', key: 'titrationDone', value: true },
-        { type: 'setVariable', key: 'conductance', value: 2.10 },
-        { type: 'setVariable', key: 'vEquivalence', value: 10.0 },
-        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.75 },
-        { type: 'setApparatusProp', apparatusId: 'conductivity-bridge', prop: 'variables', value: { conductance: 2.10 } },
+        { type: 'setFlag', key: 'vCurveDone', value: true },
+        { type: 'setVariable', key: 'naohVolume', value: 10.0 },
+        { type: 'setVariable', key: 'conductance', value: 2.1 },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.65 },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.35)' },
+        { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'label', value: 'Neutralized (V_min = 10.0 mL NaOH)' },
       ],
       completesAction: 'titrate-alkali',
-      animation: { type: 'color-change', durationMs: 1200, animatingFlag: 'isTitrating' },
+      animation: { type: 'titrate', durationMs: 2400, animatingFlag: 'isTitrating' },
     },
   ],
 
-  // ── Chemistry & Formulas ──
+  // ── Continuous Dynamics Updates ──
+  continuousUpdates: [
+    {
+      condition: { type: 'flag', key: 'isTitrating', equals: true },
+      increments: {
+        naohVolume: 1.5,
+      },
+      onConditionMet: [
+        {
+          condition: { type: 'variable', key: 'naohVolume', op: '>=', value: 10.0 },
+          effects: [
+            { type: 'setVariable', key: 'naohVolume', value: 10.0 },
+            { type: 'setVariable', key: 'conductance', value: 2.1 },
+          ],
+        },
+      ],
+    },
+  ],
+
+  // ── Chemistry Model ──
   chemistry: {
     reaction: 'H⁺ + Cl⁻ + Na⁺ + OH⁻ → H₂O + Na⁺ + Cl⁻',
-    reactionType: 'Conductometric Titration (Ionic Mobility)',
     constants: {
-      vHCl: 10.0,            // mL
-      normalityNaOH: 0.1,    // N
-      vEquivalence: 10.0,    // mL
-      hclMolarMass: 36.5,    // g/mol
+      naohNormality: 0.1,
+      hclVolume: 10.0,
     },
-    formulas: {
-      hclNormality: {
-        label: 'Normality of HCl (N₁)',
-        displayFormula: 'N₁ = (N₂ · V₂) / V₁ = (0.1 · 10.0) / 10.0',
-        computeFn: 'titrationConcentration',
-        inputs: ['titrantMolarity', 'volumeAdded', 'analyteVolume'],
-        unit: 'N',
-      },
-      hclStrength: {
-        label: 'Strength of HCl (g/L)',
-        displayFormula: 'Strength = N₁ · Equivalent Weight = 0.1 · 36.5',
-        computeFn: 'hclStrength',
-        inputs: ['normality'],
-        unit: 'g/L',
-      },
+    colorModel: 'custom',
+    colorModelArgs: {
+      default: 'transparent',
     },
   },
 
-  // ── Calculation ──
-  calculation: {
-    title: 'Conductometric Calculations & Ionic Mobility',
-    instruction: 'From the V-curve intersection minimum (V₂ = 10.0 mL of 0.1 N NaOH for 10.0 mL HCl):',
-    fields: [
-      {
-        id: 'normalityValue',
-        label: '1. Normality of unknown HCl: N₁ = (N₂ · V₂) / V₁  [V₁=10.0 mL, N₂=0.1 N, V₂=10.0 mL]',
-        placeholder: 'e.g. 0.1',
-        unit: 'N',
-        expectedValue: 0.1,
-        tolerance: 0.01,
-        toleranceType: 'absolute',
-      },
-      {
-        id: 'strengthValue',
-        label: '2. Strength of HCl in g/L: Strength = N₁ × 36.5 g/L',
-        placeholder: 'e.g. 3.65',
-        unit: 'g/L',
-        expectedFormulaName: 'hclStrength',
-        tolerance: 0.1,
-        toleranceType: 'absolute',
-      },
-      {
-        id: 'conductanceMinimum',
-        label: '3. What was the measured conductance at the equivalence point minimum (in mS/cm)?',
-        placeholder: 'e.g. 2.10',
-        unit: 'mS/cm',
-        expectedValue: 2.10,
-        tolerance: 0.1,
-        toleranceType: 'absolute',
-      },
-    ],
-  },
-
-  // ── Scoring Rubric ──
+  // ── Scoring ──
   scoring: [
     {
-      name: 'Vessel Setup & Bath Equilibration',
+      name: 'Burette Setup & Filling',
       maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'vesselPlaced', truePoints: 20 },
+      evaluator: { type: 'booleanCheck', flag: 'buretteFilled', truePoints: 20 },
     },
     {
-      name: 'Conductivity Cell & Dilution',
+      name: 'Vessel Equilibration & Prep',
       maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'acidDiluted', truePoints: 20 },
+      evaluator: { type: 'booleanCheck', flag: 'acidAdded', truePoints: 20 },
     },
     {
-      name: 'V-Curve Extrapolation Endpoint',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'titrationDone', truePoints: 20 },
+      name: 'Conductometric V-Curve Detection',
+      maxPoints: 30,
+      evaluator: { type: 'booleanCheck', flag: 'vCurveDone', truePoints: 30 },
     },
     {
-      name: 'Normality Calculation',
-      maxPoints: 20,
+      name: 'Normality & Strength Calculation',
+      maxPoints: 30,
       evaluator: {
         type: 'calculationCorrect',
-        fieldId: 'normalityValue',
-        correctPoints: 20,
-        incorrectPoints: 0,
-      },
-    },
-    {
-      name: 'Strength & Conductance Minimum',
-      maxPoints: 20,
-      evaluator: {
-        type: 'calculationCorrect',
-        fieldId: 'strengthValue',
-        correctPoints: 20,
+        fieldId: 'hclNormality',
+        correctPoints: 30,
         incorrectPoints: 0,
       },
     },
@@ -297,26 +323,104 @@ export const conductometricTitration: ExperimentConfig = {
   // ── Validation ──
   validation: [
     {
-      id: 'titrate-without-acid',
-      trigger: 'drop:micro-burette→beaker-zone',
-      condition: { type: 'flag', key: 'acidDiluted', equals: false },
-      message: 'Prepare and dilute the acid solution before adding alkali.',
+      id: 'fill-before-clamp',
+      trigger: 'drop:naoh-titrant→burette-top-zone',
+      condition: { type: 'flag', key: 'burettePlaced', equals: false },
+      message: 'Clamp the burette on the retort stand before filling it with NaOH.',
       blocking: true,
     },
   ],
 
   // ── Initial State ──
   initialVariables: {
-    conductance: 8.40,
-    normality: 0.1,
-    titrantMolarity: 0.1,
-    volumeAdded: 10.0,
-    analyteVolume: 10.0,
-    vEquivalence: 10.0,
+    conductance: 8.4,
+    naohVolume: 0,
+    hclVolume: 10,
+    naohNormality: 0.1,
+    hclNormality: 0,
+    hclStrength: 0,
+    stopcockOpen: 0,
   },
   initialFlags: {
+    burettePlaced: false,
+    buretteFilled: false,
     vesselPlaced: false,
-    acidDiluted: false,
-    titrationDone: false,
+    acidAdded: false,
+    vCurveDone: false,
+  },
+
+  // ── Calculation ──
+  calculation: {
+    title: 'Conductometric Titration Calculation',
+    instruction: 'N₁V₁ = N₂V₂ → N_HCl = (V_NaOH × N_NaOH) / V_HCl | Strength = N × 36.46 g/L',
+    fields: [
+      {
+        id: 'hclVolume',
+        label: 'Volume of HCl Pipetted (V₁ in mL)',
+        unit: 'mL',
+        expectedValue: 10.0,
+        tolerance: 0.1,
+      },
+      {
+        id: 'naohNormality',
+        label: 'Normality of NaOH Titrant (N₂)',
+        unit: 'N',
+        expectedValue: 0.1,
+        tolerance: 0.01,
+      },
+      {
+        id: 'naohVolume',
+        label: 'Equivalence Volume from V-Curve (V₂ in mL)',
+        unit: 'mL',
+        expectedValue: 10.0,
+        tolerance: 0.2,
+      },
+      {
+        id: 'hclNormality',
+        label: 'Calculated Normality of Unknown HCl (N)',
+        unit: 'N',
+        expectedValue: 0.1,
+        tolerance: 0.01,
+      },
+      {
+        id: 'hclStrength',
+        label: 'Strength of HCl (g/L)',
+        unit: 'g/L',
+        expectedValue: 3.646,
+        tolerance: 0.1,
+      },
+    ],
+  },
+
+  // ── Viva Questions ──
+  viva: {
+    questions: [
+      {
+        id: 'q1',
+        question: 'Why does electrical conductance initially decrease during titration of strong HCl with strong NaOH?',
+        options: [
+          'Highly mobile fast H⁺ ions (ionic mobility = 350 S·cm²/mol) are progressively replaced by slower Na⁺ ions (50 S·cm²/mol).',
+          'Water becomes non-conductive when salt forms.',
+          'The solution becomes colder due to an endothermic reaction.',
+          'Hydroxide ions destroy conductivity electrodes.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Protons (H⁺) have exceptionally high Grotthuss mobility. As NaOH is added, H⁺ reacts to form unionized water, and is replaced by slower Na⁺ ions, reducing conductance to a minimum.',
+      },
+      {
+        id: 'q2',
+        question: 'Why does conductance increase steeply after the equivalence point is reached?',
+        options: [
+          'Excess added OH⁻ ions (ionic mobility = 198 S·cm²/mol) accumulate unneutralized in the solution.',
+          'The NaCl salt crystallizes out.',
+          'The temperature rises above 100°C.',
+          'Conductivity cells generate voltage.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Post-equivalence, every drop of NaOH introduces free Na⁺ and highly mobile OH⁻ ions with no acid left to neutralize them, driving a sharp upward conductance slope.',
+      },
+    ],
   },
 };

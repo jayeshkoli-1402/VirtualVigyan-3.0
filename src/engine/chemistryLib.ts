@@ -212,6 +212,26 @@ function potassiumChromate(
   return 'rgba(250, 204, 21, 0.85)'; // Yellow K₂CrO₄
 }
 
+/**
+ * Oil Acid Value color model:
+ * Golden yellow oil -> lighter amber with neutral alcohol -> faint permanent pink at 0.1 N KOH endpoint.
+ */
+function oilAcidValue(
+  _variables: Record<string, number>,
+  flags: Record<string, boolean>,
+): string {
+  if (flags['titrationDone']) {
+    return 'rgba(244, 114, 182, 0.88)'; // Faint persistent rose pink endpoint
+  }
+  if (flags['alcoholAdded']) {
+    return 'rgba(245, 158, 11, 0.72)'; // Warm translucent amber blend
+  }
+  if (flags['oilAdded']) {
+    return 'rgba(234, 179, 8, 0.88)'; // Golden vegetable oil
+  }
+  return 'rgba(224, 242, 254, 0.35)';
+}
+
 // ── Color Model Registry ─────────────────────────────────────────
 
 export const COLOR_MODELS: Record<string, ColorModelFn> = {
@@ -224,6 +244,7 @@ export const COLOR_MODELS: Record<string, ColorModelFn> = {
   ebtIndicator,
   starchIodine,
   potassiumChromate,
+  oilAcidValue,
 };
 
 
@@ -315,6 +336,74 @@ function phFromConcentration(variables: Record<string, number>): number {
   return -Math.log10(hConc);
 }
 
+/**
+ * Strong Acid + Strong Base Titration Curve
+ * Computes pH based on volume of titrant added.
+ * Expects variables: { volumeAdded, analyteVolume, titrantMolarity, analyteMolarity }
+ */
+function phTitrationCurve(variables: Record<string, number>): number {
+  const vAdded = variables['volumeAdded'] ?? 0;
+  const vAnalyte = variables['analyteVolume'] ?? 20;
+  const mTitrant = variables['titrantMolarity'] ?? 0.1;
+  const mAnalyte = variables['analyteMolarity'] ?? 0.1;
+
+  const nInitialH = (vAnalyte * mAnalyte) / 1000;
+  const nAddedOH = (vAdded * mTitrant) / 1000;
+  const totalVolume = (vAnalyte + vAdded) / 1000;
+
+  if (nAddedOH < nInitialH) {
+    // Before equivalence
+    const hConc = (nInitialH - nAddedOH) / totalVolume;
+    return -Math.log10(Math.max(1e-12, hConc));
+  } else if (Math.abs(nAddedOH - nInitialH) < 1e-9) {
+    // Equivalence point
+    return 7.0;
+  } else {
+    // After equivalence
+    const ohConc = (nAddedOH - nInitialH) / totalVolume;
+    const pOH = -Math.log10(Math.max(1e-12, ohConc));
+    return 14 - pOH;
+  }
+}
+
+/**
+ * Conductometric Titration Curve (Strong Acid + Strong Base)
+ * G = Σ (c_i * λ_i) / 1000  (mS/cm approximation)
+ * λ_H = 350, λ_OH = 199, λ_Na = 50, λ_Cl = 76
+ */
+function conductometricCurve(variables: Record<string, number>): number {
+  const vAdded = variables['volumeAdded'] ?? 0;
+  const vAnalyte = variables['analyteVolume'] ?? 10;
+  const mTitrant = variables['titrantMolarity'] ?? 0.1;
+  const mAnalyte = variables['analyteMolarity'] ?? 0.1;
+  const vH2O = variables['waterVolume'] ?? 40; // dilution water
+
+  const totalVolML = vAnalyte + vAdded + vH2O;
+  const totalVolL = totalVolML / 1000;
+
+  const nInitialH = (vAnalyte * mAnalyte) / 1000;
+  const nInitialCl = nInitialH;
+  const nAddedNa = (vAdded * mTitrant) / 1000;
+  const nAddedOH = nAddedNa;
+
+  let g = 0;
+  // Cl- is always present
+  g += (nInitialCl / totalVolL) * 76.3;
+  // Na+ is always present from titrant
+  g += (nAddedNa / totalVolL) * 50.1;
+
+  if (nAddedOH < nInitialH) {
+    // Before equivalence: H+ remaining
+    g += ((nInitialH - nAddedOH) / totalVolL) * 349.8;
+  } else {
+    // After equivalence: OH- excess
+    g += ((nAddedOH - nInitialH) / totalVolL) * 198.3;
+  }
+
+  // Adjust scale to match target mS/cm ranges (approx factor)
+  return Math.round(g * 0.1 * 100) / 100;
+}
+
 /** Molar mass of Hydrogen gas H2 (2.016 g/mol) */
 function hydrogenMolarMass(variables?: Record<string, number>): number {
   return variables?.['h2MolarMass'] ?? 2.016;
@@ -400,6 +489,8 @@ export const COMPUTE_FUNCTIONS: Record<string, ComputeFn> = {
   percentYield,
   massFromDensityVolume,
   phFromConcentration,
+  phTitrationCurve,
+  conductometricCurve,
   hydrogenMolarMass,
   viscosityOstwald,
   hclStrength,

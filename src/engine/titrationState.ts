@@ -93,6 +93,7 @@ export type TitrationState = {
   isPipetteFilling: boolean;
   isPipetteDispensing: boolean;
   isPouring: boolean;
+  isAddingIndicator: boolean;
   // Mistakes
   mistakes: string[];
 };
@@ -116,6 +117,7 @@ export const initialState: TitrationState = {
   isPipetteFilling: false,
   isPipetteDispensing: false,
   isPouring: false,
+  isAddingIndicator: false,
   mistakes: [],
 };
 
@@ -161,6 +163,8 @@ export type TitrationAction =
   | { type: 'DISPENSE_PIPETTE_END' }
   | { type: 'FILL_BURETTE_START' }
   | { type: 'FILL_BURETTE_END' }
+  | { type: 'ADD_INDICATOR_START' }
+  | { type: 'ADD_INDICATOR_END' }
   | { type: 'ADD_INDICATOR' }
   | { type: 'SET_STOPCOCK'; payload: { open: number } }
   | { type: 'TICK_FLOW'; payload: { deltaMs: number } }
@@ -229,6 +233,17 @@ export function titrationReducer(
         isPouring: false,
         buretteFilled: true,
         step: Step.ADD_INDICATOR,
+      };
+
+    case 'ADD_INDICATOR_START':
+      return { ...state, isAddingIndicator: true };
+
+    case 'ADD_INDICATOR_END':
+      return {
+        ...state,
+        isAddingIndicator: false,
+        hasIndicator: true,
+        step: Step.TITRATING,
       };
 
     case 'ADD_INDICATOR':

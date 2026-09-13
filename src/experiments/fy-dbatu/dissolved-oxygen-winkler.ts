@@ -33,6 +33,20 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
   // ── Apparatus ──
   apparatus: [
     {
+      id: 'burette',
+      component: 'Burette',
+      label: '50 mL Calibrated Burette',
+      icon: '🧪',
+      initialProps: { liquidLevel: 0, width: 90, height: 280, label: '50 mL Burette' },
+    },
+    {
+      id: 'thiosulphate-titrant',
+      component: 'ReagentBottle',
+      label: 'N/50 Na₂S₂O₃ Titrant',
+      icon: '🧴',
+      initialProps: { liquidColor: 'rgba(224, 242, 254, 0.7)', label: 'N/50 Na₂S₂O₃' },
+    },
+    {
       id: 'bod-bottle',
       component: 'BODBottle',
       label: '300 mL BOD Bottle',
@@ -45,13 +59,6 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       label: '250 mL Titration Flask',
       icon: '⚗️',
       initialProps: { liquidLevel: 0, width: 120, height: 140 },
-    },
-    {
-      id: 'burette',
-      component: 'Burette',
-      label: 'Burette (N/50 Na₂S₂O₃)',
-      icon: '📏',
-      initialProps: { liquidLevel: 0.95, liquidColor: 'rgba(224, 242, 254, 0.4)' },
     },
     {
       id: 'water-sample',
@@ -93,10 +100,27 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
   // ── Drop Zones ──
   dropZones: [
     {
+      id: 'clamp-zone',
+      label: 'Clamp Burette on Retort Stand',
+      accepts: ['burette'],
+      position: { x: 65, y: 32 },
+      size: { width: 22, height: 44 },
+      rejectMessage: 'Mount the 50 mL burette onto the retort stand clamp.',
+    },
+    {
+      id: 'burette-top-zone',
+      label: 'Fill Burette with N/50 Na₂S₂O₃',
+      accepts: ['thiosulphate-titrant'],
+      position: { x: 65, y: 14 },
+      size: { width: 18, height: 20 },
+      rejectMessage: 'Pour N/50 Na₂S₂O₃ titrant into the top of the burette.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'burette' },
+    },
+    {
       id: 'bod-bench-zone',
       label: 'Place BOD Bottle on Bench',
       accepts: ['bod-bottle'],
-      position: { x: 38, y: 58 },
+      position: { x: 32, y: 58 },
       size: { width: 22, height: 38 },
       rejectMessage: 'Place the BOD bottle on the lab bench.',
     },
@@ -104,7 +128,7 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       id: 'bod-mouth-zone',
       label: 'Into BOD Bottle',
       accepts: ['water-sample', 'mnso4-reagent', 'alkaline-ki', 'conc-h2so4'],
-      position: { x: 38, y: 44 },
+      position: { x: 32, y: 44 },
       size: { width: 16, height: 26 },
       rejectMessage: 'Add reagent into the BOD bottle below surface.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'bod-bottle' },
@@ -113,17 +137,17 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       id: 'flask-bench-zone',
       label: 'Place Titration Flask',
       accepts: ['conical-flask'],
-      position: { x: 65, y: 62 },
+      position: { x: 65, y: 64 },
       size: { width: 22, height: 34 },
       rejectMessage: 'Place the conical flask under the burette stand.',
     },
     {
       id: 'flask-mouth-zone',
       label: 'Into Titration Flask',
-      accepts: ['starch-indicator', 'burette'],
+      accepts: ['starch-indicator'],
       position: { x: 65, y: 50 },
       size: { width: 18, height: 26 },
-      rejectMessage: 'Add indicator or titrate into the conical flask.',
+      rejectMessage: 'Add indicator into the conical flask.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'conical-flask' },
     },
   ],
@@ -131,68 +155,80 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
   // ── Bench ──
   bench: {
     backgroundElements: [
-      { component: 'RetortStand', position: { x: 65, y: 45 }, scale: 1.1 },
+      {
+        component: 'RetortStand',
+        position: { x: 65, y: 38 },
+        scale: 1.15,
+        props: { label: 'Retort Stand' },
+      },
     ],
   },
 
   // ── Steps ──
   steps: [
     {
+      id: 'setup-stand',
+      label: '1. Mount Burette',
+      instruction: 'Drag the 50 mL Burette from the toolbox and clamp it onto the retort stand.',
+      requiredActions: ['place-burette'],
+      type: 'lab',
+    },
+    {
+      id: 'fill-burette',
+      label: '2. Fill Burette with Thiosulphate',
+      instruction: 'Drag the N/50 Na₂S₂O₃ bottle to the top of the burette to fill it up to the 0.0 mL mark.',
+      requiredActions: ['fill-burette'],
+      type: 'lab',
+    },
+    {
       id: 'setup',
-      label: '1. Place BOD Bottle',
+      label: '3. Place BOD Bottle',
       instruction: 'Place the 300 mL BOD incubation bottle on the laboratory bench.',
       requiredActions: ['place-bod'],
       type: 'lab',
     },
     {
       id: 'fill-sample',
-      label: '2. Fill 250 mL Sample (No Bubbles)',
+      label: '4. Fill 250 mL Sample (No Bubbles)',
       instruction: 'Carefully fill 250 mL water sample into the BOD bottle. Avoid trapping any air bubbles.',
       requiredActions: ['fill-sample'],
       type: 'lab',
     },
     {
       id: 'oxygen-fixation',
-      label: '3. Add MnSO₄ & Alkaline KI',
+      label: '5. Add MnSO₄ & Alkaline KI',
       instruction: 'Add 2 mL MnSO₄ and 2 mL alkaline KI. Stopper and shake. A brown precipitate of basic manganic oxide forms.',
       requiredActions: ['fix-oxygen'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
-      id: 'acidify-iodine',
-      label: '4. Acidify to Liberate I₂',
-      instruction: 'Add 2 mL conc. H₂SO₄. Precipitate dissolves, releasing free iodine with a deep golden-brown color. Click Continue.',
-      requiredActions: ['liberate-iodine'],
+      id: 'acidification',
+      label: '6. Acidify with Conc. H₂SO₄',
+      instruction: 'Add 2 mL concentrated H₂SO₄. The brown precipitate dissolves completely, liberating free golden-brown iodine.',
+      requiredActions: ['acidify'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
-      id: 'titrate-to-yellow',
-      label: '5. Transfer & Titrate to Pale Yellow',
-      instruction: 'Place conical flask on right. Titrate iodine solution with N/50 thiosulphate until it turns pale straw-yellow.',
-      requiredActions: ['titrate-yellow'],
-      type: 'lab',
-    },
-    {
-      id: 'starch-endpoint',
-      label: '6. Add Starch & Complete Titration',
-      instruction: 'Add starch indicator (turns deep midnight blue). Titrate dropwise until blue disappears at V₂ = 6.5 mL.',
-      requiredActions: ['starch-endpoint'],
+      id: 'transfer-titrate',
+      label: '7. Transfer & Titrate with Thiosulphate',
+      instruction: 'Place the conical flask under the burette. Transfer 100 mL of liberated I₂ solution. Click the right wing of the burette cork to titrate drop-by-drop with N/50 Na₂S₂O₃ until pale straw yellow. Add starch (deep blue) and continue to colorless endpoint at V₂ = 7.8 mL.',
+      requiredActions: ['titrate-iodine'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'calculation',
-      label: '7. Calculations & Viva',
-      instruction: 'Calculate the dissolved oxygen content (ppm) and answer conceptual questions.',
+      label: '8. Calculations & Viva',
+      instruction: 'Calculate the dissolved oxygen (DO) concentration in ppm (mg/L).',
       requiredActions: ['calculation-submitted'],
       advanceMode: 'button',
       type: 'calculation',
     },
     {
       id: 'results',
-      label: '8. Score Breakdown',
+      label: '9. Score Breakdown',
       instruction: 'Review your laboratory precision and scoring evaluation.',
       requiredActions: [],
       type: 'results',
@@ -201,6 +237,29 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
 
   // ── Interactions ──
   interactions: [
+    {
+      id: 'inter-place-burette',
+      trigger: { type: 'drop', source: 'burette', target: 'clamp-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'burette', zoneId: 'clamp-zone' },
+        { type: 'setFlag', key: 'burettePlaced', value: true },
+      ],
+      completesAction: 'place-burette',
+    },
+    {
+      id: 'inter-fill-burette',
+      trigger: { type: 'drop', source: 'thiosulphate-titrant', target: 'burette-top-zone' },
+      conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
+      blockMessage: 'Clamp the burette on the retort stand before filling it.',
+      effects: [
+        { type: 'setFlag', key: 'buretteFilled', value: true },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidLevel', value: 1.0 },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.7)' },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'label', value: 'N/50 Na₂S₂O₃ Burette' },
+      ],
+      completesAction: 'fill-burette',
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
+    },
     {
       id: 'inter-place-bod',
       trigger: { type: 'drop', source: 'bod-bottle', target: 'bod-bench-zone' },
@@ -214,150 +273,124 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       id: 'inter-fill-sample',
       trigger: { type: 'drop', source: 'water-sample', target: 'bod-mouth-zone' },
       conditions: [{ type: 'flag', key: 'bodPlaced', equals: true }],
-      blockMessage: 'Place the BOD bottle on the bench first.',
+      blockMessage: 'Place the BOD bottle on the workbench first.',
       effects: [
         { type: 'setFlag', key: 'sampleFilled', value: true },
         { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidLevel', value: 0.85 },
         { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.45)' },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'label', value: '250 mL Sample (Bubble-Free)' },
       ],
       completesAction: 'fill-sample',
-      animation: { type: 'pour', durationMs: 800, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouring' },
     },
     {
       id: 'inter-fix-oxygen',
       trigger: { type: 'drop', source: 'alkaline-ki', target: 'bod-mouth-zone' },
       conditions: [{ type: 'flag', key: 'sampleFilled', equals: true }],
-      blockMessage: 'Fill the BOD bottle with water sample first.',
+      blockMessage: 'Fill the water sample into the BOD bottle first.',
       effects: [
-        { type: 'setFlag', key: 'brownPrecipitateFormed', value: true },
-        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidColor', value: 'rgba(180, 83, 9, 0.88)' },
-        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'label', value: 'Brown MnO(OH)₂ Precipitate' },
+        { type: 'setFlag', key: 'oxygenFixed', value: true },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidLevel', value: 0.90 },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidColor', value: 'rgba(180, 83, 9, 0.92)' },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'label', value: 'Brown Precipitate [MnO(OH)₂]' },
       ],
       completesAction: 'fix-oxygen',
-      animation: { type: 'color-change', durationMs: 1000, animatingFlag: 'isFixing' },
+      animation: { type: 'drip', durationMs: 2200, animatingFlag: 'isPouring' },
     },
     {
-      id: 'inter-liberate-iodine',
+      id: 'inter-acidify',
       trigger: { type: 'drop', source: 'conc-h2so4', target: 'bod-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'brownPrecipitateFormed', equals: true }],
-      blockMessage: 'Add MnSO₄ and alkaline KI to precipitate basic oxide first.',
+      conditions: [{ type: 'flag', key: 'oxygenFixed', equals: true }],
+      blockMessage: 'Add MnSO₄ and alkaline KI before acidifying.',
       effects: [
-        { type: 'setFlag', key: 'iodineLiberated', value: true },
-        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidColor', value: 'rgba(120, 53, 15, 0.92)' },
-        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'label', value: 'Golden-Brown I₂ Solution' },
+        { type: 'setFlag', key: 'acidified', value: true },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidLevel', value: 0.94 },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'liquidColor', value: 'rgba(217, 119, 6, 0.88)' },
+        { type: 'setApparatusProp', apparatusId: 'bod-bottle', prop: 'label', value: 'Clear Golden-Brown (Liberated I₂)' },
       ],
-      completesAction: 'liberate-iodine',
-      animation: { type: 'color-change', durationMs: 1000, animatingFlag: 'isDissolving' },
+      completesAction: 'acidify',
+      animation: { type: 'drip', durationMs: 2000, animatingFlag: 'isAddingIndicator' },
     },
     {
       id: 'inter-place-flask',
       trigger: { type: 'drop', source: 'conical-flask', target: 'flask-bench-zone' },
-      conditions: [{ type: 'flag', key: 'iodineLiberated', equals: true }],
       effects: [
         { type: 'placeApparatus', apparatusId: 'conical-flask', zoneId: 'flask-bench-zone' },
-        { type: 'setFlag', key: 'flaskReady', value: true },
+        { type: 'setFlag', key: 'flaskPlaced', value: true },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.45 },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(253, 224, 71, 0.85)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Pale Straw-Yellow I₂' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(217, 119, 6, 0.88)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: '100 mL Liberated I₂ Aliquot' },
       ],
-      completesAction: 'titrate-yellow',
+      completesAction: 'place-flask',
     },
     {
-      id: 'inter-starch-end',
-      trigger: { type: 'drop', source: 'burette', target: 'flask-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'flaskReady', equals: true }],
-      blockMessage: 'Transfer aliquot to titration flask first.',
+      id: 'inter-add-starch',
+      trigger: { type: 'drop', source: 'starch-indicator', target: 'flask-mouth-zone' },
+      conditions: [{ type: 'flag', key: 'flaskPlaced', equals: true }],
+      blockMessage: 'Place the titration flask beneath the burette first.',
       effects: [
-        { type: 'setFlag', key: 'iodineTitrated', value: true },
-        { type: 'setVariable', key: 'thiosulphateVolume', value: 6.5 },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.65 },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.25)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Colorless Endpoint (V₂ = 6.5 mL)' },
+        { type: 'setFlag', key: 'starchAdded', value: true },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.50 },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(30, 58, 138, 0.95)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Deep Blue [I₂-Starch Complex]' },
       ],
-      completesAction: 'starch-endpoint',
-      animation: { type: 'color-change', durationMs: 1200, animatingFlag: 'isTitrating' },
+      completesAction: 'add-starch',
+      animation: { type: 'drip', durationMs: 2000, animatingFlag: 'isAddingIndicator' },
+    },
+    {
+      id: 'inter-titrate-do',
+      trigger: { type: 'drop', source: 'burette', target: 'flask-mouth-zone' },
+      conditions: [{ type: 'flag', key: 'flaskPlaced', equals: true }],
+      blockMessage: 'Transfer the acidified I₂ solution into the conical flask first.',
+      effects: [
+        { type: 'setFlag', key: 'endpointColorless', value: true },
+        { type: 'setVariable', key: 'thiosulphateVolume', value: 7.8 },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.62 },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.45)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Colorless Endpoint (V₂ = 7.8 mL)' },
+      ],
+      completesAction: 'titrate-iodine',
+      animation: { type: 'titrate', durationMs: 2400, animatingFlag: 'isTitrating' },
     },
   ],
 
-  // ── Chemistry & Formulas ──
+  // ── Chemistry Model ──
   chemistry: {
-    reaction: '2Mn(OH)₂ + O₂ → 2MnO(OH)₂ ; MnO(OH)₂ + 2I⁻ + 4H⁺ → Mn²⁺ + I₂ + 3H₂O ; I₂ + 2S₂O₃²⁻ → S₄O₆²⁻ + 2I⁻',
-    reactionType: "Winkler Iodometric Fixation & Titration",
+    reaction: '2Mn(OH)₂ + O₂ → 2MnO(OH)₂ | I₂ + 2S₂O₃²⁻ → S₄O₆²⁻ + 2I⁻',
     constants: {
-      factor: 0.8,              // (8 * 1000 * N) / V_sample for 100 mL aliquot of N/50 thiosulphate
-      thiosulphateVolume: 6.5,  // mL
+      thiosulphateNormality: 0.02,
+      sampleAliquot: 100.0,
     },
-    formulas: {
-      dissolvedOxygen: {
-        label: 'Dissolved Oxygen DO (ppm or mg/L)',
-        displayFormula: 'DO = 0.8 · V₂ = 0.8 · 6.5',
-        computeFn: 'dissolvedOxygenWinkler',
-        inputs: ['thiosulphateVolume'],
-        unit: 'ppm',
-      },
+    colorModel: 'custom',
+    colorModelArgs: {
+      default: 'transparent',
     },
   },
 
-  // ── Calculation ──
-  calculation: {
-    title: "Dissolved Oxygen (DO) Calculations",
-    instruction: "From the sodium thiosulphate titre reading (V₂ = 6.5 mL of N/50 thiosulphate):",
-    fields: [
-      {
-        id: 'doResult',
-        label: '1. Dissolved Oxygen content in water: DO = 0.8 × V₂ (ppm)  [Given V₂ = 6.5 mL]',
-        placeholder: 'e.g. 5.20',
-        unit: 'ppm',
-        expectedFormulaName: 'dissolvedOxygenWinkler',
-        tolerance: 0.1,
-        toleranceType: 'absolute',
-      },
-      {
-        id: 'airBubbleEffect',
-        label: '2. How does an air bubble trapped in the BOD bottle affect the measured DO? (Enter 1 for Artificially Increases, 2 for Decreases)',
-        placeholder: 'Enter 1 or 2',
-        unit: 'Effect',
-        expectedValue: 1.0,
-        tolerance: 0,
-        toleranceType: 'absolute',
-      },
-    ],
-  },
-
-  // ── Scoring Rubric ──
+  // ── Scoring ──
   scoring: [
     {
-      name: 'Bubble-Free Filling & Fixation',
+      name: 'Burette Setup & Filling',
       maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'sampleFilled', truePoints: 20 },
+      evaluator: { type: 'booleanCheck', flag: 'buretteFilled', truePoints: 20 },
     },
     {
-      name: 'Brown Precipitate Formation',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'brownPrecipitateFormed', truePoints: 20 },
-    },
-    {
-      name: 'Starch-Iodine Colorless Endpoint',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'iodineTitrated', truePoints: 20 },
-    },
-    {
-      name: 'Dissolved Oxygen Calculation (ppm)',
+      name: 'Oxygen Fixation & Acidification',
       maxPoints: 25,
-      evaluator: {
-        type: 'calculationCorrect',
-        fieldId: 'doResult',
-        correctPoints: 25,
-        incorrectPoints: 0,
-      },
+      evaluator: { type: 'booleanCheck', flag: 'acidified', truePoints: 25 },
     },
     {
-      name: 'Air Bubble Error & Viva Theory',
-      maxPoints: 15,
+      name: 'Iodometric Endpoint (Colorless)',
+      maxPoints: 25,
+      evaluator: { type: 'booleanCheck', flag: 'endpointColorless', truePoints: 25 },
+    },
+    {
+      name: 'Dissolved Oxygen Calculation',
+      maxPoints: 30,
       evaluator: {
         type: 'calculationCorrect',
-        fieldId: 'airBubbleEffect',
-        correctPoints: 15,
+        fieldId: 'dissolvedOxygen',
+        correctPoints: 30,
         incorrectPoints: 0,
       },
     },
@@ -366,24 +399,98 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
   // ── Validation ──
   validation: [
     {
-      id: 'fix-without-filling',
-      trigger: 'drop:alkaline-ki→bod-mouth-zone',
-      condition: { type: 'flag', key: 'sampleFilled', equals: false },
-      message: 'Fill the BOD bottle with water sample before adding reagents.',
+      id: 'fill-before-clamp',
+      trigger: 'drop:thiosulphate-titrant→burette-top-zone',
+      condition: { type: 'flag', key: 'burettePlaced', equals: false },
+      message: 'Clamp the burette on the retort stand before filling it with Na₂S₂O₃.',
       blocking: true,
     },
   ],
 
   // ── Initial State ──
   initialVariables: {
-    thiosulphateVolume: 6.5,
+    thiosulphateNormality: 0.02,
+    thiosulphateVolume: 0,
+    sampleAliquot: 100,
+    dissolvedOxygen: 0,
+    stopcockOpen: 0,
   },
   initialFlags: {
+    burettePlaced: false,
+    buretteFilled: false,
     bodPlaced: false,
     sampleFilled: false,
-    brownPrecipitateFormed: false,
-    iodineLiberated: false,
-    flaskReady: false,
-    iodineTitrated: false,
+    oxygenFixed: false,
+    acidified: false,
+    flaskPlaced: false,
+    starchAdded: false,
+    endpointColorless: false,
+  },
+
+  // ── Calculation ──
+  calculation: {
+    title: 'Dissolved Oxygen Calculation',
+    instruction: 'DO (mg/L or ppm) = (V × N × 8 × 1000) / V_sample = (V₂ × 0.02 × 8000) / 100 = 0.8 × V₂',
+    fields: [
+      {
+        id: 'thiosulphateVolume',
+        label: 'Titre of N/50 Na₂S₂O₃ (V₂ in mL)',
+        unit: 'mL',
+        expectedValue: 7.8,
+        tolerance: 0.2,
+      },
+      {
+        id: 'dissolvedOxygen',
+        label: 'Dissolved Oxygen Concentration (ppm or mg/L)',
+        unit: 'mg/L',
+        expectedValue: 6.24,
+        tolerance: 0.2,
+      },
+    ],
+  },
+
+  // ── Viva Questions ──
+  viva: {
+    questions: [
+      {
+        id: 'q1',
+        question: "What is the primary role of MnSO₄ in Winkler's DO determination method?",
+        options: [
+          'Mn²⁺ is oxidized by dissolved O₂ in alkaline medium to Mn⁴⁺ basic oxide, chemically fixing unstable dissolved oxygen.',
+          'It acts as a primary standard reducing agent.',
+          'It changes color from red to blue at the endpoint.',
+          'It prevents iron and chloride interference.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Under alkaline conditions, Mn(OH)₂ rapidly reacts with dissolved oxygen to form brown insoluble MnO(OH)₂ (manganic basic oxide), preventing loss of gaseous oxygen.',
+      },
+      {
+        id: 'q2',
+        question: 'Why should starch indicator only be added near the end of iodometric titration (when color is pale yellow)?',
+        options: [
+          'At high I₂ concentration, starch forms an irreversibly adsorbed, slow-reacting blue complex that releases iodine sluggishly, leading to titration error.',
+          'Starch decomposes quickly in acidic solution.',
+          'Starch precipitates out of solution in water.',
+          'Starch reacts directly with sodium thiosulphate.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Starch binds tightly to high concentrations of I₂, making the complex decompose very slowly upon addition of thiosulphate. Adding it near the end ensures a sharp, reversible endpoint.',
+      },
+      {
+        id: 'q3',
+        question: 'What is the healthy ecological range of Dissolved Oxygen (DO) in natural river waters supporting aquatic life?',
+        options: [
+          '4.0 to 8.0 mg/L (ppm).',
+          '0.5 to 1.5 mg/L.',
+          '20.0 to 35.0 mg/L.',
+          '0.0 to 0.5 mg/L.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Good quality natural surface water typically contains 6.0–8.5 mg/L DO. Values below 4.0 mg/L cause severe fish mortality and indicate high organic pollution.',
+      },
+    ],
   },
 };

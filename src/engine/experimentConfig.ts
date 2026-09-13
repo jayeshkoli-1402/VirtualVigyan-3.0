@@ -78,6 +78,17 @@ export type ExperimentConfig = {
   /** Calculation form shown after experiment actions are complete */
   calculation?: CalculationConfig;
 
+  /** Viva questions for post-lab testing */
+  viva?: {
+    questions: Array<{
+      id: string;
+      question: string;
+      options: string[];
+      correctIndex: number;
+      explanation: string;
+    }>;
+  };
+
   // ── Grading ──
 
   /** Scoring rubric */
@@ -85,6 +96,9 @@ export type ExperimentConfig = {
 
   /** Validation rules for mistake detection */
   validation: ValidationRuleConfig[];
+
+  /** Continuous updates (e.g., timers, flow animations) applied on every TICK */
+  continuousUpdates?: ContinuousUpdateConfig[];
 
   // ── Initial State ──
 
@@ -286,7 +300,7 @@ export type InteractionEffect =
 
 export type AnimationConfig = {
   /** Animation type from the built-in library */
-  type: 'pour' | 'fill' | 'dispense' | 'drip' | 'mix' | 'heat' | 'bubble' | 'precipitate' | 'color-change' | 'settle';
+  type: 'pour' | 'fill' | 'dispense' | 'drip' | 'titrate' | 'suction' | 'mix' | 'heat' | 'bubble' | 'precipitate' | 'color-change' | 'settle';
 
   /** Duration in milliseconds */
   durationMs: number;
@@ -516,6 +530,32 @@ export type ValidationRuleConfig = {
   blocking: boolean;
 };
 
+// ── Continuous Updates ──────────────────────────────────────────
+
+export type ContinuousUpdateConfig = {
+  /** Condition that must be true for this update to apply */
+  condition: ConditionConfig;
+
+  /**
+   * Variables to increment on each tick.
+   * Value is 'amount per second'.
+   */
+  increments?: Record<string, number>;
+
+  /**
+   * Actions to fire when a condition is met during a tick
+   */
+  onConditionMet?: Array<{
+    condition: ConditionConfig;
+    effects: InteractionEffect[];
+  }>;
+
+  /**
+   * Variables to update via custom logic on each tick.
+   */
+  customFn?: string;
+};
+
 
 // ── Experiment State (runtime) ──────────────────────────────────
 
@@ -573,6 +613,7 @@ export type ExperimentAction =
   | { type: 'CLICK_ELEMENT'; payload: { elementId: string } }
   | { type: 'SET_STOPCOCK'; payload: { apparatusId: string; openAmount: number } }
   | { type: 'TICK_FLOW'; payload: { deltaMs: number } }
+  | { type: 'TICK'; payload: { deltaMs: number } }
   | { type: 'ADVANCE_STEP' }
   | { type: 'SUBMIT_CALCULATION'; payload: { answers: Record<string, number> } }
   | { type: 'ANIMATION_COMPLETE'; payload: { animationFlag: string; interactionId: string } }

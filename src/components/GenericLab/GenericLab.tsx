@@ -66,6 +66,20 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
     dispatch({ type: 'START_EXPERIMENT' });
   }, []);
 
+  // Continuous TICK for timers and flow animations
+  useEffect(() => {
+    if (!config.continuousUpdates && !config.id.includes('titration')) return;
+
+    const tickRate = 100; // ms
+    const interval = setInterval(() => {
+      dispatch({ type: 'TICK', payload: { deltaMs: tickRate } });
+      // Legacy titration flow support
+      dispatch({ type: 'TICK_FLOW', payload: { deltaMs: tickRate } });
+    }, tickRate);
+
+    return () => clearInterval(interval);
+  }, [config.continuousUpdates, config.id]);
+
   // Clear mistake messages after delay
   useEffect(() => {
     if (mistakeMessage) {

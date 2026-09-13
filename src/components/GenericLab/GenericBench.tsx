@@ -10,6 +10,7 @@ import type { ExperimentConfig, ExperimentState, ExperimentAction, DropZoneConfi
 import { getApparatusComponent } from '../../apparatus';
 import { getSolutionColor } from '../../engine/chemistryLib';
 import { evaluateCondition } from '../../engine/experimentRunner';
+import { FluidDynamicsLayer } from './FluidDynamicsLayer';
 
 type GenericBenchProps = {
   config: ExperimentConfig;
@@ -24,6 +25,66 @@ const GenericBench: React.FC<GenericBenchProps> = ({
   dispatch,
   activeDropZone,
 }) => {
+  const [isSwirling, setIsSwirling] = React.useState(false);
+  const [isStirring, setIsStirring] = React.useState(false);
+  const [stopcockOpen, setStopcockOpen] = React.useState(0);
+
+  // Sync with state.variables.stopcockOpen if updated by reducer
+  React.useEffect(() => {
+    if (state.variables.stopcockOpen !== undefined && state.variables.stopcockOpen !== stopcockOpen) {
+      setStopcockOpen(state.variables.stopcockOpen);
+    }
+  }, [state.variables.stopcockOpen]);
+
+  // Listen for burette stopcock rotation events from SVG interactive cork handles
+  React.useEffect(() => {
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ open: number; id: string }>;
+      if (typeof custom.detail?.open === 'number') {
+        const newOpen = custom.detail.open;
+        setStopcockOpen(newOpen);
+        dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: newOpen } });
+      }
+    };
+    window.addEventListener('burette_stopcock_change', handler);
+    return () => window.removeEventListener('burette_stopcock_change', handler);
+  }, [dispatch]);
+
+  // Continuous flow animation and titration variable advancement when stopcock is open
+  React.useEffect(() => {
+    if (stopcockOpen <= 0) return;
+
+    const interval = setInterval(() => {
+      dispatch({ type: 'TICK_FLOW', payload: { deltaMs: 100 } });
+
+      // If there's an active titration interaction in config, trigger titration effects
+      for (const inter of config.interactions) {
+        if (inter.trigger.type === 'drop' && (inter.trigger.source === 'burette' || inter.trigger.source === 'micro-burette')) {
+          const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, state));
+          if (conditionsMet && inter.completesAction && !state.completedActions.includes(inter.completesAction)) {
+            dispatch({ type: 'DROP_ITEM', payload: { itemId: inter.trigger.source, zoneId: inter.trigger.target } });
+          }
+        }
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [stopcockOpen, dispatch, config.interactions, state]);
+
+  // Responsive scale factor for desktop & tablet
+  const [windowWidth, setWindowWidth] = React.useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1200
+  );
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const benchScale = windowWidth < 768 ? 1.15 : windowWidth < 1200 ? 1.45 : 1.7;
+
+
+
   // Compute current solution color
   const solutionColor = getSolutionColor(
     config.chemistry.colorModel,
@@ -38,10 +99,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         flex: 1,
         position: 'relative',
         borderRadius: 'var(--radius-lg)',
-        background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 65%, #e2e8f0 100%)',
+        background: 'radial-gradient(ellipse at 50% 30%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)',
         border: '1px solid var(--border-subtle)',
         overflow: 'hidden',
-        minHeight: 460,
+        minHeight: 520,
       }}
     >
       {/* ── Realistic Lab Workbench Table Surface ── */}
@@ -105,6 +166,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── High-Fidelity Fluid Dynamics & Pouring Physics Simulation ── */}
+      <FluidDynamicsLayer
+        config={config}
+        state={state}
+        solutionColor={solutionColor}
+        benchScale={benchScale}
+      />
 
       {/* ── Active Reaction Observation Banner ── */}
       {config.steps[state.currentStepIndex]?.id === 'observe' && (
@@ -221,10 +290,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
-      {/* Background elements (retort stand, etc.) */}
+      {/* Background elements (retort stand, etc. - dimmed for glassware focus) */}
       {config.bench.backgroundElements?.map((elem, i) => {
         const Component = getApparatusComponent(elem.component);
         if (!Component) return null;
+        const isStand = elem.component === 'RetortStand' || elem.component === 'Tripod';
         return (
           <div
             key={i}
@@ -232,14 +302,25 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               position: 'absolute',
               left: `${elem.position.x}%`,
               top: `${elem.position.y}%`,
-              transform: `translate(-50%, -50%) scale(${elem.scale ?? 1})`,
-              zIndex: 2,
+              transform: `translate(-50%, -50%) scale(${(elem.scale ?? 1) * benchScale})`,
+              zIndex: elem.component === 'BuretteStand' ? 12 : 2,
+              opacity: isStand ? 0.35 : (elem.component === 'BuretteStand' ? 1 : 0.85),
+              filter: isStand ? 'none' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
+              pointerEvents: 'none',
+              transition: 'opacity 0.3s ease',
             }}
           >
             <Component
               id={`bg-${elem.component}-${i}`}
-              flags={state.flags}
-              variables={state.variables}
+              flags={{ ...state.flags, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+              variables={{ ...state.variables, stopcockOpen }}
+              extraProps={{
+                stopcockOpen,
+                onSetStopcock: (val: number) => {
+                  setStopcockOpen(val);
+                  dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                },
+              }}
               {...(elem.props as Record<string, unknown>)}
             />
           </div>
@@ -261,11 +342,12 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             state={state}
             config={config}
             solutionColor={solutionColor}
+            benchScale={benchScale}
           />
         );
       })}
 
-      {/* Placed apparatus */}
+      {/* Placed apparatus - Glassware, Beakers & Flasks in FRONT with high visual priority */}
       {Object.entries(state.placedApparatus).map(([apparatusId, zoneId]) => {
         const apparatusConfig = config.apparatus.find(a => a.id === apparatusId);
         const zone = config.dropZones.find(z => z.id === zoneId);
@@ -275,6 +357,12 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         if (!Component) return null;
 
         const dynamicProps = state.apparatusProps[apparatusId] ?? {};
+        const isTargetSwirling = isSwirling && (apparatusConfig.component === 'ConicalFlask' || apparatusConfig.component === 'Beaker' || apparatusConfig.component === 'TestTube');
+
+        // Glassware and reaction vessels (Beakers, Flasks) have priority foreground z-index over the burette stand
+        const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(apparatusConfig.component);
+        const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod'].includes(apparatusConfig.component);
+        const apparatusZIndex = isTool ? 25 : isVessel ? 18 : 10;
 
         return (
           <div
@@ -283,21 +371,102 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               position: 'absolute',
               left: `${zone.position.x}%`,
               top: `${zone.position.y}%`,
-              transform: 'translate(-50%, -50%)',
-              animation: 'fadeIn 0.3s ease-out',
-              zIndex: 10,
+              transform: `translate(-50%, -50%) scale(${benchScale})`,
+              animation: isTargetSwirling ? 'apparatusSwirl 0.8s ease-in-out infinite' : 'fadeIn 0.3s ease-out',
+              filter: isVessel
+                ? 'drop-shadow(0 14px 18px rgba(0,0,0,0.30)) drop-shadow(0 2px 8px rgba(59,130,246,0.18))'
+                : 'drop-shadow(0 14px 14px rgba(0,0,0,0.25))',
+              zIndex: apparatusZIndex,
+              transition: 'transform 0.2s ease',
             }}
           >
             <Component
               id={apparatusId}
               liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
-              flags={state.flags}
-              variables={state.variables}
+              flags={{ ...state.flags, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+              variables={{ ...state.variables, stopcockOpen }}
+              extraProps={{
+                stopcockOpen,
+                onSetStopcock: (val: number) => {
+                  setStopcockOpen(val);
+                  dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                },
+              }}
               {...dynamicProps}
             />
           </div>
         );
       })}
+
+      {/* ── Interactive Workbench Action Bar (Shake / Swirl, Stirrer & Burette Cork Tap) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 14,
+          left: 14,
+          zIndex: 35,
+          display: 'flex',
+          gap: 8,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(8px)',
+          border: '1.5px solid var(--border-subtle, #e2e8f0)',
+          borderRadius: 10,
+          padding: '5px 8px',
+          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
+        }}
+      >
+        {/* Shake / Swirl Flask button */}
+        <button
+          type="button"
+          id="btn-generic-shake-flask"
+          onClick={() => setIsSwirling(prev => !prev)}
+          title="Continuously shake & swirl the conical flask for thorough mixing"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 6,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: isSwirling ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
+            background: isSwirling ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f8fafc',
+            color: isSwirling ? '#ffffff' : '#334155',
+            boxShadow: isSwirling ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
+          <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
+        </button>
+
+        {/* Stir Solution button */}
+        <button
+          type="button"
+          id="btn-generic-stir-solution"
+          onClick={() => setIsStirring(prev => !prev)}
+          title="Toggle rapid magnetic stirring and liquid vortex mixing"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 6,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: isStirring ? '1.5px solid #059669' : '1px solid #cbd5e1',
+            background: isStirring ? 'linear-gradient(135deg, #059669, #047857)' : '#f8fafc',
+            color: isStirring ? '#ffffff' : '#334155',
+            boxShadow: isStirring ? '0 2px 8px rgba(5, 150, 105, 0.35)' : 'none',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
+          <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
+        </button>
+      </div>
 
       {/* Volume / measurement display */}
       {state.variables['volumeAdded'] !== undefined && state.flags['hasIndicator'] && (
@@ -359,6 +528,7 @@ type DropZoneProps = {
   state: ExperimentState;
   config: ExperimentConfig;
   solutionColor: string;
+  benchScale?: number;
 };
 
 const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
@@ -392,6 +562,7 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 5,
+        pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
       {!hasItem && !isOver && (

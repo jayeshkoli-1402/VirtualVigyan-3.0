@@ -28,18 +28,25 @@ export const waterAcidity: ExperimentConfig = {
   // ── Apparatus ──
   apparatus: [
     {
+      id: 'burette',
+      component: 'Burette',
+      label: '50 mL Calibrated Burette',
+      icon: '🧪',
+      initialProps: { liquidLevel: 0, width: 90, height: 280, label: '50 mL Burette' },
+    },
+    {
+      id: 'naoh-titrant',
+      component: 'ReagentBottle',
+      label: '0.02 N NaOH Titrant',
+      icon: '🧴',
+      initialProps: { liquidColor: 'rgba(224, 242, 254, 0.7)', label: '0.02 N NaOH' },
+    },
+    {
       id: 'conical-flask',
       component: 'ConicalFlask',
       label: '250 mL Conical Flask',
       icon: '⚗️',
       initialProps: { liquidLevel: 0, width: 130, height: 150 },
-    },
-    {
-      id: 'burette',
-      component: 'Burette',
-      label: 'Burette (N/50 NaOH)',
-      icon: '📏',
-      initialProps: { liquidLevel: 0.95, liquidColor: 'rgba(56, 189, 248, 0.5)' },
     },
     {
       id: 'water-sample',
@@ -74,18 +81,35 @@ export const waterAcidity: ExperimentConfig = {
   // ── Drop Zones ──
   dropZones: [
     {
+      id: 'clamp-zone',
+      label: 'Clamp Burette on Retort Stand',
+      accepts: ['burette'],
+      position: { x: 50, y: 32 },
+      size: { width: 22, height: 44 },
+      rejectMessage: 'Mount the 50 mL burette onto the retort stand clamp.',
+    },
+    {
+      id: 'burette-top-zone',
+      label: 'Fill Burette with 0.02 N NaOH',
+      accepts: ['naoh-titrant'],
+      position: { x: 50, y: 14 },
+      size: { width: 18, height: 20 },
+      rejectMessage: 'Pour 0.02 N NaOH titrant into the top of the burette.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'burette' },
+    },
+    {
       id: 'flask-bench-zone',
       label: 'Place Flask under Burette',
       accepts: ['conical-flask'],
-      position: { x: 50, y: 62 },
+      position: { x: 50, y: 64 },
       size: { width: 24, height: 32 },
       rejectMessage: 'Place the flask under the burette stand.',
     },
     {
       id: 'flask-mouth-zone',
       label: 'Into Conical Flask',
-      accepts: ['water-sample', 'thiosulphate', 'methyl-orange', 'phenolphthalein', 'burette'],
-      position: { x: 50, y: 48 },
+      accepts: ['water-sample', 'thiosulphate', 'methyl-orange', 'phenolphthalein'],
+      position: { x: 50, y: 50 },
       size: { width: 18, height: 26 },
       rejectMessage: 'Add reagent into the conical flask.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'conical-flask' },
@@ -95,45 +119,64 @@ export const waterAcidity: ExperimentConfig = {
   // ── Bench ──
   bench: {
     backgroundElements: [
-      { component: 'RetortStand', position: { x: 50, y: 45 }, scale: 1.1 },
+      {
+        component: 'RetortStand',
+        position: { x: 50, y: 38 },
+        scale: 1.15,
+        props: { label: 'Retort Stand' },
+      },
     ],
   },
 
   // ── Steps ──
   steps: [
     {
-      id: 'setup',
-      label: '1. Place Flask',
-      instruction: 'Place the clean conical flask on the titration bench.',
+      id: 'setup-stand',
+      label: '1. Mount Burette',
+      instruction: 'Drag the 50 mL Burette from the toolbox and clamp it onto the retort stand.',
+      requiredActions: ['place-burette'],
+      type: 'lab',
+    },
+    {
+      id: 'fill-burette',
+      label: '2. Fill Burette with NaOH',
+      instruction: 'Drag the 0.02 N NaOH bottle to the top of the burette to fill it up to the 0.0 mL mark.',
+      requiredActions: ['fill-burette'],
+      type: 'lab',
+    },
+    {
+      id: 'setup-flask',
+      label: '3. Place Flask',
+      instruction: 'Place the clean conical flask beneath the clamped burette.',
       requiredActions: ['place-flask'],
       type: 'lab',
     },
     {
       id: 'sample-prep',
-      label: '2. Add 100 mL Water & Dechlorinate',
+      label: '4. Add 100 mL Water & Dechlorinate',
       instruction: 'Add 100 mL water sample and add 1 drop N/10 Na₂S₂O₃ to destroy residual chlorine.',
       requiredActions: ['add-water-sample'],
       type: 'lab',
     },
     {
       id: 'part-a-titration',
-      label: '3. Part A — Methyl Orange Acidity',
-      instruction: 'Add methyl orange (turns red). Titrate with N/50 NaOH until red turns to yellow at Y = 2.4 mL. Click Continue when observed.',
+      label: '5. Part A — Methyl Orange Acidity',
+      instruction: 'Add methyl orange (turns red). Click the right wing of the burette cork to titrate drop-by-drop with N/50 NaOH until red turns to yellow at Y = 2.4 mL. Click Continue when observed.',
       requiredActions: ['titrate-methyl-orange'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'part-b-titration',
-      label: '4. Part B — Total Acidity',
-      instruction: 'Add phenolphthalein. Titrate with N/50 NaOH until faint pink persists for 30 seconds at Z = 5.4 mL. Click Continue when observed.',
+      label: '6. Part B — Total Acidity',
+      instruction: 'Add phenolphthalein. Open/rotate the burette cork to titrate with N/50 NaOH until faint pink persists for 30 seconds at Z = 5.4 mL. Click Continue when observed.',
       requiredActions: ['titrate-phenolphthalein'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'calculation',
-      label: '5. Calculations & Viva',
+      label: '7. Calculations & Viva',
       instruction: 'Calculate methyl orange acidity and total phenolphthalein acidity in ppm (mg/L CaCO₃ equivalent).',
       requiredActions: ['calculation-submitted'],
       advanceMode: 'button',
@@ -141,7 +184,7 @@ export const waterAcidity: ExperimentConfig = {
     },
     {
       id: 'results',
-      label: '6. Score Breakdown',
+      label: '8. Score Breakdown',
       instruction: 'Review your laboratory accuracy and answers.',
       requiredActions: [],
       type: 'results',
@@ -150,6 +193,29 @@ export const waterAcidity: ExperimentConfig = {
 
   // ── Interactions ──
   interactions: [
+    {
+      id: 'inter-place-burette',
+      trigger: { type: 'drop', source: 'burette', target: 'clamp-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'burette', zoneId: 'clamp-zone' },
+        { type: 'setFlag', key: 'burettePlaced', value: true },
+      ],
+      completesAction: 'place-burette',
+    },
+    {
+      id: 'inter-fill-burette',
+      trigger: { type: 'drop', source: 'naoh-titrant', target: 'burette-top-zone' },
+      conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
+      blockMessage: 'Clamp the burette on the retort stand before filling it.',
+      effects: [
+        { type: 'setFlag', key: 'buretteFilled', value: true },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidLevel', value: 1.0 },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.7)' },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'label', value: '0.02 N NaOH Burette' },
+      ],
+      completesAction: 'fill-burette',
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
+    },
     {
       id: 'inter-place-flask',
       trigger: { type: 'drop', source: 'conical-flask', target: 'flask-bench-zone' },
@@ -160,143 +226,88 @@ export const waterAcidity: ExperimentConfig = {
       completesAction: 'place-flask',
     },
     {
-      id: 'inter-add-sample',
+      id: 'inter-add-water',
       trigger: { type: 'drop', source: 'water-sample', target: 'flask-mouth-zone' },
       conditions: [{ type: 'flag', key: 'flaskPlaced', equals: true }],
       blockMessage: 'Place the flask under the burette first.',
       effects: [
-        { type: 'setFlag', key: 'sampleAdded', value: true },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.5 },
+        { type: 'setFlag', key: 'waterAdded', value: true },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.45 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.45)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: '100 mL Acidic Water Sample' },
       ],
       completesAction: 'add-water-sample',
-      animation: { type: 'pour', durationMs: 800, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
     },
     {
       id: 'inter-titrate-mo',
       trigger: { type: 'drop', source: 'methyl-orange', target: 'flask-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'sampleAdded', equals: true }],
+      conditions: [{ type: 'flag', key: 'waterAdded', equals: true }],
       blockMessage: 'Add the 100 mL water sample first.',
       effects: [
         { type: 'setFlag', key: 'moEndpointReached', value: true },
         { type: 'setVariable', key: 'volumeY', value: 2.4 },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(250, 204, 21, 0.9)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'MO End: Yellow (Y = 2.4 mL)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.52 },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(234, 179, 8, 0.85)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'MO Endpoint: Yellow (Y = 2.4 mL)' },
       ],
       completesAction: 'titrate-methyl-orange',
-      animation: { type: 'color-change', durationMs: 1000, animatingFlag: 'isTitrating' },
+      animation: { type: 'drip', durationMs: 2000, animatingFlag: 'isAddingIndicator' },
     },
     {
-      id: 'inter-titrate-ph',
+      id: 'inter-titrate-phenol',
       trigger: { type: 'drop', source: 'phenolphthalein', target: 'flask-mouth-zone' },
       conditions: [{ type: 'flag', key: 'moEndpointReached', equals: true }],
-      blockMessage: 'Complete Part A methyl orange titration first.',
+      blockMessage: 'Complete the Methyl Orange mineral acidity titration (Part A) first.',
       effects: [
-        { type: 'setFlag', key: 'phEndpointReached', value: true },
+        { type: 'setFlag', key: 'phenolEndpointReached', value: true },
         { type: 'setVariable', key: 'volumeZ', value: 5.4 },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.65 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(244, 114, 182, 0.85)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Total End: Persistent Pink (Z = 5.4 mL)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Total Acidity: Faint Pink (Z = 5.4 mL)' },
       ],
       completesAction: 'titrate-phenolphthalein',
-      animation: { type: 'color-change', durationMs: 1000, animatingFlag: 'isTitrating' },
+      animation: { type: 'drip', durationMs: 2000, animatingFlag: 'isAddingIndicator' },
     },
   ],
 
-  // ── Chemistry & Formulas ──
+  // ── Chemistry Model ──
   chemistry: {
-    reaction: 'Mineral Acids / H₂CO₃ + NaOH → Na-salts + H₂O',
-    reactionType: 'Acid-Base Differential Neutralization',
+    reaction: 'H⁺ + OH⁻ → H₂O | H₂CO₃ + OH⁻ → HCO₃⁻ + H₂O',
     constants: {
-      naohNormality: 0.02, // N/50
-      sampleVolume: 100,   // mL
+      normalityNaOH: 0.02,
+      sampleVolume: 100.0,
     },
-    formulas: {
-      moAcidity: {
-        label: 'Methyl Orange Acidity (ppm)',
-        displayFormula: 'MO Acidity = Y · 10 = 2.4 · 10',
-        computeFn: 'waterAcidity',
-        inputs: ['volumeY'],
-        unit: 'ppm',
-      },
-      phAcidity: {
-        label: 'Phenolphthalein Total Acidity (ppm)',
-        displayFormula: 'Total Acidity = Z · 10 = 5.4 · 10',
-        computeFn: 'waterAcidity',
-        inputs: ['volumeZ'],
-        unit: 'ppm',
-      },
+    colorModel: 'custom',
+    colorModelArgs: {
+      default: 'transparent',
     },
   },
 
-  // ── Calculation ──
-  calculation: {
-    title: 'Water Acidity Calculations',
-    instruction: 'From the burette readings (Y = 2.4 mL for Methyl Orange, Z = 5.4 mL for Phenolphthalein):',
-    fields: [
-      {
-        id: 'mineralAcidity',
-        label: '1. Methyl Orange / Mineral Acidity (ppm): Acidity = Y × 10  [Given Y = 2.4 mL]',
-        placeholder: 'e.g. 24.0',
-        unit: 'ppm',
-        expectedValue: 24.0,
-        tolerance: 0.5,
-        toleranceType: 'absolute',
-      },
-      {
-        id: 'totalAcidity',
-        label: '2. Phenolphthalein / Total Acidity (ppm): Acidity = Z × 10  [Given Z = 5.4 mL]',
-        placeholder: 'e.g. 54.0',
-        unit: 'ppm',
-        expectedValue: 54.0,
-        tolerance: 0.5,
-        toleranceType: 'absolute',
-      },
-      {
-        id: 'phCutoff',
-        label: '3. What approximate pH corresponds to the methyl orange endpoint cutoff?',
-        placeholder: 'e.g. 4.5',
-        unit: 'pH',
-        expectedValue: 4.5,
-        tolerance: 0.3,
-        toleranceType: 'absolute',
-      },
-    ],
-  },
-
-  // ── Scoring Rubric ──
+  // ── Scoring ──
   scoring: [
     {
-      name: 'Apparatus Placement & Dechlorination',
+      name: 'Burette Setup & Filling',
       maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'sampleAdded', truePoints: 20 },
+      evaluator: { type: 'booleanCheck', flag: 'buretteFilled', truePoints: 20 },
     },
     {
-      name: 'Part A Methyl Orange Titration (Y)',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'moEndpointReached', truePoints: 20 },
+      name: 'Methyl Orange Acidity (Part A)',
+      maxPoints: 25,
+      evaluator: { type: 'booleanCheck', flag: 'moEndpointReached', truePoints: 25 },
     },
     {
-      name: 'Part B Phenolphthalein Titration (Z)',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'phEndpointReached', truePoints: 20 },
+      name: 'Phenolphthalein Acidity (Part B)',
+      maxPoints: 25,
+      evaluator: { type: 'booleanCheck', flag: 'phenolEndpointReached', truePoints: 25 },
     },
     {
-      name: 'Mineral Acidity Calculation',
-      maxPoints: 20,
-      evaluator: {
-        type: 'calculationCorrect',
-        fieldId: 'mineralAcidity',
-        correctPoints: 20,
-        incorrectPoints: 0,
-      },
-    },
-    {
-      name: 'Total Acidity & pH Theory Viva',
-      maxPoints: 20,
+      name: 'Acidity Calculations',
+      maxPoints: 30,
       evaluator: {
         type: 'calculationCorrect',
         fieldId: 'totalAcidity',
-        correctPoints: 20,
+        correctPoints: 30,
         incorrectPoints: 0,
       },
     },
@@ -305,24 +316,111 @@ export const waterAcidity: ExperimentConfig = {
   // ── Validation ──
   validation: [
     {
-      id: 'skip-sample',
-      trigger: 'drop:methyl-orange→flask-mouth-zone',
-      condition: { type: 'flag', key: 'sampleAdded', equals: false },
-      message: 'Add 100 mL water sample to the conical flask before adding indicator.',
+      id: 'fill-before-clamp',
+      trigger: 'drop:naoh-titrant→burette-top-zone',
+      condition: { type: 'flag', key: 'burettePlaced', equals: false },
+      message: 'Clamp the burette on the retort stand before filling it with NaOH.',
       blocking: true,
     },
   ],
 
   // ── Initial State ──
   initialVariables: {
-    volumeY: 2.4,
-    volumeZ: 5.4,
-    naohVolume: 5.4,
+    volumeY: 0,
+    volumeZ: 0,
+    normalityNaOH: 0.02,
+    sampleVolume: 100,
+    mineralAcidity: 0,
+    totalAcidity: 0,
+    stopcockOpen: 0,
   },
   initialFlags: {
+    burettePlaced: false,
+    buretteFilled: false,
     flaskPlaced: false,
-    sampleAdded: false,
+    waterAdded: false,
     moEndpointReached: false,
-    phEndpointReached: false,
+    phenolEndpointReached: false,
+  },
+
+  // ── Calculation ──
+  calculation: {
+    title: 'Water Acidity Calculation',
+    instruction: 'Acidity (ppm CaCO₃ eq.) = (V × N × 50 × 1000) / V_sample = V × 10 ppm',
+    fields: [
+      {
+        id: 'volumeY',
+        label: 'Methyl Orange Titre (Y in mL)',
+        unit: 'mL',
+        expectedValue: 2.4,
+        tolerance: 0.2,
+      },
+      {
+        id: 'volumeZ',
+        label: 'Phenolphthalein Titre (Z in mL)',
+        unit: 'mL',
+        expectedValue: 5.4,
+        tolerance: 0.2,
+      },
+      {
+        id: 'mineralAcidity',
+        label: 'Mineral Acidity (ppm CaCO₃ eq.)',
+        unit: 'ppm',
+        expectedValue: 24.0,
+        tolerance: 2.0,
+      },
+      {
+        id: 'totalAcidity',
+        label: 'Total Acidity (ppm CaCO₃ eq.)',
+        unit: 'ppm',
+        expectedValue: 54.0,
+        tolerance: 3.0,
+      },
+    ],
+  },
+
+  // ── Viva Questions ──
+  viva: {
+    questions: [
+      {
+        id: 'q1',
+        question: 'What is the chemical difference between mineral acidity and total acidity in water?',
+        options: [
+          'Mineral acidity is due to strong mineral acids (HCl, H₂SO₄, pH < 4.5); Total acidity also includes weak acids like dissolved CO₂ and carbonic acid (pH up to 8.3).',
+          'Mineral acidity is caused by calcium ions, total acidity by magnesium ions.',
+          'Mineral acidity is measured with starch, total acidity with phenolphthalein.',
+          'Mineral acidity only exists above boiling temperature.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Mineral acids ionize completely and are titrated up to pH 4.5 (methyl orange endpoint). Weak acids like carbonic acid (H₂CO₃) require titration up to pH 8.3 (phenolphthalein endpoint).',
+      },
+      {
+        id: 'q2',
+        question: 'Why is sodium thiosulphate (Na₂S₂O₃) added to the water sample before acidity titration?',
+        options: [
+          'To neutralize residual free chlorine bleach which would otherwise destroy and decolorize the organic indicators.',
+          'To increase the ionic strength and electrical conductivity.',
+          'To precipitate iron and aluminium ions.',
+          'To buffer the solution at pH 7.0.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Residual free chlorine present in treated tap water acts as a strong oxidizer that bleaches azo and phthalein indicators, preventing accurate visual endpoint detection.',
+      },
+      {
+        id: 'q3',
+        question: 'Why is environmental water acidity hazardous in industrial and municipal applications?',
+        options: [
+          'It causes severe metal corrosion of underground pipes, pumps, and boiler tubes, and dissolves toxic heavy metals.',
+          'It increases water turbidity and makes it smell like sulfur.',
+          'It precipitates soap into curd.',
+          'It accelerates algae growth.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Acidic water aggressively corrodes plumbing fixtures and boiler systems, leaching harmful lead, copper, and iron into distribution networks.',
+      },
+    ],
   },
 };

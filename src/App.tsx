@@ -27,19 +27,33 @@ import ExperimentSelector from './components/ExperimentSelector';
 import ConservationExperiment from './components/conservation/ConservationExperiment';
 import GenericLab from './components/GenericLab/GenericLab';
 import { getExperimentById } from './experiments';
-import { AuthProvider, useAuth } from './auth/AuthContext';
+import { AuthProvider } from './auth/AuthContext';
 import AuthModal from './components/auth/AuthModal';
 import AdminPanel from './components/admin/AdminPanel';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
+import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
+import { TopHeader } from './components/layout/TopHeader';
+import { ClassesView } from './components/home/ClassesView';
+import { TheoryNotesView } from './components/home/TheoryNotesView';
+import { ProgressView } from './components/home/ProgressView';
+import { SettingsModal } from './components/home/SettingsModal';
+import { AboutModal } from './components/home/AboutModal';
+import { HowItWorksModal } from './components/home/HowItWorksModal';
 
 type ActiveExperiment = 'select' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
 const AppContent: React.FC = () => {
-  const { user, logout } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
+  const [activeTab, setActiveTab] = useState<NavItem>('home');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [aboutModalOpen, setAboutModalOpen] = useState(false);
+  const [howItWorksModalOpen, setHowItWorksModalOpen] = useState(false);
+
   const [state, dispatch] = useReducer(titrationReducer, initialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
@@ -263,13 +277,132 @@ const AppContent: React.FC = () => {
 
   const headerInfo = getHeaderInfo();
 
+  // If in 'select' mode, render the full new Dashboard shell matching the user's mockup
+  if (activeExperiment === 'select') {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+        {/* ── Left Navigation Sidebar ── */}
+        <AppSidebar
+          activeTab={activeTab}
+          onSelectTab={(tab) => {
+            if (tab === 'settings') {
+              setSettingsModalOpen(true);
+            } else if (tab === 'about') {
+              setAboutModalOpen(true);
+            } else if (tab === 'teacher') {
+              setActiveTab('teacher');
+              setActiveExperiment('teacher');
+            } else {
+              setActiveTab(tab);
+              setActiveExperiment('select');
+            }
+          }}
+          isMobile={isMobile}
+          isOpenMobile={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+        />
+
+        {/* ── Main Workspace Area ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflowY: 'auto' }}>
+          {/* Top Header */}
+          <TopHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+            onOpenAuthModal={() => {
+              setAuthModalTab('login');
+              setAuthModalOpen(true);
+            }}
+            isMobile={isMobile}
+            onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          />
+
+          {/* Views */}
+          <main style={{ flex: 1, padding: isMobile ? '20px 16px' : '32px 36px', boxSizing: 'border-box' }}>
+            {activeTab === 'home' || activeTab === 'experiments' ? (
+              <ExperimentSelector
+                onSelectExperiment={handleSelectExperiment}
+                onSelectEngineExperiment={(id) => setActiveExperiment(id)}
+                onSelectVR={() => setActiveExperiment('conservation-vr')}
+                onGoToNotes={() => setActiveTab('theory-notes')}
+                onOpenHowItWorks={() => setHowItWorksModalOpen(true)}
+                externalSearchQuery={searchQuery}
+              />
+            ) : activeTab === 'classes' ? (
+              <ClassesView
+                onBackToHome={() => setActiveTab('home')}
+                onLaunchExperiment={(id) => {
+                  if (id === 'titration') handleSelectExperiment('titration');
+                  else if (id === 'conservation') handleSelectExperiment('conservation');
+                  else setActiveExperiment(id);
+                }}
+              />
+            ) : activeTab === 'theory-notes' ? (
+              <TheoryNotesView
+                onBackToHome={() => setActiveTab('home')}
+                onLaunchExperiment={(id) => {
+                  if (id === 'titration') handleSelectExperiment('titration');
+                  else if (id === 'conservation') handleSelectExperiment('conservation');
+                  else setActiveExperiment(id);
+                }}
+              />
+            ) : activeTab === 'progress' ? (
+              <ProgressView
+                onBackToHome={() => setActiveTab('home')}
+                onLaunchExperiment={(id) => {
+                  if (id === 'titration') handleSelectExperiment('titration');
+                  else if (id === 'conservation') handleSelectExperiment('conservation');
+                  else setActiveExperiment(id);
+                }}
+              />
+            ) : null}
+          </main>
+        </div>
+
+        {/* Global Modals */}
+        <SettingsModal
+          isOpen={settingsModalOpen}
+          onClose={() => setSettingsModalOpen(false)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <AboutModal
+          isOpen={aboutModalOpen}
+          onClose={() => setAboutModalOpen(false)}
+        />
+        <HowItWorksModal
+          isOpen={howItWorksModalOpen}
+          onClose={() => setHowItWorksModalOpen(false)}
+          onStartExploring={() => {
+            setActiveTab('home');
+            const section = document.getElementById('browse-experiments-section');
+            section?.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialTab={authModalTab}
+          onRoleRedirect={(role) => {
+            if (role === 'admin') setActiveExperiment('admin');
+            else if (role === 'teacher') setActiveExperiment('teacher');
+            else setActiveExperiment('select');
+          }}
+        />
+      </div>
+    );
+  }
+
+  // ── When in active experiment mode (simulation, teacher, or admin) ──
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+      {/* ── Laboratory Top Header ── */}
       <header
         style={{
-          padding: '10px 20px',
-          borderBottom: '1px solid var(--border-subtle)',
+          padding: '0 20px',
+          height: 54,
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -278,74 +411,87 @@ const AppContent: React.FC = () => {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+          boxShadow: 'var(--shadow-xs)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {activeExperiment !== 'select' && (
-            <button
-              id="btn-back-to-selector"
-              onClick={handleBackToSelector}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                fontSize: '0.8rem',
-                color: 'var(--text-muted)',
-                padding: '4px 8px',
-                borderRadius: 6,
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-              }}
-            >
-              ← Back
-            </button>
-          )}
-          <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            id="btn-back-to-selector"
+            onClick={handleBackToSelector}
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: headerInfo.color,
-              color: '#ffffff',
+              all: 'unset',
+              cursor: 'pointer',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: '#2563eb',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              background: 'var(--bg-secondary)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
+              gap: 6,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#2563eb';
+              e.currentTarget.style.transform = 'translateX(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.transform = 'translateX(0)';
             }}
           >
-            ⚗️
-          </div>
-          <div>
-            <h1
+            ← Back to Dashboard
+          </button>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
               style={{
-                fontSize: '1rem',
-                fontWeight: 800,
-                lineHeight: 1.2,
-                color: 'var(--text-primary)',
+                width: 28,
+                height: 28,
+                borderRadius: 'var(--radius-md)',
+                background: headerInfo.color,
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 14,
               }}
             >
-              VirtualVigyan
-            </h1>
-            <p
-              style={{
-                fontSize: '0.6rem',
-                color: headerInfo.color,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                fontWeight: 600,
-              }}
-            >
-              {headerInfo.subtitle}
-            </p>
+              ⚗️
+            </div>
+            <div>
+              <h1
+                style={{
+                  fontSize: '0.9375rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-heading)',
+                  lineHeight: 1.2,
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                }}
+              >
+                VirtualVigyan Lab
+              </h1>
+              <p
+                style={{
+                  fontSize: '0.66rem',
+                  color: 'var(--text-muted)',
+                  fontWeight: 600,
+                  margin: 0,
+                }}
+              >
+                {headerInfo.subtitle}
+              </p>
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Step progress — titration only */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Step progress indicator — titration */}
           {activeExperiment === 'titration' && state.step !== Step.SELECT && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginRight: 8 }}>
               {STEP_ORDER.map((step, i) => {
                 const isCompleted = i < currentStepIndex;
                 const isCurrent = i === currentStepIndex;
@@ -354,14 +500,14 @@ const AppContent: React.FC = () => {
                     key={step}
                     title={STEP_LABELS[step]}
                     style={{
-                      width: isCurrent ? 20 : 6,
+                      width: isCurrent ? 18 : 6,
                       height: 6,
                       borderRadius: 3,
                       background: isCompleted
                         ? 'var(--accent-teal)'
                         : isCurrent
-                          ? 'linear-gradient(90deg, var(--accent-teal), var(--accent-blue))'
-                          : 'rgba(148, 163, 184, 0.15)',
+                          ? 'var(--accent)'
+                          : 'var(--border)',
                       transition: 'all 0.3s ease',
                     }}
                   />
@@ -370,133 +516,31 @@ const AppContent: React.FC = () => {
             </div>
           )}
 
-          {/* Theme Switcher Toggle */}
+          {/* Theme toggle */}
           <button
-            id="btn-toggle-theme"
+            id="btn-toggle-theme-lab"
             onClick={toggleTheme}
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="clay-btn clay-btn-neutral"
             style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              fontSize: '0.78rem',
-              fontWeight: 700,
+              all: 'unset',
+              cursor: 'pointer',
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.9rem',
+              background: 'var(--bg-secondary)',
             }}
           >
-            <span>{theme === 'dark' ? '🌙' : '☀️'}</span>
-            <span>{theme === 'dark' ? 'Dark' : 'Light'}</span>
+            {theme === 'dark' ? '🌙' : '☀️'}
           </button>
-
-          {/* User Auth Profile / Login Button */}
-          {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {user.role === 'admin' && (
-                <button
-                  id="btn-nav-admin"
-                  onClick={() => setActiveExperiment(activeExperiment === 'admin' ? 'select' : 'admin')}
-                  className={`clay-btn ${activeExperiment === 'admin' ? 'clay-btn-neutral' : 'clay-btn-purple'}`}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 14,
-                    fontSize: '0.78rem',
-                  }}
-                >
-                  <span>🛡️</span>
-                  <span>{activeExperiment === 'admin' ? 'Browse Labs' : 'Admin Panel'}</span>
-                </button>
-              )}
-
-              {user.role === 'teacher' && (
-                <button
-                  id="btn-nav-teacher"
-                  onClick={() => setActiveExperiment(activeExperiment === 'teacher' ? 'select' : 'teacher')}
-                  className={`clay-btn ${activeExperiment === 'teacher' ? 'clay-btn-neutral' : 'clay-btn-blue'}`}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 14,
-                    fontSize: '0.78rem',
-                  }}
-                >
-                  <span>👨‍🏫</span>
-                  <span>{activeExperiment === 'teacher' ? 'Browse Labs' : 'Teacher Portal'}</span>
-                </button>
-              )}
-
-              {/* User Profile Pill */}
-              <div
-                className="clay-badge"
-                style={{
-                  padding: '4px 10px 4px 6px',
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid rgba(255, 255, 255, 0.4)',
-                }}
-              >
-                <span style={{ fontSize: 18 }}>{user.avatar || '👤'}</span>
-                <span style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  {user.name}
-                </span>
-                <span
-                  className="clay-badge"
-                  style={{
-                    fontSize: '0.62rem',
-                    fontWeight: 900,
-                    textTransform: 'uppercase',
-                    padding: '2px 8px',
-                    background:
-                      user.role === 'admin'
-                        ? 'rgba(124, 58, 237, 0.18)'
-                        : user.role === 'teacher'
-                        ? 'rgba(2, 132, 199, 0.18)'
-                        : 'rgba(5, 150, 105, 0.18)',
-                    color:
-                      user.role === 'admin' ? '#a78bfa' : user.role === 'teacher' ? '#38bdf8' : '#34d399',
-                  }}
-                >
-                  {user.role}
-                </span>
-              </div>
-
-              {/* Sign Out Button */}
-              <button
-                id="btn-sign-out"
-                onClick={() => {
-                  logout();
-                  setActiveExperiment('select');
-                }}
-                title="Sign Out"
-                className="clay-btn clay-btn-neutral"
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 12,
-                  fontSize: '0.75rem',
-                }}
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <button
-              id="btn-open-auth-modal"
-              onClick={() => {
-                setAuthModalTab('login');
-                setAuthModalOpen(true);
-              }}
-              className="clay-btn clay-btn-emerald"
-              style={{
-                padding: '7px 18px',
-                borderRadius: 20,
-                fontSize: '0.82rem',
-                fontWeight: 800,
-              }}
-            >
-              <span>🔑</span>
-              <span>Sign In / Register</span>
-            </button>
-          )}
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Main Experiment Content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Admin Command Center */}
         {activeExperiment === 'admin' && (
@@ -572,7 +616,7 @@ const AppContent: React.FC = () => {
                   display: 'grid',
                   gridTemplateColumns: isMobile
                     ? '1fr'
-                    : `${leftCollapsed ? '52px' : '200px'} 1fr ${rightCollapsed ? '52px' : '240px'}`,
+                    : `${leftCollapsed ? '48px' : '210px'} 1fr ${rightCollapsed ? '48px' : '260px'}`,
                   gap: 0,
                   minHeight: 0,
                   transition: 'grid-template-columns 0.2s ease',
@@ -581,9 +625,9 @@ const AppContent: React.FC = () => {
                 {/* Left: Toolbox */}
                 <div
                   style={{
-                    borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
-                    borderBottom: isMobile ? '1px solid var(--border-subtle)' : 'none',
-                    background: '#ffffff',
+                    borderRight: isMobile ? 'none' : '1px solid var(--border)',
+                    borderBottom: isMobile ? '1px solid var(--border)' : 'none',
+                    background: 'var(--bg-card)',
                     order: isMobile ? 1 : 0,
                   }}
                 >
@@ -600,7 +644,7 @@ const AppContent: React.FC = () => {
                     display: 'flex',
                     padding: 8,
                     order: isMobile ? 0 : 1,
-                    background: '#f8fafc',
+                    background: 'var(--bg-secondary)',
                   }}
                 >
                   <LabBench
@@ -613,9 +657,9 @@ const AppContent: React.FC = () => {
                 {/* Right: Instructions */}
                 <div
                   style={{
-                    borderLeft: isMobile ? 'none' : '1px solid var(--border-subtle)',
-                    borderTop: isMobile ? '1px solid var(--border-subtle)' : 'none',
-                    background: '#ffffff',
+                    borderLeft: isMobile ? 'none' : '1px solid var(--border)',
+                    borderTop: isMobile ? '1px solid var(--border)' : 'none',
+                    background: 'var(--bg-card)',
                     order: 2,
                   }}
                 >
@@ -640,20 +684,20 @@ const AppContent: React.FC = () => {
                     gap: 8,
                     padding: '8px 14px',
                     borderRadius: 'var(--radius-md)',
-                    background: '#ffffff',
-                    border: '1.5px solid #2563eb',
+                    background: 'var(--bg-card)',
+                    border: '1.5px solid var(--accent)',
                     opacity: 0.95,
                     cursor: 'grabbing',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+                    boxShadow: 'var(--shadow-lg)',
                     animation: shakeItem === activeDragId ? 'shake 0.3s ease' : undefined,
                   }}
                 >
                   <span style={{ fontSize: 18 }}>{getDragLabel(activeDragId).icon}</span>
                   <span
                     style={{
-                      fontSize: '0.78rem',
+                      fontSize: '0.8125rem',
                       fontWeight: 600,
-                      color: '#1d4ed8',
+                      color: 'var(--accent)',
                     }}
                   >
                     {getDragLabel(activeDragId).label}

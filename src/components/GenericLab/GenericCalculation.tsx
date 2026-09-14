@@ -79,7 +79,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
               <div key={key} style={{
                 display: 'flex', justifyContent: 'space-between',
                 fontSize: '0.8rem', padding: '4px 0',
-                borderBottom: '1px solid var(--border-subtle)',
+                borderBottom: '1px solid var(--border)',
               }}>
                 <span style={{ color: 'var(--text-secondary)' }}>
                   {formatVariableName(key)}
@@ -124,11 +124,12 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                       padding: '8px 12px',
                       borderRadius: 'var(--radius-md)',
                       border: `1.5px solid ${
-                        result ? (result.correct ? '#059669' : '#dc2626') : 'var(--border-subtle)'
+                        result ? (result.correct ? '#059669' : '#dc2626') : 'var(--border)'
                       }`,
                       fontSize: '0.85rem',
                       fontFamily: 'var(--font-mono)',
-                      background: submitted ? '#f8fafc' : '#ffffff',
+                      background: submitted ? 'var(--bg-secondary)' : 'var(--bg-card)',
+                      color: 'var(--text-primary)',
                       outline: 'none',
                     }}
                   />
@@ -162,15 +163,15 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                         </div>
                         <div style={{
                           padding: '8px 10px',
-                          background: '#ffffff',
+                          background: 'var(--bg-card)',
                           borderRadius: 6,
                           border: '1px solid rgba(220, 38, 38, 0.2)',
                           fontFamily: 'var(--font-mono)',
                           fontSize: '0.72rem',
-                          color: '#334155',
+                          color: 'var(--text-secondary)',
                           whiteSpace: 'pre-line',
                         }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: 2 }}>
+                          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
                             Worked Solution:
                           </div>
                           {result.workedFormula}

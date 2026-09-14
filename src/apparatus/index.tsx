@@ -723,7 +723,7 @@ const TestTube: React.FC<ApparatusProps> = ({
 
 const BuretteSVG: React.FC<ApparatusProps> = ({
   id = 'burette',
-  liquidLevel = 1,
+  liquidLevel: _liquidLevel = 0,
   liquidColor = 'rgba(37, 99, 235, 0.35)',
   label,
   highlighted = false,
@@ -847,9 +847,16 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
 
-  const effectiveLevel = hasVolumeVar
+  const isBuretteFilled = Boolean(
+    flags?.buretteFilled === true ||
+    extraProps?.buretteFilled === true ||
+    extraProps?.isFilled === true ||
+    flags?.['burette-filled'] === true
+  );
+
+  const effectiveLevel = isBuretteFilled
     ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
-    : Math.max(0, Math.min(1, liquidLevel));
+    : 0;
 
   // Visual parameters matching Class 11 Burette (scaled for 90x280 viewBox)
   const buretteX = 40;
@@ -1494,7 +1501,7 @@ const RetortStand: React.FC<ApparatusProps> = ({
   height = 300,
 }) => {
   return (
-    <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible', opacity: 0.38, transition: 'opacity 0.3s ease' }}>
+    <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible', transition: 'opacity 0.3s ease' }}>
       <defs>
         <linearGradient id="metalStandGrad" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="#475569" />
@@ -1529,7 +1536,7 @@ const RetortStand: React.FC<ApparatusProps> = ({
 
 const BuretteStand: React.FC<ApparatusProps> = ({
   id = 'burette-stand',
-  liquidLevel = 1,
+  liquidLevel: _liquidLevel = 0,
   liquidColor = 'rgba(37, 99, 235, 0.45)',
   label = '50 mL Burette',
   highlighted = false,
@@ -1653,9 +1660,16 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
 
-  const effectiveLevel = hasVolumeVar
+  const isBuretteFilled = Boolean(
+    flags?.buretteFilled === true ||
+    extraProps?.buretteFilled === true ||
+    extraProps?.isFilled === true ||
+    flags?.['burette-filled'] === true
+  );
+
+  const effectiveLevel = isBuretteFilled
     ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
-    : Math.max(0, Math.min(1, liquidLevel));
+    : 0;
 
   // Burette tube coordinates (in 140x300 viewBox, matching Class 11 Burette.tsx proportions)
   const buretteX = 72;

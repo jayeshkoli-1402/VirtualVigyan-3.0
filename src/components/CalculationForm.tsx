@@ -51,20 +51,20 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
           fontSize: '1.1rem',
           fontWeight: 700,
           marginBottom: 6,
-          color: '#1e293b',
+          color: 'var(--text-primary)',
         }}
       >
         Calculate Unknown Concentration
       </h3>
-      <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: 20, lineHeight: 1.5 }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20, lineHeight: 1.5 }}>
         Using your recorded endpoint volume, calculate the molar concentration of the unknown HCl solution.
       </p>
 
       {/* Given values */}
       <div
         style={{
-          background: '#f8fafc',
-          border: '1px solid #e2e8f0',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-md)',
           padding: 16,
           marginBottom: 20,
@@ -73,7 +73,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
         <div
           style={{
             fontSize: '0.65rem',
-            color: '#64748b',
+            color: 'var(--text-muted)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
             marginBottom: 10,
@@ -84,21 +84,21 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
-            <span style={{ color: '#475569', fontSize: '0.8rem' }}>V<sub>NaOH</sub> (your reading):</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>V<sub>NaOH</sub> (your reading):</span>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>
             {markedVolume.toFixed(1)} mL
           </div>
           <div>
-            <span style={{ color: '#475569', fontSize: '0.8rem' }}>M<sub>NaOH</sub> (known):</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>M<sub>NaOH</sub> (known):</span>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>
             0.100 M
           </div>
           <div>
-            <span style={{ color: '#475569', fontSize: '0.8rem' }}>V<sub>HCl</sub> (flask volume):</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>V<sub>HCl</sub> (flask volume):</span>
           </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: '#2563eb', fontSize: '0.9rem' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>
             25.0 mL
           </div>
         </div>
@@ -107,23 +107,23 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
       {/* Formula hint */}
       <div
         style={{
-          background: '#eff6ff',
-          border: '1px solid #bfdbfe',
+          background: 'var(--accent-glow)',
+          border: '1px solid var(--border)',
           borderRadius: 'var(--radius-md)',
           padding: 12,
           marginBottom: 20,
           textAlign: 'center',
         }}
       >
-        <span style={{ fontSize: '0.75rem', color: '#475569' }}>Formula: </span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: '#1d4ed8', fontWeight: 600 }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Formula: </span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>
           M<sub>HCl</sub> = (V<sub>NaOH</sub> × M<sub>NaOH</sub>) / V<sub>HCl</sub>
         </span>
       </div>
 
       {/* Input form */}
       <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', fontSize: '0.8rem', color: '#334155', marginBottom: 8, fontWeight: 600 }}>
+        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
           Calculated HCl Concentration (M):
         </label>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -139,10 +139,10 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
             style={{
               flex: 1,
               padding: '10px 14px',
-              background: '#ffffff',
+              background: 'var(--bg-card)',
               border: `1px solid ${submitted ? (result?.correct ? '#16a34a' : '#dc2626') : '#cbd5e1'}`,
               borderRadius: 'var(--radius-md)',
-              color: '#0f172a',
+              color: 'var(--text-primary)',
               fontFamily: 'var(--font-mono)',
               fontSize: '1rem',
               outline: 'none',
@@ -180,7 +180,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
                   Correct Calculation!
                 </span>
               </div>
-              <p style={{ color: '#334155', fontSize: '0.8rem', lineHeight: 1.5 }}>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5 }}>
                 Your answer is within ±10% tolerance of the expected concentration ({result.expected.toFixed(4)} M).
               </p>
             </div>
@@ -204,8 +204,8 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
               </p>
               <pre
                 style={{
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-sm)',
                   padding: 12,
                   fontFamily: 'var(--font-mono)',

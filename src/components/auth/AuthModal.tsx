@@ -125,7 +125,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid var(--border-subtle)',
+            borderBottom: '1px solid var(--border)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -388,7 +388,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 style={{
                   marginTop: 8,
                   paddingTop: 16,
-                  borderTop: '1px solid var(--border-subtle)',
+                  borderTop: '1px solid var(--border)',
                 }}
               >
                 <div

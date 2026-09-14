@@ -99,8 +99,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         flex: 1,
         position: 'relative',
         borderRadius: 'var(--radius-lg)',
-        background: 'radial-gradient(ellipse at 50% 30%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)',
-        border: '1px solid var(--border-subtle)',
+        background: 'radial-gradient(ellipse at 50% 30%, var(--bg-card) 0%, var(--bg-inset) 60%, var(--bg-secondary) 100%)',
+        border: '1px solid var(--border)',
         overflow: 'hidden',
         minHeight: 520,
       }}
@@ -304,8 +304,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               top: `${elem.position.y}%`,
               transform: `translate(-50%, -50%) scale(${(elem.scale ?? 1) * benchScale})`,
               zIndex: elem.component === 'BuretteStand' ? 12 : 2,
-              opacity: isStand ? 0.35 : (elem.component === 'BuretteStand' ? 1 : 0.85),
-              filter: isStand ? 'none' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
+              opacity: isStand ? 0.95 : (elem.component === 'BuretteStand' ? 1 : 0.95),
+              filter: isStand ? 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
               pointerEvents: 'none',
               transition: 'opacity 0.3s ease',
             }}
@@ -356,7 +356,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const Component = getApparatusComponent(apparatusConfig.component);
         if (!Component) return null;
 
-        const dynamicProps = state.apparatusProps[apparatusId] ?? {};
+        const dynamicProps = {
+          ...(apparatusConfig.initialProps ?? {}),
+          ...(state.apparatusProps[apparatusId] ?? {}),
+        };
         const isTargetSwirling = isSwirling && (apparatusConfig.component === 'ConicalFlask' || apparatusConfig.component === 'Beaker' || apparatusConfig.component === 'TestTube');
 
         // Glassware and reaction vessels (Beakers, Flasks) have priority foreground z-index over the burette stand
@@ -372,7 +375,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               left: `${zone.position.x}%`,
               top: `${zone.position.y}%`,
               transform: `translate(-50%, -50%) scale(${benchScale})`,
-              animation: isTargetSwirling ? 'apparatusSwirl 0.8s ease-in-out infinite' : 'fadeIn 0.3s ease-out',
+              animation: 'fadeIn 0.3s ease-out',
               filter: isVessel
                 ? 'drop-shadow(0 14px 18px rgba(0,0,0,0.30)) drop-shadow(0 2px 8px rgba(59,130,246,0.18))'
                 : 'drop-shadow(0 14px 14px rgba(0,0,0,0.25))',
@@ -380,20 +383,28 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               transition: 'transform 0.2s ease',
             }}
           >
-            <Component
-              id={apparatusId}
-              liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
-              flags={{ ...state.flags, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
-              variables={{ ...state.variables, stopcockOpen }}
-              extraProps={{
-                stopcockOpen,
-                onSetStopcock: (val: number) => {
-                  setStopcockOpen(val);
-                  dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
-                },
+            <div
+              style={{
+                animation: isTargetSwirling ? 'innerApparatusSwirl 0.8s ease-in-out infinite' : undefined,
+                transformOrigin: '50% 88%',
+                display: 'inline-block',
               }}
-              {...dynamicProps}
-            />
+            >
+              <Component
+                id={apparatusId}
+                liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
+                flags={{ ...state.flags, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+                variables={{ ...state.variables, stopcockOpen }}
+                extraProps={{
+                  stopcockOpen,
+                  onSetStopcock: (val: number) => {
+                    setStopcockOpen(val);
+                    dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                  },
+                }}
+                {...dynamicProps}
+              />
+            </div>
           </div>
         );
       })}
@@ -402,17 +413,17 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       <div
         style={{
           position: 'absolute',
-          bottom: 14,
-          left: 14,
+          bottom: 12,
+          left: 12,
           zIndex: 35,
           display: 'flex',
-          gap: 8,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(8px)',
-          border: '1.5px solid var(--border-subtle, #e2e8f0)',
-          borderRadius: 10,
-          padding: '5px 8px',
-          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
+          gap: 6,
+          background: 'var(--bg-card)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '4px 6px',
+          boxShadow: 'var(--shadow-lg)',
         }}
       >
         {/* Shake / Swirl Flask button */}
@@ -426,18 +437,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-md)',
             fontSize: '0.72rem',
-            fontWeight: 700,
+            fontWeight: 600,
             cursor: 'pointer',
-            border: isSwirling ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
-            background: isSwirling ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f8fafc',
-            color: isSwirling ? '#ffffff' : '#334155',
-            boxShadow: isSwirling ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
+            border: isSwirling ? '1px solid var(--primary)' : '1px solid var(--border)',
+            background: isSwirling ? 'var(--primary)' : 'var(--bg-secondary)',
+            color: isSwirling ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: isSwirling ? '0 2px 8px rgba(79, 70, 229, 0.35)' : 'none',
+            transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
+          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
           <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
         </button>
 
@@ -452,18 +463,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
-            borderRadius: 6,
+            borderRadius: 'var(--radius-md)',
             fontSize: '0.72rem',
-            fontWeight: 700,
+            fontWeight: 600,
             cursor: 'pointer',
-            border: isStirring ? '1.5px solid #059669' : '1px solid #cbd5e1',
-            background: isStirring ? 'linear-gradient(135deg, #059669, #047857)' : '#f8fafc',
-            color: isStirring ? '#ffffff' : '#334155',
-            boxShadow: isStirring ? '0 2px 8px rgba(5, 150, 105, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
+            border: isStirring ? '1px solid var(--success)' : '1px solid var(--border)',
+            background: isStirring ? 'var(--success)' : 'var(--bg-secondary)',
+            color: isStirring ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: isStirring ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
+            transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
+          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
           <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
         </button>
       </div>
@@ -476,8 +487,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           right: 12,
           padding: '6px 12px',
           borderRadius: 'var(--radius-md)',
-          background: 'rgba(255,255,255,0.9)',
-          border: '1px solid var(--border-subtle)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           fontSize: '0.75rem',
           fontFamily: 'var(--font-mono)',
           color: 'var(--text-secondary)',
@@ -550,7 +561,7 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
           isOver ? '#2563eb' :
           isActive ? '#60a5fa' :
           hasItem ? 'transparent' :
-          'rgba(148, 163, 184, 0.3)'
+          'rgba(148, 163, 184, 0.22)'
         }`,
         background: isOver
           ? 'rgba(37, 99, 235, 0.08)'
@@ -568,7 +579,7 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
       {!hasItem && !isOver && (
         <span style={{
           fontSize: '0.6rem',
-          color: 'rgba(148, 163, 184, 0.6)',
+          color: 'rgba(148, 163, 184, 0.55)',
           textAlign: 'center',
           padding: 4,
           pointerEvents: 'none',

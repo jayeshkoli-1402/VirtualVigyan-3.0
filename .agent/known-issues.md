@@ -93,4 +93,21 @@ There are zero automated tests. All validation was done manually. The `engine/` 
 1. `SUBMIT_CALCULATION` now saves answers and marks `'calculation-submitted'`, but does NOT auto-advance. The student stays on `GenericCalculation` to review clear "✓ Correct" or "✗ Incorrect" badges with step-by-step worked formulas, then clicks `"View Final Score & Results →"`.
 2. Scoring rubrics must include `calculationCorrect` evaluators (worth 40% of total score). Incorrect calculations correctly penalize the student's score.
 
+### 19. Burette liquid pre-filled before dispensing titrant (FIXED)
+**Was:** In `src/apparatus/index.tsx`, `BuretteSVG` and `BuretteStand` evaluated `effectiveLevel` from `hasVolumeVar` or variable existence. Because titration experiments initialize variables such as `naohVolume: 0`, `buretteReading: 0`, or `volumeAdded: 0`, the level evaluated to `(50 - 0) / 50 = 1.0` (100% full), causing the burette to render full of liquid immediately upon mounting or dragging, before the student completed the "Fill Burette" step.
+**Fix:** Updated `BuretteSVG` and `BuretteStand` in `src/apparatus/index.tsx` so that `isBuretteFilled` strictly requires `flags?.buretteFilled === true` (or `extraProps?.buretteFilled === true` / `flags?.['burette-filled'] === true`). When `flags.buretteFilled` is false or not yet set, `effectiveLevel` is strictly 0. Pre-seeded `state.apparatusProps` in `experimentRunner.ts` and `GenericBench.tsx` from `config.apparatus[].initialProps` so apparatus initial properties (such as `liquidLevel: 0`) are preserved across all 8 titration experiments and legacy labs.
+
+### 20. Apparatus shrinking during Shake / Swirl animation (FIXED)
+**Was:** In `src/components/GenericLab/GenericBench.tsx`, `@keyframes apparatusSwirl` was applied directly to the outer positioned apparatus container. Because the keyframes specified `transform: translate(...) rotate(...)` without `scale(${benchScale})`, CSS animation replaced the inline 1.7x scale factor with default 1.0x, shrinking the glassware by ~42% while shaking.
+**Fix:** Removed keyframe animation from the outer scaled container. Wrapped the apparatus `<Component />` inside an inner wrapper with `@keyframes innerApparatusSwirl` using rotational and translate motion around its base (`transformOrigin: '50% 88%'`), preserving 100% of the outer container's scale.
+
+### 21. Main experiment playground canvas remaining stark white in Dark Mode (FIXED)
+**Was:** In `GenericBench.tsx`, the workbench canvas background was hardcoded to `radial-gradient(ellipse at 50% 30%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)`. In Dark Mode, this left a glaring white bench surface contrasting harshly with the dark header and panels.
+**Fix:** Replaced hardcoded `#ffffff` with CSS custom properties `radial-gradient(ellipse at 50% 30%, var(--bg-card) 0%, var(--bg-inset) 60%, var(--bg-secondary) 100%)`, smoothly adapting between Light Mode (clean bright lab bench) and Dark Mode (deep navy/slate workbench atmosphere).
+
+### 22. Retort stand faded ghost appearance & DBATU categorization (FIXED)
+**Was:** `RetortStand` SVG had hardcoded `opacity: 0.38` and `GenericBench.tsx` applied `opacity: 0.35`, resulting in `0.38 * 0.35 = 0.13` (13% opacity). DBATU experiments were also misclassified under Class 11 & Class 12 in the experiment selector and curriculum views.
+**Fix:** Restored full `opacity: 1.0` in `RetortStand` SVG with sharp metallic gradients and cast-iron base with realistic drop shadow (`opacity: 0.95`, `filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35))`). Categorized all 9 DBATU engineering practicals under `F.Y. B.Tech (DBATU)` with dedicated filter pill.
+
+
 

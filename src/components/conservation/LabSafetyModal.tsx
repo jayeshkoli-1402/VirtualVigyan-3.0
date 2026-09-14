@@ -34,7 +34,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
         style={{
           maxWidth: '520px',
           width: '100%',
-          background: '#ffffff',
+          background: 'var(--bg-card)',
           borderRadius: '16px',
           padding: '24px',
           boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
@@ -63,7 +63,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
             <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#9a3412', margin: 0 }}>
               Mandatory Lab Safety Protocols
             </h2>
-            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0 0' }}>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
               Standard Chemical PPE & Hazard Briefing for MH9-CHEM-002
             </p>
           </div>
@@ -90,7 +90,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
 
         {/* PPE Checklist */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
             Required Personal Protective Equipment (PPE):
           </div>
 
@@ -103,7 +103,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 gap: 10,
                 padding: '10px 12px',
                 borderRadius: '8px',
-                border: gogglesEquipped ? '1.5px solid #10b981' : '1.5px solid #e2e8f0',
+                border: gogglesEquipped ? '1.5px solid #10b981' : '1px solid var(--border)',
                 background: gogglesEquipped ? '#ecfdf5' : '#f8fafc',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -116,8 +116,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>🥽 Safety Goggles</div>
-                <div style={{ fontSize: '0.62rem', color: '#64748b' }}>Eye splash protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥽 Safety Goggles</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Eye splash protection</div>
               </div>
             </label>
 
@@ -129,7 +129,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 gap: 10,
                 padding: '10px 12px',
                 borderRadius: '8px',
-                border: maskEquipped ? '1.5px solid #10b981' : '1.5px solid #e2e8f0',
+                border: maskEquipped ? '1.5px solid #10b981' : '1px solid var(--border)',
                 background: maskEquipped ? '#ecfdf5' : '#f8fafc',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -142,8 +142,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>😷 Protective Mask</div>
-                <div style={{ fontSize: '0.62rem', color: '#64748b' }}>Aerosol/mist filter</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>😷 Protective Mask</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Aerosol/mist filter</div>
               </div>
             </label>
 
@@ -155,7 +155,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 gap: 10,
                 padding: '10px 12px',
                 borderRadius: '8px',
-                border: glovesEquipped ? '1.5px solid #10b981' : '1.5px solid #e2e8f0',
+                border: glovesEquipped ? '1.5px solid #10b981' : '1px solid var(--border)',
                 background: glovesEquipped ? '#ecfdf5' : '#f8fafc',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -168,8 +168,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>🧤 Chemical Gloves</div>
-                <div style={{ fontSize: '0.62rem', color: '#64748b' }}>Skin barrier protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🧤 Chemical Gloves</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Skin barrier protection</div>
               </div>
             </label>
 
@@ -181,7 +181,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 gap: 10,
                 padding: '10px 12px',
                 borderRadius: '8px',
-                border: labCoatEquipped ? '1.5px solid #10b981' : '1.5px solid #e2e8f0',
+                border: labCoatEquipped ? '1.5px solid #10b981' : '1px solid var(--border)',
                 background: labCoatEquipped ? '#ecfdf5' : '#f8fafc',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -194,8 +194,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>🥼 Lab Coat</div>
-                <div style={{ fontSize: '0.62rem', color: '#64748b' }}>Full body protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥼 Lab Coat</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Full body protection</div>
               </div>
             </label>
           </div>

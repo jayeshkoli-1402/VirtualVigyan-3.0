@@ -179,10 +179,10 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           gap: 8,
           marginBottom: '8px',
           padding: '4px 8px',
-          background: 'rgba(255, 255, 255, 0.9)',
-          borderRadius: 8,
-          border: '1px solid var(--border-subtle)',
-          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-card)',
           flexShrink: 0,
         }}
       >
@@ -193,8 +193,8 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
             alignItems: 'center',
             gap: 6,
             fontSize: '0.68rem',
-            color: '#065f46',
-            fontWeight: 600,
+            color: 'var(--text-secondary)',
+            fontWeight: 500,
           }}
         >
           <span>💡</span>
@@ -232,7 +232,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           )}
 
           {/* Zoom buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f1f5f9', padding: '2px 4px', borderRadius: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
             <button
               onClick={handleZoomOut}
               title="Zoom Out"
@@ -262,7 +262,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                 fontFamily: 'var(--font-mono)',
                 color: '#059669',
                 borderRadius: 4,
-                background: '#ffffff',
+                background: 'var(--bg-card)',
                 border: '1px solid #a7f3d0',
               }}
             >
@@ -288,32 +288,32 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           </div>
 
           {/* Pan directional buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f1f5f9', padding: '2px 4px', borderRadius: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
             <button
               onClick={handlePanLeft}
               title="Pan Left"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: '#334155', background: '#fff', borderRadius: 3, border: '1px solid #e2e8f0' }}
+              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
             >
               ←
             </button>
             <button
               onClick={handlePanUp}
               title="Pan Up"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: '#334155', background: '#fff', borderRadius: 3, border: '1px solid #e2e8f0' }}
+              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
             >
               ↑
             </button>
             <button
               onClick={handlePanDown}
               title="Pan Down"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: '#334155', background: '#fff', borderRadius: 3, border: '1px solid #e2e8f0' }}
+              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
             >
               ↓
             </button>
             <button
               onClick={handlePanRight}
               title="Pan Right"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: '#334155', background: '#fff', borderRadius: 3, border: '1px solid #e2e8f0' }}
+              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
             >
               →
             </button>
@@ -624,7 +624,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
               <foreignObject x={152} y={180} width={135} height={52}>
                 <div
                   style={{
-                    background: '#ffffff',
+                    background: 'var(--bg-card)',
                     border: '1.5px solid #059669',
                     borderRadius: 8,
                     padding: '6px 10px',
@@ -744,7 +744,7 @@ const DropZoneOverlay: React.FC<{
                 fontWeight: 800,
                 textAlign: 'center',
                 padding: '3px 8px',
-                background: '#ffffff',
+                background: 'var(--bg-card)',
                 borderRadius: 5,
                 border: '1.5px solid #059669',
                 boxShadow: '0 2px 4px rgba(0, 0, 0, 0.12)',

@@ -198,7 +198,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
               display: 'grid',
               gridTemplateColumns: isMobile
                 ? '1fr'
-                : `${leftCollapsed ? '52px' : '200px'} 1fr ${rightCollapsed ? '52px' : '240px'}`,
+                : `${leftCollapsed ? '48px' : '210px'} 1fr ${rightCollapsed ? '48px' : '260px'}`,
               gap: 0,
               minHeight: 0,
               transition: 'grid-template-columns 0.2s ease',
@@ -206,9 +206,9 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
           >
             {/* Left: Toolbox */}
             <div style={{
-              borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
-              borderBottom: isMobile ? '1px solid var(--border-subtle)' : 'none',
-              background: '#ffffff',
+              borderRight: isMobile ? 'none' : '1px solid var(--border)',
+              borderBottom: isMobile ? '1px solid var(--border)' : 'none',
+              background: 'var(--bg-card)',
               order: isMobile ? 1 : 0,
             }}>
               <GenericToolbox
@@ -224,7 +224,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
               display: 'flex',
               padding: 8,
               order: isMobile ? 0 : 1,
-              background: '#f8fafc',
+              background: 'var(--bg-secondary)',
             }}>
               <GenericBench
                 config={config}
@@ -236,9 +236,9 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
 
             {/* Right: Instructions */}
             <div style={{
-              borderLeft: isMobile ? 'none' : '1px solid var(--border-subtle)',
-              borderTop: isMobile ? '1px solid var(--border-subtle)' : 'none',
-              background: '#ffffff',
+              borderLeft: isMobile ? 'none' : '1px solid var(--border)',
+              borderTop: isMobile ? '1px solid var(--border)' : 'none',
+              background: 'var(--bg-card)',
               order: 2,
             }}>
               <GenericInstructions
@@ -259,12 +259,12 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
               padding: '8px 14px', borderRadius: 'var(--radius-md)',
-              background: '#ffffff', border: '1.5px solid #2563eb',
+              background: 'var(--bg-card)', border: '1.5px solid var(--accent)',
               opacity: 0.95, cursor: 'grabbing',
-              boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+              boxShadow: 'var(--shadow-lg)',
             }}>
               <span style={{ fontSize: 18 }}>{getDragLabel(activeDragId).icon}</span>
-              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#1d4ed8' }}>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--accent)' }}>
                 {getDragLabel(activeDragId).label}
               </span>
             </div>

@@ -242,6 +242,13 @@ function advanceToNextStep(
 export function createInitialState(config: ExperimentConfig): ExperimentState {
   const generatedValues = config.generateInitialValues?.() ?? {};
 
+  const initialApparatusProps: Record<string, Record<string, unknown>> = {};
+  for (const app of config.apparatus) {
+    if (app.initialProps) {
+      initialApparatusProps[app.id] = { ...app.initialProps };
+    }
+  }
+
   return {
     currentStepIndex: 0,
     currentStepId: config.steps[0]?.id ?? '',
@@ -250,7 +257,7 @@ export function createInitialState(config: ExperimentConfig): ExperimentState {
     variables: { ...config.initialVariables, ...generatedValues },
     flags: { ...config.initialFlags },
     animations: {},
-    apparatusProps: {},
+    apparatusProps: initialApparatusProps,
     mistakes: [],
     studentAnswers: {},
     score: null,

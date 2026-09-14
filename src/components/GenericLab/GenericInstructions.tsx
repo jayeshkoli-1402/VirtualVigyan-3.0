@@ -65,7 +65,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           style={{
             all: 'unset', cursor: 'pointer', fontSize: '0.7rem',
             color: 'var(--text-muted)', padding: '2px 4px',
-            borderRadius: 4, border: '1px solid var(--border-subtle)',
+            borderRadius: 4, border: '1px solid var(--border)',
           }}
         >
           ←
@@ -89,7 +89,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           style={{
             all: 'unset', cursor: 'pointer', fontSize: '0.7rem',
             color: 'var(--text-muted)', padding: '2px 4px',
-            borderRadius: 4, border: '1px solid var(--border-subtle)',
+            borderRadius: 4, border: '1px solid var(--border)',
           }}
         >
           →

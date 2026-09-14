@@ -51,7 +51,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
             height: 96,
             borderRadius: '50%',
             margin: '0 auto 16px',
-            background: `conic-gradient(${scoreColor} ${totalScore * 3.6}deg, #e2e8f0 0deg)`,
+            background: `conic-gradient(${scoreColor} ${totalScore * 3.6}deg, var(--border) 0deg)`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -63,7 +63,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
               width: 78,
               height: 78,
               borderRadius: '50%',
-              background: '#ffffff',
+              background: 'var(--bg-card)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -82,7 +82,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
             >
               {totalScore}
             </span>
-            <span style={{ fontSize: '0.6rem', color: '#64748b', marginTop: 2 }}>/ 100</span>
+            <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: 2 }}>/ 100</span>
           </div>
         </div>
         <h2
@@ -95,14 +95,14 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
         >
           {getScoreLabel(totalScore)}
         </h2>
-        <p style={{ color: '#64748b', fontSize: '0.8rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
           Acid-Base Titration Performance Evaluation
         </p>
       </div>
 
       {/* Score breakdown */}
       <div className="glass-card" style={{ padding: '20px', marginBottom: 16 }}>
-        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 14, color: '#334155' }}>
+        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 14, color: 'var(--text-secondary)' }}>
           Score Breakdown
         </h3>
 
@@ -143,39 +143,39 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
 
       {/* Detailed feedback */}
       <div className="glass-card" style={{ padding: '20px', marginBottom: 16 }}>
-        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: '#334155' }}>
+        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 12, color: 'var(--text-secondary)' }}>
           Detailed Feedback
         </h3>
 
         <div
           style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-md)',
             padding: 14,
             marginBottom: 12,
           }}
         >
-          <p style={{ fontSize: '0.8rem', color: '#334155', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             {endpointEval.explanation}
           </p>
         </div>
 
-        <div style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.7 }}>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
           <p style={{ marginBottom: 6 }}>
-            <strong style={{ color: '#0f172a' }}>Your recorded endpoint:</strong>{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>Your recorded endpoint:</strong>{' '}
             {state.endpointMarkedAt?.toFixed(1)} mL
           </p>
           <p style={{ marginBottom: 6 }}>
-            <strong style={{ color: '#0f172a' }}>True equivalence point:</strong>{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>True equivalence point:</strong>{' '}
             {EQUIVALENCE_VOLUME_ML}.0 mL
           </p>
           <p style={{ marginBottom: 6 }}>
-            <strong style={{ color: '#0f172a' }}>Your calculated concentration:</strong>{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>Your calculated concentration:</strong>{' '}
             {state.studentConcentration?.toFixed(4)} M
           </p>
           <p>
-            <strong style={{ color: '#0f172a' }}>Ground truth HCl concentration:</strong>{' '}
+            <strong style={{ color: 'var(--text-primary)' }}>Ground truth HCl concentration:</strong>{' '}
             0.1000 M
           </p>
         </div>
@@ -206,15 +206,15 @@ const ScoreRow: React.FC<{
   return (
     <div
       style={{
-        background: '#f8fafc',
-        border: '1px solid #e2e8f0',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border)',
         borderRadius: 'var(--radius-sm)',
         padding: '10px 12px',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
         <div>
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#0f172a' }}>{label}</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</span>
           <span style={{ fontSize: '0.7rem', color, marginLeft: 8, fontWeight: 600 }}>{sublabel}</span>
         </div>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', fontWeight: 700, color }}>
@@ -224,7 +224,7 @@ const ScoreRow: React.FC<{
       <div
         style={{
           height: 5,
-          background: '#e2e8f0',
+          background: 'var(--border)',
           borderRadius: 3,
           overflow: 'hidden',
         }}

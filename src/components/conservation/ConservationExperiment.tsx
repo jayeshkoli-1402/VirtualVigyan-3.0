@@ -278,9 +278,9 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
             {/* Left: Toolbox */}
             <div
               style={{
-                borderRight: isMobile ? 'none' : '1px solid var(--border-subtle)',
-                borderBottom: isMobile ? '1px solid var(--border-subtle)' : 'none',
-                background: '#ffffff',
+                borderRight: isMobile ? 'none' : '1px solid var(--border)',
+                borderBottom: isMobile ? '1px solid var(--border)' : 'none',
+                background: 'var(--bg-card)',
                 order: isMobile ? 1 : 0,
               }}
             >
@@ -297,7 +297,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
                 display: 'flex',
                 padding: 8,
                 order: isMobile ? 0 : 1,
-                background: '#f8fafc',
+                background: 'var(--bg-secondary)',
               }}
             >
               <ConservationLabBench
@@ -311,9 +311,9 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
             {/* Right: Instructions */}
             <div
               style={{
-                borderLeft: isMobile ? 'none' : '1px solid var(--border-subtle)',
-                borderTop: isMobile ? '1px solid var(--border-subtle)' : 'none',
-                background: '#ffffff',
+                borderLeft: isMobile ? 'none' : '1px solid var(--border)',
+                borderTop: isMobile ? '1px solid var(--border)' : 'none',
+                background: 'var(--bg-card)',
                 order: 2,
               }}
             >
@@ -339,7 +339,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
               gap: 8,
               padding: '8px 14px',
               borderRadius: 'var(--radius-md)',
-              background: '#ffffff',
+              background: 'var(--bg-card)',
               border: '1.5px solid #059669',
               opacity: 0.95,
               cursor: 'grabbing',

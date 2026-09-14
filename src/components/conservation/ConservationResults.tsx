@@ -74,7 +74,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
               width: 72,
               height: 72,
               borderRadius: '50%',
-              background: '#ffffff',
+              background: 'var(--bg-card)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

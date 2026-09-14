@@ -40,7 +40,7 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
           alignItems: 'center',
           justifyContent: isCollapsed ? 'center' : 'space-between',
           marginBottom: 2,
-          borderBottom: '1px solid var(--border-subtle)',
+          borderBottom: '1px solid var(--border)',
           paddingBottom: 8,
           width: '100%',
         }}
@@ -63,12 +63,12 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
             onClick={onToggleCollapse}
             title={isCollapsed ? 'Expand Instructions' : 'Collapse Instructions'}
             style={{
-              background: '#f1f5f9',
-              border: '1px solid #cbd5e1',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
               borderRadius: 4,
               padding: '3px 6px',
               fontSize: '0.65rem',
-              color: '#334155',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
               fontWeight: 700,
               display: 'inline-flex',

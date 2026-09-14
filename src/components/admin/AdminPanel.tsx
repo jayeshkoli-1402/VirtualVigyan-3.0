@@ -439,7 +439,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '12px 14px', fontWeight: 800 }}>User Profile</th>
                   <th style={{ padding: '12px 14px', fontWeight: 800 }}>Role</th>
                   <th style={{ padding: '12px 14px', fontWeight: 800 }}>Grade / Affiliation</th>
@@ -449,7 +449,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
               </thead>
               <tbody>
                 {filteredUsers.map((u) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <span style={{ fontSize: 24 }}>{u.avatar || '👤'}</span>

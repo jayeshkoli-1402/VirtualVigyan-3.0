@@ -175,7 +175,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment 
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
               <thead>
-                <tr style={{ borderBottom: '2px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
                   <th style={{ padding: '10px 12px', fontWeight: 800 }}>Student</th>
                   <th style={{ padding: '10px 12px', fontWeight: 800 }}>Class</th>
                   <th style={{ padding: '10px 12px', fontWeight: 800 }}>Labs Done</th>
@@ -184,7 +184,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment 
               </thead>
               <tbody>
                 {students.map((st) => (
-                  <tr key={st.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                  <tr key={st.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: 22 }}>{st.avatar || '🎓'}</span>

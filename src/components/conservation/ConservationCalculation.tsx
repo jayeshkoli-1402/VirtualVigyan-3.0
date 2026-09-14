@@ -118,9 +118,9 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
         style={{
           marginBottom: 20,
           padding: '10px 14px',
-          background: '#f8fafc',
+          background: 'var(--bg-secondary)',
           borderRadius: 8,
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border)',
         }}
       >
         <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
@@ -159,8 +159,8 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
                 ? deltaMResult?.correct
                   ? '2px solid #059669'
                   : '2px solid #dc2626'
-                : '1px solid var(--border-subtle)',
-              background: '#ffffff',
+                : '1px solid var(--border)',
+              background: 'var(--bg-card)',
               outline: 'none',
               boxSizing: 'border-box',
             }}
@@ -210,8 +210,8 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
                 ? deviationResult?.correct
                   ? '2px solid #059669'
                   : '2px solid #dc2626'
-                : '1px solid var(--border-subtle)',
-              background: '#ffffff',
+                : '1px solid var(--border)',
+              background: 'var(--bg-card)',
               outline: 'none',
               boxSizing: 'border-box',
             }}

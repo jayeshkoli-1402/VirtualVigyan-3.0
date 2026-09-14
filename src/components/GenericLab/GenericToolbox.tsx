@@ -39,9 +39,11 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
         <button
           onClick={onToggleCollapse}
           style={{
-            all: 'unset', cursor: 'pointer', fontSize: '0.7rem',
-            color: 'var(--text-muted)', padding: '2px 4px',
-            borderRadius: 4, border: '1px solid var(--border-subtle)',
+            all: 'unset', cursor: 'pointer', fontSize: '0.625rem',
+            color: 'var(--text-muted)', padding: '3px 6px',
+            borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+            background: 'var(--bg-secondary)',
+            transition: 'all 0.15s ease',
           }}
         >
           {isCollapsed ? '→' : '←'}
@@ -128,23 +130,23 @@ const DraggableCard: React.FC<DraggableCardProps> = ({
         gap: compact ? 0 : 8,
         padding: compact ? '6px' : '8px 10px',
         borderRadius: 'var(--radius-md)',
-        border: `1.5px solid ${isDragging ? '#2563eb' : disabled ? '#e2e8f0' : 'var(--border-subtle)'}`,
-        background: disabled ? '#f8fafc' : '#ffffff',
+        border: `1px solid ${isDragging ? 'var(--accent)' : disabled ? 'var(--border)' : 'var(--border)'}`,
+        background: disabled ? 'var(--bg-secondary)' : 'var(--bg-card)',
         opacity: disabled ? 0.45 : dimmed ? 0.55 : 1,
         cursor: disabled ? 'not-allowed' : 'grab',
         transition: 'all 0.15s ease',
-        fontSize: compact ? '1rem' : '0.78rem',
+        fontSize: compact ? '1rem' : '0.8125rem',
         fontWeight: 500,
-        color: disabled ? '#94a3b8' : 'var(--text-primary)',
+        color: disabled ? 'var(--text-muted)' : 'var(--text-primary)',
         justifyContent: compact ? 'center' : 'flex-start',
         userSelect: 'none',
         touchAction: 'none',
       }}
     >
-      <span style={{ fontSize: compact ? '1rem' : '1.1rem' }}>{icon}</span>
+      <span style={{ fontSize: compact ? '1rem' : '1rem' }}>{icon}</span>
       {!compact && label && <span>{label}</span>}
       {disabled && !compact && (
-        <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: '#94a3b8' }}>✓</span>
+        <span style={{ marginLeft: 'auto', fontSize: '0.6875rem', color: 'var(--accent-green)' }}>✓</span>
       )}
     </div>
   );

@@ -1,503 +1,607 @@
-import React from 'react';
-import { getAllExperiments } from '../experiments';
+import React, { useState, useMemo } from 'react';
+import { HeroBanner } from './home/HeroBanner';
+import { NotesPromoBanner } from './home/NotesPromoBanner';
+import { ExperimentThumbnail } from './home/ExperimentCardThumbnails';
+
+export interface ExperimentItem {
+  id: string;
+  type: 'legacy-titration' | 'legacy-conservation' | 'generic';
+  title: string;
+  description: string;
+  classLevel: string; // 'Class 9', 'Class 10', 'Class 11', 'Class 12'
+  categoryTag: string; // e.g. 'Class 11 • Engineering Chemistry'
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  thumbnailType: string;
+  order: number;
+}
+
+const ALL_EXPERIMENTS: ExperimentItem[] = [
+  {
+    id: 'viscosity-ostwald',
+    type: 'generic',
+    title: "Determination of Viscosity by Ostwald's Viscometer",
+    description: 'Measure the flow time of a liquid and determine its coefficient of viscosity.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Medium',
+    thumbnailType: 'viscosity-ostwald',
+    order: 1,
+  },
+  {
+    id: 'ph-metric-titration',
+    type: 'generic',
+    title: 'pH-Metric Titration (Acid–Base)',
+    description: 'Determine the strength of an acid or base using a pH meter and plot the titration curve.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Medium',
+    thumbnailType: 'ph-metric-titration',
+    order: 2,
+  },
+  {
+    id: 'conductometric-titration',
+    type: 'generic',
+    title: 'Conductometric Titration (HCl vs NaOH)',
+    description: 'Monitor conductance during neutralization and find the equivalence point.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Hard',
+    thumbnailType: 'conductometric-titration',
+    order: 3,
+  },
+  {
+    id: 'chloride-mohr-method',
+    type: 'generic',
+    title: "Chloride Content by Mohr's Method",
+    description: 'Estimate chloride content using silver nitrate and potassium chromate indicator.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Medium',
+    thumbnailType: 'chloride-mohr-method',
+    order: 4,
+  },
+  {
+    id: 'water-acidity',
+    type: 'generic',
+    title: 'Acidity of Water Sample',
+    description: 'Determine pH and total acidity of a water sample using standard methods.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Medium',
+    thumbnailType: 'water-acidity',
+    order: 5,
+  },
+  {
+    id: 'water-alkalinity',
+    type: 'generic',
+    title: 'Determination of Alkalinity of Water',
+    description: 'Determine phenolphthalein, methyl orange and total alkalinity by titration.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Hard',
+    thumbnailType: 'water-alkalinity',
+    order: 6,
+  },
+  {
+    id: 'water-hardness-edta',
+    type: 'generic',
+    title: 'Hardness of Water by EDTA Method',
+    description: 'Determine total, permanent and temporary hardness using EDTA.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Easy',
+    thumbnailType: 'water-hardness-edta',
+    order: 7,
+  },
+  {
+    id: 'acid-value-oil',
+    type: 'generic',
+    title: 'Acid Value of Vegetable Oil',
+    description: 'Determine the acid value and percentage of free fatty acids (FFA) in vegetable oil by KOH titration.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Engineering Chemistry',
+    difficulty: 'Medium',
+    thumbnailType: 'acid-value-oil',
+    order: 8,
+  },
+  {
+    id: 'dissolved-oxygen-winkler',
+    type: 'generic',
+    title: "Dissolved Oxygen by Winkler's Method",
+    description: 'Estimate dissolved oxygen in water sample using sodium thiosulfate iodometric titration.',
+    classLevel: 'F.Y. B.Tech (DBATU)',
+    categoryTag: 'F.Y. B.Tech • Environmental Chemistry',
+    difficulty: 'Hard',
+    thumbnailType: 'acid-value-oil',
+    order: 9,
+  },
+  {
+    id: 'titration',
+    type: 'legacy-titration',
+    title: 'Acid-Base Titration (Volumetric Analysis)',
+    description: 'Determine the unknown concentration of HCl using standardized NaOH and phenolphthalein indicator.',
+    classLevel: 'Class 11',
+    categoryTag: 'Class 11 • Volumetric Analysis',
+    difficulty: 'Medium',
+    thumbnailType: 'water-alkalinity',
+    order: 10,
+  },
+  {
+    id: 'zinc-acid-reaction',
+    type: 'generic',
+    title: 'Zinc-Acid Reaction & Gas Evolution',
+    description: 'Observe zinc reacting with dilute acid and test hydrogen gas evolution with pop sound.',
+    classLevel: 'Class 10',
+    categoryTag: 'Class 10 • Chemical Reactions',
+    difficulty: 'Easy',
+    thumbnailType: 'water-hardness-edta',
+    order: 11,
+  },
+  {
+    id: 'conservation',
+    type: 'legacy-conservation',
+    title: 'Law of Conservation of Mass',
+    description: 'Verify mass invariance during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Chemical Reactions',
+    difficulty: 'Easy',
+    thumbnailType: 'water-acidity',
+    order: 12,
+  },
+];
 
 interface ExperimentSelectorProps {
   onSelectExperiment: (id: 'titration' | 'conservation') => void;
   onSelectEngineExperiment?: (id: string) => void;
   onSelectVR?: () => void;
+  onGoToNotes?: () => void;
+  onOpenHowItWorks?: () => void;
+  externalSearchQuery?: string;
 }
 
-const experiments = [
-  {
-    id: 'conservation' as const,
-    title: 'Conservation of Mass',
-    subtitle: 'BaCl₂ + Na₂SO₄ → BaSO₄↓ + 2NaCl',
-    description: 'Verify the Law of Conservation of Mass by measuring the total mass of a sealed system before and after a double displacement reaction.',
-    classLevel: 'Class 9',
-    subject: 'Chemistry',
-    topic: 'Chemical Reactions & Laws',
-    difficulty: 'Beginner',
-    icon: '⚖️',
-    accentFrom: '#059669',
-    accentTo: '#0d9488',
-    borderAccent: 'rgba(5, 150, 105, 0.3)',
-  },
-  {
-    id: 'titration' as const,
-    title: 'Acid-Base Titration',
-    subtitle: 'HCl + NaOH → NaCl + H₂O',
-    description: 'Determine the unknown concentration of HCl by titrating with NaOH solution using phenolphthalein indicator.',
-    classLevel: 'Class 11',
-    subject: 'Chemistry',
-    topic: 'Volumetric Analysis',
-    difficulty: 'Intermediate',
-    icon: '🧪',
-    accentFrom: '#2563eb',
-    accentTo: '#7c3aed',
-    borderAccent: 'rgba(37, 99, 235, 0.3)',
-  },
-];
-
-const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
+export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   onSelectExperiment,
   onSelectEngineExperiment,
-  onSelectVR,
+  onGoToNotes = () => {},
+  onOpenHowItWorks = () => {},
+  externalSearchQuery = '',
 }) => {
-  const [category, setCategory] = React.useState<'all' | 'dbatu' | 'school'>('all');
-  const engineExperiments = getAllExperiments();
+  const [selectedClass, setSelectedClass] = useState<string>('All');
+  const [sortOption, setSortOption] = useState<'latest' | 'difficulty-asc' | 'difficulty-desc' | 'alpha'>('latest');
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
-  const showLegacy = category === 'all' || category === 'school';
-  const filteredEngineExperiments = engineExperiments.filter((exp) => {
-    if (category === 'all') return true;
-    if (category === 'dbatu') return exp.class === 'F.Y. B.Tech' || exp.chapter.includes('Engineering');
-    if (category === 'school') return typeof exp.class === 'number';
-    return true;
-  });
+  // Filter & sort experiments
+  const filteredExperiments = useMemo(() => {
+    let list = ALL_EXPERIMENTS;
+
+    // Filter by class pill
+    if (selectedClass !== 'All') {
+      list = list.filter((item) => item.classLevel === selectedClass);
+    }
+
+    // Filter by search query (from top header)
+    if (externalSearchQuery.trim()) {
+      const q = externalSearchQuery.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.title.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.categoryTag.toLowerCase().includes(q)
+      );
+    }
+
+    // Sort options
+    return [...list].sort((a, b) => {
+      if (sortOption === 'alpha') return a.title.localeCompare(b.title);
+      if (sortOption === 'difficulty-asc') {
+        const diffWeight = { Easy: 1, Medium: 2, Hard: 3 };
+        return diffWeight[a.difficulty] - diffWeight[b.difficulty];
+      }
+      if (sortOption === 'difficulty-desc') {
+        const diffWeight = { Easy: 1, Medium: 2, Hard: 3 };
+        return diffWeight[b.difficulty] - diffWeight[a.difficulty];
+      }
+      return a.order - b.order;
+    });
+  }, [selectedClass, externalSearchQuery, sortOption]);
+
+  const handleCardClick = (item: ExperimentItem) => {
+    if (item.type === 'legacy-titration') {
+      onSelectExperiment('titration');
+    } else if (item.type === 'legacy-conservation') {
+      onSelectExperiment('conservation');
+    } else if (onSelectEngineExperiment) {
+      onSelectEngineExperiment(item.id);
+    }
+  };
+
+  const getDifficultyBadge = (diff: 'Easy' | 'Medium' | 'Hard') => {
+    switch (diff) {
+      case 'Easy':
+        return {
+          bg: '#dcfce7',
+          color: '#15803d',
+        };
+      case 'Medium':
+        return {
+          bg: '#fef3c7',
+          color: '#b45309',
+        };
+      case 'Hard':
+        return {
+          bg: '#fee2e2',
+          color: '#dc2626',
+        };
+    }
+  };
+
+  const classPills = ['All', 'F.Y. B.Tech (DBATU)', 'Class 11', 'Class 10', 'Class 9'];
 
   return (
-    <div
-      className="animate-fade-in"
-      style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '32px 20px',
-        minHeight: '80vh',
-      }}
-    >
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <div
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: '50%',
-            margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, rgba(45, 212, 191, 0.12), rgba(59, 130, 246, 0.12))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid rgba(45, 212, 191, 0.2)',
-          }}
-        >
-          <span style={{ fontSize: 32 }}>🔬</span>
-        </div>
+    <div style={{ maxWidth: 1280, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      {/* ── 1. Hero Banner ── */}
+      <HeroBanner
+        onStartExploring={() => {
+          const section = document.getElementById('browse-experiments-section');
+          section?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onViewHowItWorks={onOpenHowItWorks}
+      />
+
+      {/* ── 2. Browse Experiments Header Bar ── */}
+      <div
+        id="browse-experiments-section"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+          marginBottom: 22,
+        }}
+      >
+        {/* Section Heading */}
         <h2
           style={{
-            fontSize: '1.6rem',
+            fontFamily: 'var(--font-heading)',
+            fontSize: '1.45rem',
             fontWeight: 800,
-            marginBottom: 6,
-            background: 'linear-gradient(135deg, var(--accent-teal), var(--accent-blue))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: 'var(--text-primary)',
+            margin: 0,
+            letterSpacing: '-0.02em',
           }}
         >
-          Select Experiment
+          Browse Experiments
         </h2>
-        <p
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: '0.88rem',
-            maxWidth: 480,
-            margin: '0 auto 20px',
-            lineHeight: 1.6,
-          }}
-        >
-          Choose an experiment to begin your interactive virtual lab simulation.
-        </p>
 
-        {/* Category Filter Tabs */}
-        <div
-          style={{
-            display: 'inline-flex',
-            background: 'var(--bg-secondary)',
-            borderRadius: 24,
-            padding: 5,
-            boxShadow: 'var(--clay-input-shadow)',
-            gap: 6,
-            flexWrap: 'wrap',
-            justifyContent: 'center',
-          }}
-        >
-          {[
-            { id: 'all', label: 'All Experiments' },
-            { id: 'dbatu', label: '🎓 F.Y. B.Tech (DBATU)' },
-            { id: 'school', label: '🏫 Classes 9–12 (NCERT)' },
-          ].map((tab) => {
-            const active = category === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setCategory(tab.id as 'all' | 'dbatu' | 'school')}
-                className="clay-btn"
+        {/* Right side: Filter Pills & Sort Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Class Filter Pills */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: 'var(--bg-secondary)',
+              padding: 4,
+              borderRadius: 9999,
+              border: '1px solid var(--border)',
+            }}
+          >
+            {classPills.map((cls) => {
+              const isSelected = selectedClass === cls;
+              return (
+                <button
+                  key={cls}
+                  id={`filter-pill-${cls.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => setSelectedClass(cls)}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    padding: '6px 14px',
+                    borderRadius: 9999,
+                    fontSize: '0.78rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    background: isSelected ? '#2563eb' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {cls}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div style={{ position: 'relative' }}>
+            <button
+              id="btn-sort-experiments"
+              onClick={() => setSortDropdownOpen(!sortDropdownOpen)}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 9999,
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: 'var(--text-secondary)',
+                boxShadow: 'var(--shadow-xs)',
+              }}
+            >
+              <span>
+                Sort by:{' '}
+                {sortOption === 'latest'
+                  ? 'Latest'
+                  : sortOption === 'difficulty-asc'
+                    ? 'Easiest'
+                    : sortOption === 'difficulty-desc'
+                      ? 'Hardest'
+                      : 'A–Z'}
+              </span>
+              <span style={{ fontSize: '0.65rem' }}>˅</span>
+            </button>
+
+            {sortDropdownOpen && (
+              <div
                 style={{
-                  padding: '8px 18px',
-                  borderRadius: 18,
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  background: active
-                    ? 'linear-gradient(145deg, #ffffff, var(--bg-card))'
-                    : 'transparent',
-                  color: active ? '#059669' : 'var(--text-secondary)',
-                  boxShadow: active
-                    ? '4px 6px 14px rgba(0, 0, 0, 0.08), inset 2px 2px 3px rgba(255, 255, 255, 0.9)'
-                    : 'none',
+                  position: 'absolute',
+                  top: 38,
+                  right: 0,
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  boxShadow: 'var(--shadow-md)',
+                  padding: 4,
+                  width: 150,
+                  zIndex: 100,
                 }}
               >
-                {tab.label}
-              </button>
+                {[
+                  { id: 'latest', label: 'Latest' },
+                  { id: 'difficulty-asc', label: 'Easiest First' },
+                  { id: 'difficulty-desc', label: 'Hardest First' },
+                  { id: 'alpha', label: 'Alphabetical' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      setSortOption(opt.id as any);
+                      setSortDropdownOpen(false);
+                    }}
+                    style={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      display: 'block',
+                      width: '100%',
+                      padding: '7px 10px',
+                      borderRadius: 6,
+                      fontSize: '0.78rem',
+                      fontWeight: sortOption === opt.id ? 700 : 500,
+                      color: sortOption === opt.id ? '#2563eb' : 'var(--text-primary)',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. 4-Column Grid of Experiment Cards ── */}
+      {filteredExperiments.length === 0 ? (
+        <div
+          style={{
+            padding: '60px 20px',
+            textAlign: 'center',
+            background: 'var(--bg-card)',
+            borderRadius: 16,
+            border: '1px solid var(--border)',
+          }}
+        >
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>
+            No experiments found
+          </h3>
+          <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+            No practicals matched "{externalSearchQuery}" in {selectedClass}.
+          </p>
+          <button
+            onClick={() => setSelectedClass('All')}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              padding: '8px 18px',
+              borderRadius: 8,
+              background: '#2563eb',
+              color: '#ffffff',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+            }}
+          >
+            Show All Experiments
+          </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+            gap: 20,
+          }}
+        >
+          {filteredExperiments.map((item) => {
+            const badge = getDifficultyBadge(item.difficulty);
+
+            return (
+              <div
+                key={item.id}
+                id={`card-${item.id}`}
+                onClick={() => handleCardClick(item)}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: 'var(--shadow-xs)',
+                  position: 'relative',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 10px 20px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04)';
+                  e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.35)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-xs)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }}
+              >
+                {/* ── Top Image Container ── */}
+                <div
+                  style={{
+                    height: 135,
+                    width: '100%',
+                    background: 'var(--bg-secondary)',
+                    borderBottom: '1px solid var(--border)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ExperimentThumbnail type={item.thumbnailType} width={280} height={135} />
+                </div>
+
+                {/* ── Card Content ── */}
+                <div
+                  style={{
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flex: 1,
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    {/* Difficulty Badge */}
+                    <div style={{ marginBottom: 10 }}>
+                      <span
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          background: badge.bg,
+                          color: badge.color,
+                          display: 'inline-block',
+                        }}
+                      >
+                        {item.difficulty}
+                      </span>
+                    </div>
+
+                    {/* Title */}
+                    <h3
+                      style={{
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: '0.94rem',
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        margin: '0 0 6px 0',
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {item.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p
+                      style={{
+                        fontSize: '0.78rem',
+                        color: 'var(--text-muted)',
+                        margin: 0,
+                        lineHeight: 1.5,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {item.description}
+                    </p>
+                  </div>
+
+                  {/* ── Card Footer: Tag & Action Arrow ── */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: 18,
+                      paddingTop: 12,
+                      borderTop: '1px solid var(--border)',
+                    }}
+                  >
+                    {/* Category Tag Pill */}
+                    <span
+                      style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        color: '#2563eb',
+                        background: 'rgba(37, 99, 235, 0.08)',
+                        padding: '3px 8px',
+                        borderRadius: 6,
+                        maxWidth: '78%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {item.categoryTag}
+                    </span>
+
+                    {/* Action Arrow Icon Button */}
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: 'rgba(37, 99, 235, 0.08)',
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      →
+                    </div>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
-      </div>
+      )}
 
-      {/* Experiment Cards Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 20,
-          maxWidth: 1080,
-          width: '100%',
-        }}
-      >
-        {showLegacy && experiments.map((exp) => (
-          <button
-            key={exp.id}
-            id={`btn-select-${exp.id}`}
-            onClick={() => onSelectExperiment(exp.id)}
-            className="clay-card"
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              padding: 26,
-              background: 'var(--bg-card)',
-              borderRadius: 26,
-              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(-4px) scale(1.01)';
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(0) scale(1)';
-            }}
-          >
-            {/* Decorative gradient bar at top */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 3,
-                background: `linear-gradient(90deg, ${exp.accentFrom}, ${exp.accentTo})`,
-                borderRadius: '16px 16px 0 0',
-              }}
-            />
-
-            {/* Icon + Badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 12,
-                  background: `linear-gradient(135deg, ${exp.accentFrom}18, ${exp.accentTo}18)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 22,
-                  flexShrink: 0,
-                }}
-              >
-                {exp.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
-                  <span
-                    style={{
-                      fontSize: '0.62rem',
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      color: exp.accentFrom,
-                      background: `${exp.accentFrom}12`,
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                    }}
-                  >
-                    {exp.classLevel}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: '0.62rem',
-                      fontWeight: 600,
-                      color: 'var(--text-muted)',
-                      background: 'rgba(148, 163, 184, 0.1)',
-                      padding: '2px 8px',
-                      borderRadius: 4,
-                    }}
-                  >
-                    {exp.difficulty}
-                  </span>
-                  {exp.id === 'conservation' && (
-                    <span
-                      style={{
-                        fontSize: '0.62rem',
-                        fontWeight: 700,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        color: '#0d9488',
-                        background: 'rgba(13, 148, 136, 0.12)',
-                        border: '1px solid rgba(13, 148, 136, 0.3)',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 3,
-                      }}
-                    >
-                      🥽 3D VR Ready
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Title & Subtitle */}
-            <h3
-              style={{
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                color: 'var(--text-primary)',
-                marginBottom: 4,
-                lineHeight: 1.3,
-              }}
-            >
-              {exp.title}
-            </h3>
-            <p
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                fontFamily: 'var(--font-mono)',
-                color: exp.accentFrom,
-                marginBottom: 10,
-              }}
-            >
-              {exp.subtitle}
-            </p>
-
-            {/* Description */}
-            <p
-              style={{
-                fontSize: '0.82rem',
-                color: 'var(--text-secondary)',
-                lineHeight: 1.55,
-                marginBottom: 14,
-                flex: 1,
-              }}
-            >
-              {exp.description}
-            </p>
-
-            {/* Direct 3D VR Launcher on Card */}
-            {exp.id === 'conservation' && (
-              <div style={{ marginBottom: 14 }}>
-                <button
-                  id="btn-card-launch-vr"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onSelectVR) {
-                      onSelectVR();
-                    } else {
-                      onSelectExperiment('conservation');
-                    }
-                  }}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 8,
-                    background: 'linear-gradient(135deg, #059669, #0284c7)',
-                    color: '#ffffff',
-                    border: 'none',
-                    fontSize: '0.78rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)',
-                    transition: 'transform 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.03)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-                >
-                  <span>🥽</span>
-                  <span>Launch 3D VR Lab (Cardboard / WebXR)</span>
-                </button>
-              </div>
-            )}
-
-            {/* Topic tag */}
-            <div
-              style={{
-                fontSize: '0.7rem',
-                color: 'var(--text-muted)',
-                borderTop: '1px solid var(--border-subtle)',
-                paddingTop: 12,
-              }}
-            >
-              📖 {exp.topic}
-            </div>
-
-            {/* Start arrow */}
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 24,
-                right: 24,
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: `linear-gradient(135deg, ${exp.accentFrom}, ${exp.accentTo})`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontSize: 14,
-                fontWeight: 700,
-              }}
-            >
-              →
-            </div>
-          </button>
-        ))}
-
-        {/* ═══ NEW ENGINE EXPERIMENTS ═══ */}
-        {filteredEngineExperiments.map((exp) => (
-          <button
-            key={exp.id}
-            id={`btn-select-${exp.id}`}
-            onClick={() => onSelectEngineExperiment?.(exp.id)}
-            className="clay-card"
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              padding: 26,
-              background: 'var(--bg-card)',
-              borderRadius: 26,
-              transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(-4px) scale(1.01)';
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget;
-              el.style.transform = 'translateY(0) scale(1)';
-            }}
-          >
-            {/* Gradient bar */}
-            <div style={{
-              position: 'absolute', top: 0, left: 0, right: 0, height: 3,
-              background: `linear-gradient(90deg, ${exp.themeColor}, ${exp.themeColor}cc)`,
-              borderRadius: '16px 16px 0 0',
-            }} />
-
-            {/* Icon + Badges */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 12,
-                background: `${exp.themeColor}15`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
-              }}>
-                {exp.icon}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <span style={{
-                    fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.04em', color: exp.themeColor,
-                    background: `${exp.themeColor}12`, padding: '2px 8px', borderRadius: 4,
-                  }}>
-                    {typeof exp.class === 'number' ? `Class ${exp.class}` : exp.class}
-                  </span>
-                  <span style={{
-                    fontSize: '0.62rem', fontWeight: 600, color: 'var(--text-muted)',
-                    background: 'rgba(148, 163, 184, 0.1)', padding: '2px 8px', borderRadius: 4,
-                  }}>
-                    {exp.difficulty}
-                  </span>
-                  {/* NEW ENGINE BADGE */}
-                  <span style={{
-                    fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase',
-                    letterSpacing: '0.04em', color: '#7c3aed',
-                    background: 'rgba(124, 58, 237, 0.1)',
-                    padding: '2px 8px', borderRadius: 4,
-                    border: '1px solid rgba(124, 58, 237, 0.2)',
-                  }}>
-                    ⚡ New Engine
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Title & Subtitle */}
-            <h3 style={{
-              fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)',
-              marginBottom: 4, lineHeight: 1.3,
-            }}>
-              {exp.title}
-            </h3>
-            <p style={{
-              fontSize: '0.75rem', fontWeight: 600, fontFamily: 'var(--font-mono)',
-              color: exp.themeColor, marginBottom: 10,
-            }}>
-              {exp.subtitle}
-            </p>
-
-            {/* Description */}
-            <p style={{
-              fontSize: '0.82rem', color: 'var(--text-secondary)',
-              lineHeight: 1.55, marginBottom: 16, flex: 1,
-            }}>
-              {exp.description}
-            </p>
-
-            {/* Chapter tag */}
-            <div style={{
-              fontSize: '0.7rem', color: 'var(--text-muted)',
-              borderTop: '1px solid var(--border-subtle)', paddingTop: 12,
-            }}>
-              📖 {exp.chapter}
-            </div>
-
-            {/* Start arrow */}
-            <div style={{
-              position: 'absolute', bottom: 24, right: 24,
-              width: 32, height: 32, borderRadius: '50%',
-              background: exp.themeColor,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#ffffff', fontSize: 14, fontWeight: 700,
-            }}>
-              →
-            </div>
-          </button>
-        ))}
-      </div>
+      {/* ── 4. Bottom Notes Promo Banner ── */}
+      <NotesPromoBanner onGoToNotes={onGoToNotes} />
     </div>
   );
 };

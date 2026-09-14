@@ -27,73 +27,70 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
       className="glass-card"
       style={{ padding: '12px', overflow: 'hidden', flex: 1, position: 'relative' }}
     >
-      {/* Interactive Workbench Action Bar (Shake/Swirl & Stir buttons) */}
+      {/* Action Bar */}
       <div
         style={{
           position: 'absolute',
-          bottom: 16,
-          left: 16,
+          bottom: 12,
+          left: 12,
           zIndex: 35,
           display: 'flex',
-          gap: 8,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdropFilter: 'blur(8px)',
-          border: '1.5px solid var(--border-subtle, #e2e8f0)',
-          borderRadius: 10,
-          padding: '5px 8px',
-          boxShadow: '0 6px 16px rgba(0, 0, 0, 0.12)',
+          gap: 6,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          padding: '4px 6px',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
-        {/* Shake / Swirl Flask button */}
         <button
           type="button"
           id="btn-shake-flask"
           onClick={() => setIsSwirling(prev => !prev)}
-          title="Continuously shake & swirl the conical flask for complete mixing"
+          title="Shake & swirl the conical flask"
           style={{
+            all: 'unset',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
-            borderRadius: 6,
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: isSwirling ? '1.5px solid #2563eb' : '1px solid #cbd5e1',
-            background: isSwirling ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : '#f8fafc',
-            color: isSwirling ? '#ffffff' : '#334155',
-            boxShadow: isSwirling ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            border: isSwirling ? '1px solid var(--accent-blue)' : '1px solid var(--border)',
+            background: isSwirling ? 'var(--accent-blue)' : 'var(--bg-secondary)',
+            color: isSwirling ? '#ffffff' : 'var(--text-secondary)',
+            transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
-          <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
+          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
+          <span>{isSwirling ? 'Swirling' : 'Shake'}</span>
         </button>
 
-        {/* Stir Solution button */}
         <button
           type="button"
           id="btn-stir-solution"
           onClick={() => setIsStirring(prev => !prev)}
-          title="Toggle rapid magnetic stirring and liquid vortex mixing"
+          title="Toggle magnetic stirring"
           style={{
+            all: 'unset',
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: 5,
             padding: '5px 10px',
-            borderRadius: 6,
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            border: isStirring ? '1.5px solid #059669' : '1px solid #cbd5e1',
-            background: isStirring ? 'linear-gradient(135deg, #059669, #047857)' : '#f8fafc',
-            color: isStirring ? '#ffffff' : '#334155',
-            boxShadow: isStirring ? '0 2px 8px rgba(5, 150, 105, 0.35)' : 'none',
-            transition: 'all 0.2s ease',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            border: isStirring ? '1px solid var(--accent-green)' : '1px solid var(--border)',
+            background: isStirring ? 'var(--accent-green)' : 'var(--bg-secondary)',
+            color: isStirring ? '#ffffff' : 'var(--text-secondary)',
+            transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.9rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
-          <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
+          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
+          <span>{isStirring ? 'Stirring' : 'Stir'}</span>
         </button>
       </div>
       <svg

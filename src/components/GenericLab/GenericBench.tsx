@@ -93,6 +93,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     config.chemistry.colorModelArgs,
   );
 
+
+
   return (
     <div
       style={{
@@ -290,6 +292,195 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
+      {/* ── Viscometry Capillary Flow & Timing Banner ── */}
+      {(config.steps[state.currentStepIndex]?.id === 'flow-timing' || config.steps[state.currentStepIndex]?.id === 'water-reference') && (() => {
+        const stepId = config.steps[state.currentStepIndex]?.id;
+        const isTiming = !!state.flags['timerRunning'];
+        const isSample = stepId === 'flow-timing';
+        const isCleared = isSample || !!state.flags['viscoCleared'];
+        const isCompleted = isSample ? !!state.flags['sampleTimed'] : !!state.flags['waterTimed'];
+        const flowProg = (state.variables['_flowProgress'] ?? state.variables['flowProgress'] ?? 0) as number;
+        const reachedD = flowProg >= 0.98;
+        const stoppedTooEarly = !!state.flags['stoppedTooEarly'];
+        const readyAtC = isSample
+          ? !!state.flags['suckedAboveMark']
+          : (isCleared && !!state.flags['waterIntroduced'] && !!state.flags['suckedAboveMark']);
+
+        const sampleTime = (state.variables['flowTimeSample'] ?? state.variables['_timerSeconds'] ?? 24.5) as number;
+        const waterTime = (state.variables['flowTimeWater'] ?? state.variables['_timerSeconds'] ?? 18.2) as number;
+
+        let statusText = '';
+        if (isSample) {
+          if (isTiming) {
+            statusText = reachedD ? 'Meniscus reached mark D — stop the stopwatch.' : 'Liquid flowing from C → D — Stopwatch running';
+          } else if (isCompleted) {
+            statusText = `Flow complete — measured t_A = ${sampleTime.toFixed(1)} s`;
+          } else if (stoppedTooEarly) {
+            statusText = 'Meniscus has not reached mark D yet. Continue the measurement.';
+          } else {
+            statusText = 'Liquid A ready above mark C — start the stopwatch to begin timing.';
+          }
+        } else {
+          if (!isCleared) {
+            statusText = 'Drain and clear Liquid A from the viscometer before introducing distilled water.';
+          } else if (!state.flags['waterIntroduced']) {
+            statusText = 'Viscometer cleared! Introduce distilled water into the broad limb.';
+          } else if (!state.flags['suckedAboveMark']) {
+            statusText = 'Attach suction tube to capillary limb to draw water above mark C.';
+          } else if (isTiming) {
+            statusText = reachedD ? 'Meniscus reached mark D — stop the stopwatch.' : 'Water flowing from C → D — Stopwatch running';
+          } else if (isCompleted) {
+            statusText = `Flow complete — measured t_W = ${waterTime.toFixed(1)} s`;
+          } else if (stoppedTooEarly) {
+            statusText = 'Meniscus has not reached mark D yet. Continue the measurement.';
+          } else {
+            statusText = 'Water ready above mark C — start the stopwatch to begin timing.';
+          }
+        }
+
+        const handleStop = () => {
+          const elementId = flowProg < 0.98
+            ? (isSample ? 'pause-sample-flow' : 'pause-water-flow')
+            : (isSample ? 'stop-sample-flow' : 'stop-water-flow');
+          dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
+        };
+
+        const handleStart = () => {
+          const elementId = isSample ? 'start-sample-flow' : 'start-water-flow';
+          dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
+        };
+
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              top: 14,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 30,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
+              border: `1.5px solid ${isTiming ? (reachedD ? '#ef4444' : '#059669') : isCompleted ? '#10b981' : '#0284c7'}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '10px 18px',
+              boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              animation: 'fadeIn 0.3s ease-out',
+              maxWidth: '92%',
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: isTiming ? (reachedD ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)') : 'rgba(2, 132, 199, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+            >
+              {isTiming ? (reachedD ? '🚨' : '⏱️') : isCompleted ? '✅' : '🧪'}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isTiming ? (reachedD ? '#dc2626' : '#059669') : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {isTiming ? (reachedD ? 'Meniscus At Mark D • Stop Watch' : 'Capillary Flow Active • Stopwatch Running') : 'Viscometer Flow Measurement'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                {statusText}
+              </div>
+            </div>
+
+            {/* Drain & Clear Viscometer button (Student control before water) */}
+            {!isSample && !isCleared && (
+              <button
+                id="btn-drain-viscometer"
+                className="btn-primary"
+                onClick={() => {
+                  dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'drain-viscometer' } });
+                }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+                }}
+              >
+                🚰 Drain & Clear Liquid A
+              </button>
+            )}
+
+            {/* Start / Resume Timing Button */}
+            {!isTiming && !isCompleted && readyAtC && (
+              <button
+                id={isSample ? 'btn-start-sample-flow' : 'btn-start-water-flow'}
+                className="btn-primary"
+                onClick={handleStart}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: stoppedTooEarly
+                    ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                    : 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+                }}
+              >
+                {stoppedTooEarly ? '▶ Continue Timing' : '▶ Start Timing'}
+              </button>
+            )}
+
+            {/* Stop Timing Button (Explicit Student Control) */}
+            {isTiming && (
+              <button
+                id={isSample ? 'btn-stop-sample-flow' : 'btn-stop-water-flow'}
+                className="btn-primary"
+                onClick={handleStop}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: reachedD
+                    ? 'linear-gradient(135deg, #ef4444, #b91c1c)'
+                    : 'linear-gradient(135deg, #dc2626, #991b1b)',
+                  boxShadow: reachedD
+                    ? '0 0 16px rgba(239, 68, 68, 0.6)'
+                    : '0 4px 12px rgba(220, 38, 38, 0.35)',
+                  animation: reachedD ? 'pulse 1s infinite' : 'none',
+                }}
+              >
+                ■ Stop Timing
+              </button>
+            )}
+
+            {/* Continue button after successful timing */}
+            {isCompleted && (
+              <button
+                id="btn-bench-advance"
+                className="btn-primary"
+                onClick={() => {
+                  dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'advance-step' } });
+                  dispatch({ type: 'ADVANCE_STEP' });
+                }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: 'linear-gradient(135deg, #059669, #047857)',
+                  boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
+                }}
+              >
+                Continue →
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Background elements (retort stand, etc. - dimmed for glassware focus) */}
       {config.bench.backgroundElements?.map((elem, i) => {
         const Component = getApparatusComponent(elem.component);
@@ -306,7 +497,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               zIndex: elem.component === 'BuretteStand' ? 12 : 2,
               opacity: isStand ? 0.95 : (elem.component === 'BuretteStand' ? 1 : 0.95),
               filter: isStand ? 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
-              pointerEvents: 'none',
+              pointerEvents: elem.component === 'Stopwatch' ? 'auto' : 'none',
               transition: 'opacity 0.3s ease',
             }}
           >
@@ -319,6 +510,25 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 onSetStopcock: (val: number) => {
                   setStopcockOpen(val);
                   dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                },
+                onToggleStopwatch: () => {
+                  const stepId = config.steps[state.currentStepIndex]?.id;
+                  const flowProg = (state.variables['_flowProgress'] ?? state.variables['flowProgress'] ?? 0) as number;
+                  if (stepId === 'flow-timing') {
+                    if (state.flags['timerRunning']) {
+                      const elementId = flowProg < 0.98 ? 'pause-sample-flow' : 'stop-sample-flow';
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
+                    } else if (!state.flags['sampleTimed'] && state.flags['suckedAboveMark']) {
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'start-sample-flow' } });
+                    }
+                  } else if (stepId === 'water-reference') {
+                    if (state.flags['timerRunning']) {
+                      const elementId = flowProg < 0.98 ? 'pause-water-flow' : 'stop-water-flow';
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
+                    } else if (!state.flags['waterTimed'] && state.flags['viscoCleared'] && state.flags['waterIntroduced'] && state.flags['suckedAboveMark']) {
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'start-water-flow' } });
+                    }
+                  }
                 },
               }}
               {...(elem.props as Record<string, unknown>)}

@@ -197,6 +197,7 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
               <div style={{ transform: `scale(${benchScale * 0.92})` }}>
                 <SourceComponent
                   id={`pouring-${sourceApparatus.id}`}
+                  label={(sourceProps.label as string | undefined) ?? (sourceApparatus.initialProps?.label as string | undefined) ?? sourceApparatus.label}
                   liquidColor={fluidColor}
                   liquidLevel={0.75}
                   flags={state.flags}
@@ -511,20 +512,58 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
             opacity: 0;
           }
           15% {
-            transform: rotate(-38deg) translate(-10px, -10px);
+            transform: rotate(36deg) translate(10px, -4px);
             opacity: 1;
           }
           80% {
-            transform: rotate(-45deg) translate(-14px, -14px);
+            transform: rotate(44deg) translate(14px, -6px);
             opacity: 1;
           }
           92% {
-            transform: rotate(-18deg) translate(-5px, -5px);
+            transform: rotate(16deg) translate(4px, -2px);
             opacity: 0.9;
           }
           100% {
             transform: rotate(0deg) translate(0, 0);
             opacity: 0;
+          }
+        }
+
+        [id^="pouring-"] #reagent-liquid rect {
+          animation: bottleDrain 2.2s ease-in-out forwards;
+          transform-origin: bottom;
+        }
+
+        @keyframes bottleDrain {
+          0% {
+            transform: scaleY(1);
+          }
+          20% {
+            transform: scaleY(0.95);
+          }
+          75% {
+            transform: scaleY(0.2);
+          }
+          100% {
+            transform: scaleY(0.2);
+          }
+        }
+
+        @keyframes viscoFillIn {
+          0% {
+            opacity: 0.2;
+            transform: scaleY(0.15);
+            transform-origin: bottom;
+          }
+          40% {
+            opacity: 0.6;
+            transform: scaleY(0.5);
+            transform-origin: bottom;
+          }
+          100% {
+            opacity: 0.92;
+            transform: scaleY(1);
+            transform-origin: bottom;
           }
         }
 

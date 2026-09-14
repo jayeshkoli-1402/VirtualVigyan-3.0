@@ -1483,11 +1483,26 @@ const ReagentBottle: React.FC<ApparatusProps> = ({
 
       {/* Label Plaque */}
       {label && (
-        <g transform="translate(10, 44)">
-          <rect x="0" y="0" width="30" height="18" rx="2" fill="rgba(255,255,255,0.92)" stroke="#cbd5e1" strokeWidth="0.8" />
-          <text x="15" y="12" textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#1e293b" fontFamily="var(--font-sans)">
-            {label}
-          </text>
+        <g transform="translate(9, 44)">
+          <rect x="0" y="0" width="32" height="18" rx="2" fill="rgba(255,255,255,0.95)" stroke="#cbd5e1" strokeWidth="0.8" />
+          {label.includes(' ') ? (
+            (() => {
+              const words = label.split(' ');
+              const mid = Math.ceil(words.length / 2);
+              const line1 = words.slice(0, mid).join(' ');
+              const line2 = words.slice(mid).join(' ');
+              return (
+                <text x="16" y="7" textAnchor="middle" fontSize="4.8" fontWeight="700" fill="#0f172a" fontFamily="var(--font-sans)">
+                  <tspan x="16" dy="0">{line1}</tspan>
+                  <tspan x="16" dy="6.5">{line2}</tspan>
+                </text>
+              );
+            })()
+          ) : (
+            <text x="16" y="11.5" textAnchor="middle" fontSize={label.length > 8 ? '5.2' : '6.5'} fontWeight="700" fill="#0f172a" fontFamily="var(--font-sans)">
+              {label}
+            </text>
+          )}
         </g>
       )}
     </svg>
@@ -1499,7 +1514,10 @@ const ReagentBottle: React.FC<ApparatusProps> = ({
 const RetortStand: React.FC<ApparatusProps> = ({
   width = 140,
   height = 300,
+  extraProps = {},
 }) => {
+  const hideLowerClamp = !!(extraProps as Record<string, unknown>).hideLowerClamp;
+
   return (
     <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible', transition: 'opacity 0.3s ease' }}>
       <defs>
@@ -1525,9 +1543,13 @@ const RetortStand: React.FC<ApparatusProps> = ({
       <circle cx="49" cy="62" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
       <path d="M 53 58 L 72 58 L 78 54 L 78 68 L 72 64 L 53 64 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
       {/* Lower Boss Head Clamp */}
-      <rect x="38" y="180" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
-      <circle cx="49" cy="187" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
-      <path d="M 53 183 L 72 183 L 78 179 L 78 193 L 72 189 L 53 189 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+      {!hideLowerClamp && (
+        <>
+          <rect x="38" y="180" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+          <circle cx="49" cy="187" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+          <path d="M 53 183 L 72 183 L 78 179 L 78 193 L 72 189 L 53 189 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+        </>
+      )}
     </svg>
   );
 };
@@ -2468,115 +2490,206 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
 
 const OstwaldViscometer: React.FC<ApparatusProps> = ({
   liquidLevel = 0,
-  liquidColor = 'rgba(56, 189, 248, 0.7)',
+  liquidColor = 'rgba(56, 189, 248, 0.65)',
   label = "Ostwald's Viscometer",
   highlighted = false,
   width = 140,
   height = 280,
   variables = {},
+  flags = {},
 }) => {
-  const strokeColor = highlighted ? '#3b82f6' : '#1e293b';
-  const flowProgress = variables.flowProgress ?? 0;
+  const strokeColor = highlighted ? '#2563eb' : '#334155';
+  const rawProgress = (variables._flowProgress ?? variables.flowProgress ?? 0) as number;
+  const currentProgress = Math.max(0, Math.min(1, rawProgress));
+  const hasSucked = !!flags.suckedAboveMark;
 
-  // Relative coordinates in a 140x280 viewBox
-  const leftX = 40;
-  const rightX = 100;
-  const topY = 20;
-  const bulbAY = 210; // Left arm bulb
-  const bulbBY = 80;  // Right arm bulb
+  // Upper timing mark C is at y = 55, Lower timing mark D is at y = 114
+  // Bulb B (upper bulb on right capillary limb) spans y = 55 to y = 114
   const upperMarkY = 55;
-  const lowerMarkY = 105;
+  const lowerMarkY = 114;
+  const meniscusY = upperMarkY + currentProgress * (lowerMarkY - upperMarkY);
 
-  // Liquid level animation in Bulk B (Right arm)
-  const arm2LiquidY = upperMarkY + (flowProgress * (lowerMarkY - upperMarkY));
+  // Coupled liquid level in lower Bulb A:
+  // When sucked, liquid in Bulb A is drawn down to its starting level (y = 188).
+  // As liquid drains from Bulb B (currentProgress 0 -> 1), Bulb A liquid rises up to y = 152.
+  // When liquid is introduced before suction, it rests at y = 162.
+  const bulbAInitialY = 162;
+  const bulbASuckedStartY = 188;
+  const bulbAFinalY = 152;
+  const bulbAY = hasSucked
+    ? bulbASuckedStartY - currentProgress * (bulbASuckedStartY - bulbAFinalY)
+    : bulbAInitialY;
+
+  // Symmetrical Bulb A width at bulbAY (centered at X=40, y=168)
+  const bulbARadiusX = Math.max(11, 17.5 - Math.abs(bulbAY - 168) * 0.22);
 
   return (
     <svg width={width} height={height} viewBox="0 0 140 280" fill="none" style={{ overflow: 'visible' }}>
-      {/* ── Glass Body (High visibility) ── */}
+      <defs>
+        {/* Glass reflection gradient */}
+        <linearGradient id="ostwaldGlassGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
+          <stop offset="20%" stopColor="rgba(255,255,255,0.15)" />
+          <stop offset="70%" stopColor="rgba(255,255,255,0.05)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
+        </linearGradient>
+
+        {/* Clip path for liquid draining down upper Bulb B */}
+        <clipPath id="upperBulbClip">
+          <path d="M 94 54 C 80 66 80 102 94 114 L 102 114 C 116 102 116 66 102 54 Z" />
+        </clipPath>
+
+        {/* Clip path for lower limb, Bulb A, U-bend, and capillary connection */}
+        <clipPath id="lowerLimbClip">
+          <path
+            d={`
+              M 32 140
+              C 18 152 18 184 32 196
+              L 32 215
+              C 32 254 104 254 104 215
+              L 104 114
+              L 92 114
+              L 92 215
+              C 92 238 48 238 48 215
+              L 48 196
+              C 62 184 62 152 48 140
+              Z
+            `}
+          />
+        </clipPath>
+      </defs>
+
+      {/* ── Glass Body: Outer and Inner Walls forming the authentic Ostwald U-tube ── */}
+      {/* Outer Contour */}
       <path
         d={`
-          /* Outer path */
-          M ${leftX-8} ${topY} L ${leftX-8} 185
-          C ${leftX-8} 185 ${leftX-20} 185 ${leftX-20} 210
-          C ${leftX-20} 235 ${leftX+20} 235 ${leftX+20} 210
-          C ${leftX+20} 185 ${leftX+8} 185 ${leftX+8} 220
-          C ${leftX+8} 270 ${rightX+8} 270 ${rightX+8} 220
-          L ${rightX+8} 105
-          C ${rightX+8} 105 ${rightX+16} 105 ${rightX+16} 80
-          C ${rightX+16} 55 ${rightX-16} 55 ${rightX-16} 80
-          C ${rightX-16} 105 ${rightX-8} 105 ${rightX-8} 105
-          L ${rightX-8} ${topY}
-          L ${rightX+8} ${topY}
-
-          /* Return path (Inner wall) */
-          M ${rightX-6} ${topY}
-          L ${rightX-6} 80
-          C ${rightX-6} 65 ${rightX+12} 65 ${rightX+12} 80
-          C ${rightX+12} 100 ${rightX+4} 100 ${rightX+4} 105
-          L ${rightX+4} 220
-          C ${rightX+4} 265 ${leftX+4} 265 ${leftX+4} 210
-          C ${leftX+4} 190 ${leftX+16} 190 ${leftX+16} 210
-          C ${leftX+16} 230 ${leftX-16} 230 ${leftX-16} 210
-          C ${leftX-16} 190 ${leftX-4} 190 ${leftX-4} 185
-          L ${leftX-4} ${topY}
+          M 32 20
+          L 32 140
+          C 18 152 18 184 32 196
+          L 32 215
+          C 32 254 104 254 104 215
+          L 104 114
+          C 118 102 118 66 104 54
+          L 104 20
         `}
         stroke={strokeColor}
-        strokeWidth="2.5"
-        fill="rgba(241, 245, 249, 0.4)"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        fill="rgba(241, 245, 249, 0.22)"
+      />
+
+      {/* Inner Wall Contour */}
+      <path
+        d={`
+          M 48 20
+          L 48 140
+          C 62 152 62 184 48 196
+          L 48 215
+          C 48 238 92 238 92 215
+          L 94 114
+          C 80 102 80 66 94 54
+          L 94 20
+        `}
+        stroke={strokeColor}
+        strokeWidth="2.2"
+        fill="url(#ostwaldGlassGrad)"
       />
 
       {/* ── Liquid Layer ── */}
       {liquidLevel > 0 && (
-        <g>
-          {/* Left Arm Pool */}
-          <path
-            d={`
-              M ${leftX-7} 150 L ${leftX-7} 185
-              C ${leftX-7} 185 ${leftX-19} 185 ${leftX-19} 210
-              C ${leftX-19} 234 ${leftX+19} 234 ${leftX+19} 210
-              C ${leftX+19} 185 ${leftX+7} 185 ${leftX+7} 220
-              C ${leftX+7} 269 ${rightX-7} 269 ${rightX-7} 220
-              L ${rightX-7} 150 Z
-            `}
-            fill={liquidColor}
-          />
-
-          {/* Right Arm Bulb B animation */}
-          {flowProgress < 1 && (
-            <path
-              d={`
-                M ${rightX} ${arm2LiquidY}
-                C ${rightX+14} ${arm2LiquidY+5} ${rightX+14} 100 ${rightX} 103
-                C ${rightX-14} 100 ${rightX-14} ${arm2LiquidY+5} ${rightX} ${arm2LiquidY} Z
-              `}
+        <g opacity="0.92">
+          {/* Continuous liquid volume: Bulb A + U-bend + right capillary connection */}
+          <g clipPath="url(#lowerLimbClip)">
+            {/* Liquid filling from bulbAY down through U-tube */}
+            <rect
+              x="16"
+              y={bulbAY}
+              width="90"
+              height={260 - bulbAY}
               fill={liquidColor}
             />
+            {/* Meniscus on top of rising liquid in Bulb A */}
+            <ellipse
+              cx="40"
+              cy={bulbAY}
+              rx={bulbARadiusX}
+              ry="2.4"
+              fill="rgba(255,255,255,0.45)"
+              stroke={liquidColor}
+              strokeWidth="0.8"
+            />
+          </g>
+
+          {/* Liquid in Upper Bulb B (on right capillary limb) during flow from Mark C to D */}
+          {hasSucked && currentProgress < 1 && (
+            <g clipPath="url(#upperBulbClip)">
+              {/* Draining liquid column based on exact student progress */}
+              <rect
+                x="76"
+                y={meniscusY}
+                width="44"
+                height={Math.max(0, lowerMarkY - meniscusY + 4)}
+                fill={liquidColor}
+              />
+              {/* Curved liquid meniscus surface */}
+              <ellipse
+                cx="98"
+                cy={meniscusY}
+                rx="14"
+                ry="2.6"
+                fill="rgba(255,255,255,0.45)"
+                stroke={liquidColor}
+                strokeWidth="0.8"
+              />
+            </g>
           )}
 
-          {/* Capillary Fill */}
-          <rect x={rightX-3} y="105" width="6" height="120" fill={liquidColor} opacity="0.7" />
+          {/* Narrow Capillary liquid column (connecting below lower Mark D down into U-tube) */}
+          {hasSucked && (
+            <rect
+              x="96"
+              y="114"
+              width="6"
+              height="101"
+              fill={liquidColor}
+              opacity="0.85"
+            />
+          )}
         </g>
       )}
 
-      {/* ── Marks & Labels (High Contrast) ── */}
-      <line x1={rightX-15} y1={upperMarkY} x2={rightX+15} y2={upperMarkY} stroke="#dc2626" strokeWidth="3" />
-      <text x={rightX+18} y={upperMarkY+4} fontSize="14" fontWeight="900" fill="#dc2626">C</text>
+      {/* Capillary bore centerline in narrow right limb */}
+      <line x1="98" y1="114" x2="98" y2="185" stroke="#475569" strokeWidth="1.2" strokeDasharray="3 2" opacity="0.6" />
 
-      <line x1={rightX-15} y1={lowerMarkY} x2={rightX+15} y2={lowerMarkY} stroke="#dc2626" strokeWidth="3" />
-      <text x={rightX+18} y={lowerMarkY+4} fontSize="14" fontWeight="900" fill="#dc2626">D</text>
+      {/* ── Upper Timing Mark (Mark C) ── */}
+      <line x1="88" y1={upperMarkY} x2="110" y2={upperMarkY} stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
+      <text x="115" y={upperMarkY + 4} fontSize="13" fontWeight="900" fill="#dc2626">C</text>
 
-      <text x={leftX} y={bulbAY+4} textAnchor="middle" fontSize="11" fontWeight="900" fill="#1e293b">BULK A</text>
-      <text x={rightX} y={bulbBY+4} textAnchor="middle" fontSize="10" fontWeight="900" fill="#1e293b">BULK B</text>
+      {/* ── Lower Timing Mark (Mark D) ── */}
+      <line x1="88" y1={lowerMarkY} x2="110" y2={lowerMarkY} stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
+      <text x="115" y={lowerMarkY + 4} fontSize="13" fontWeight="900" fill="#dc2626">D</text>
 
-      {/* Capillary Line */}
-      <line x1={rightX} y1="108" x2={rightX} y2="222" stroke="#1e293b" strokeWidth="1.2" strokeDasharray="3 3" />
+      {/* Limb & Bulb Labels for accurate pedagogy */}
+      <text x="40" y="172" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#1e293b">Bulb A</text>
+      <text x="98" y="86" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#1e293b">Bulb B</text>
 
-      {/* Glass highlights */}
-      <line x1={leftX-5} y1="30" x2={leftX-5} y2="175" stroke="#ffffff" strokeWidth="2.5" opacity="0.6" />
+      {/* Descriptive limb indicators */}
+      <text x="40" y="14" textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748b">Broad Limb</text>
+      <text x="98" y="14" textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748b">Capillary Limb</text>
+      <text x="98" y="150" textAnchor="middle" fontSize="7.5" fontStyle="italic" fill="#64748b">Capillary</text>
 
-      {/* Label */}
+      {/* Glass reflections & highlights */}
+      <path d="M 35 25 L 35 135" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M 97 25 L 97 50" stroke="rgba(255,255,255,0.6)" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M 23 165 C 21 175 25 185 30 190" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" fill="none" />
+
+      {/* Stand Clamp Attachment Graphic (gripping upper broad limb naturally) */}
+      <rect x="25" y="70" width="30" height="11" rx="2.5" fill="#1e293b" stroke="#0f172a" strokeWidth="1" opacity="0.85" />
+      <circle cx="40" cy="75.5" r="2.5" fill="#94a3b8" />
+
+      {/* Apparatus Label */}
       {label && (
-        <text x="70" y="275" textAnchor="middle" fontSize="13" fontWeight="900" fill="#0f172a">
+        <text x="68" y="272" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#0f172a">
           {label}
         </text>
       )}
@@ -2593,22 +2706,43 @@ const Stopwatch: React.FC<ApparatusProps> = ({
   height = 120,
   variables = {},
   flags = {},
+  extraProps = {},
 }) => {
-  const isRunning = flags.timerRunning ?? false;
-  const timeSeconds = variables.timerSeconds ?? 24.8;
+  const isRunning = !!flags.timerRunning;
+  const timeSeconds = (variables._timerSeconds ?? variables.timerSeconds ?? 0) as number;
   const mins = Math.floor(timeSeconds / 60);
   const secs = (timeSeconds % 60).toFixed(1);
   const timeStr = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+  const onToggle = extraProps.onToggleStopwatch as (() => void) | undefined;
 
   return (
     <svg width={width} height={height} viewBox="0 0 110 120" fill="none">
       {/* Top buttons */}
       <rect x="49" y="6" width="12" height="10" rx="2" fill="#475569" stroke="#334155" strokeWidth="1.5" />
       <rect x="22" y="14" width="10" height="8" rx="2" fill="#64748b" transform="rotate(-30 27 18)" />
-      <rect x="78" y="10" width="10" height="8" rx="2" fill={isRunning ? '#ef4444' : '#10b981'} transform="rotate(30 83 14)" />
+      <rect
+        x="78"
+        y="10"
+        width="10"
+        height="8"
+        rx="2"
+        fill={isRunning ? '#ef4444' : '#10b981'}
+        transform="rotate(30 83 14)"
+        style={{ cursor: onToggle ? 'pointer' : 'default' }}
+        onClick={onToggle}
+      />
 
       {/* Body casing */}
-      <circle cx="55" cy="65" r="46" fill="#1e293b" stroke={highlighted ? '#2563eb' : '#334155'} strokeWidth="3" />
+      <circle
+        cx="55"
+        cy="65"
+        r="46"
+        fill="#1e293b"
+        stroke={highlighted ? '#2563eb' : '#334155'}
+        strokeWidth="3"
+        style={{ cursor: onToggle ? 'pointer' : 'default' }}
+        onClick={onToggle}
+      />
       <circle cx="55" cy="65" r="42" fill="#0f172a" />
 
       {/* Inner dial rim */}
@@ -2647,6 +2781,8 @@ const Stopwatch: React.FC<ApparatusProps> = ({
     </svg>
   );
 };
+
+
 
 // ── Benchtop Digital pH Meter ────────────────────────────────────
 

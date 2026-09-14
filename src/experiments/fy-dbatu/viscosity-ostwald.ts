@@ -40,13 +40,6 @@ export const viscosityOstwald: ExperimentConfig = {
       },
     },
     {
-      id: 'stopwatch',
-      component: 'Stopwatch',
-      label: 'Digital Stopwatch',
-      icon: '⏱️',
-      initialProps: { width: 110, height: 120 },
-    },
-    {
       id: 'chromic-acid',
       component: 'ReagentBottle',
       label: 'Chromic Acid',
@@ -58,21 +51,21 @@ export const viscosityOstwald: ExperimentConfig = {
       component: 'ReagentBottle',
       label: 'Acetone (Rinse)',
       icon: '🧴',
-      initialProps: { liquidColor: 'rgba(224, 242, 254, 0.5)', label: 'Acetone' },
+      initialProps: { liquidColor: 'rgba(224, 242, 254, 0.5)', label: 'Acetone (Rinse)' },
     },
     {
       id: 'liquid-sample',
       component: 'ReagentBottle',
       label: 'Liquid Sample A',
       icon: '🧪',
-      initialProps: { liquidColor: 'rgba(14, 165, 233, 0.75)', label: 'Sample A' },
+      initialProps: { liquidColor: 'rgba(14, 165, 233, 0.75)', label: 'Liquid Sample A' },
     },
     {
       id: 'distilled-water',
       component: 'ReagentBottle',
       label: 'Distilled Water',
       icon: '💧',
-      initialProps: { liquidColor: 'rgba(56, 189, 248, 0.45)', label: 'Water' },
+      initialProps: { liquidColor: 'rgba(56, 189, 248, 0.45)', label: 'Distilled Water' },
     },
     {
       id: 'suction-bulb',
@@ -94,11 +87,11 @@ export const viscosityOstwald: ExperimentConfig = {
     },
     {
       id: 'visco-broad-end',
-      label: 'Into Broad Limb (Bulk A)',
+      label: 'Into Broad Limb (Bulb A)',
       accepts: ['chromic-acid', 'acetone', 'liquid-sample', 'distilled-water'],
       position: { x: 44, y: 35 },
       size: { width: 14, height: 22 },
-      rejectMessage: 'Pour liquid into the broad limb (Bulk A) of the viscometer.',
+      rejectMessage: 'Pour liquid into the broad limb (Bulb A) of the viscometer.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'viscometer' },
     },
     {
@@ -107,7 +100,7 @@ export const viscosityOstwald: ExperimentConfig = {
       accepts: ['suction-bulb'],
       position: { x: 56, y: 32 },
       size: { width: 14, height: 22 },
-      rejectMessage: 'Attach suction tube to the narrow capillary arm (Bulk B).',
+      rejectMessage: 'Attach suction tube to the narrow capillary arm (Bulb B).',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'viscometer' },
     },
   ],
@@ -115,7 +108,8 @@ export const viscosityOstwald: ExperimentConfig = {
   // ── Bench ──
   bench: {
     backgroundElements: [
-      { component: 'RetortStand', position: { x: 50, y: 55 }, scale: 1.15 },
+      { component: 'RetortStand', props: { hideLowerClamp: true }, position: { x: 44, y: 52 }, scale: 1.1 },
+      { component: 'Stopwatch', position: { x: 78, y: 50 }, scale: 1.05 },
     ],
   },
 
@@ -152,16 +146,80 @@ export const viscosityOstwald: ExperimentConfig = {
     {
       id: 'flow-timing',
       label: '5. Time Flow to Lower Mark',
-      instruction: 'Click "Start Timing" to release liquid. Watch the viscometer and record flow time.',
-      requiredActions: ['sampleTimed'],
+      instruction: 'Liquid A is ready above mark C — start the stopwatch to begin timing.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'sampleTimed', equals: true },
+          instruction: '✓ Flow complete — measured flow time recorded! Click "Continue to Next Step".',
+        },
+        {
+          condition: { type: 'flag', key: 'stoppedTooEarly', equals: true },
+          instruction: '⚠️ Meniscus has not reached mark D yet. Continue the measurement.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'timerRunning', equals: true },
+              { type: 'variable', key: '_flowProgress', op: '>=', value: 0.98 },
+            ],
+          },
+          instruction: '⏱️ Meniscus reached mark D — stop the stopwatch.',
+        },
+        {
+          condition: { type: 'flag', key: 'timerRunning', equals: true },
+          instruction: '⏱️ Liquid flowing from C → D — Stopwatch running...',
+        },
+      ],
+      requiredActions: ['time-sample'],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'water-reference',
-      label: '6. Determine Water Flow Time',
-      instruction: 'Repeat using distilled water. Suck liquid, then click "Start Timing".',
-      requiredActions: ['waterTimed'],
+      label: '6. Clear Viscometer & Measure Water',
+      instruction: 'Drain Liquid A, then introduce distilled water and measure its reference efflux time.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'waterTimed', equals: true },
+          instruction: '✓ Flow complete — water efflux time recorded! Click "Continue to Calculations".',
+        },
+        {
+          condition: { type: 'flag', key: 'stoppedTooEarly', equals: true },
+          instruction: '⚠️ Meniscus has not reached mark D yet. Continue the measurement.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'timerRunning', equals: true },
+              { type: 'variable', key: '_flowProgress', op: '>=', value: 0.98 },
+            ],
+          },
+          instruction: '⏱️ Meniscus reached mark D — stop the stopwatch.',
+        },
+        {
+          condition: { type: 'flag', key: 'timerRunning', equals: true },
+          instruction: '⏱️ Water flowing from C → D — Stopwatch running...',
+        },
+        {
+          condition: { type: 'flag', key: 'suckedAboveMark', equals: true },
+          instruction: 'Water ready above mark C — start the stopwatch to begin timing.',
+        },
+        {
+          condition: { type: 'flag', key: 'waterIntroduced', equals: true },
+          instruction: 'Attach suction bulb to capillary limb to draw water above mark C.',
+        },
+        {
+          condition: { type: 'flag', key: 'viscoCleared', equals: true },
+          instruction: 'Viscometer cleared! Introduce Distilled Water into the broad limb (Bulb A).',
+        },
+        {
+          condition: { type: 'flag', key: 'viscoCleared', equals: false },
+          instruction: 'Drain and clear Liquid A from the viscometer before introducing distilled water.',
+        },
+      ],
+      requiredActions: ['time-water'],
       advanceMode: 'button',
       type: 'lab',
     },
@@ -203,7 +261,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.3 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidColor', value: 'rgba(234, 88, 12, 0.4)' },
       ],
-      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouringChromic' },
     },
     {
       id: 'inter-rinse-acetone',
@@ -216,7 +274,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: 'Clean & Dry Viscometer' },
       ],
       completesAction: 'rinse-acetone',
-      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isRinsing' },
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isRinsingAcetone' },
     },
     {
       id: 'inter-add-sample',
@@ -229,7 +287,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidColor', value: 'rgba(14, 165, 233, 0.75)' },
       ],
       completesAction: 'add-sample',
-      animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouringSample' },
     },
     {
       id: 'inter-suck-liquid',
@@ -238,41 +296,95 @@ export const viscosityOstwald: ExperimentConfig = {
       blockMessage: 'Introduce the liquid sample into the broad arm first.',
       effects: [
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
-        { type: 'setVariable', key: 'flowProgress', value: 0 },
-        { type: 'setVariable', key: 'timerSeconds', value: 0 },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+        { type: 'setVariable', key: '_timerSeconds', value: 0 },
+        { type: 'setVariable', key: 'flowTimeSample', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
       ],
       completesAction: 'suck-liquid',
       animation: { type: 'suction', durationMs: 2000, animatingFlag: 'isSucking' },
     },
+    // Start sample flow timing
     {
-      id: 'inter-start-timing',
-      trigger: { type: 'click', elementId: 'advance-step' },
-      conditions: [
-        { type: 'flag', key: 'suckedAboveMark', equals: true },
-        { type: 'flag', key: 'sampleTimed', equals: false },
-      ],
+      id: 'inter-start-sample-flow',
+      trigger: { type: 'click', elementId: 'start-sample-flow' },
+      conditions: [{ type: 'flag', key: 'suckedAboveMark', equals: true }],
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: true },
-        { type: 'setVariable', key: 'timerSeconds', value: 0 },
-        { type: 'setVariable', key: 'flowProgress', value: 0 },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+      ],
+    },
+    // Pause sample flow timing if stopped before reaching mark D
+    {
+      id: 'inter-pause-sample-flow',
+      trigger: { type: 'click', elementId: 'pause-sample-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
+      ],
+    },
+    // Complete sample flow timing (student presses STOP at or after Mark D)
+    {
+      id: 'inter-stop-sample-flow',
+      trigger: { type: 'click', elementId: 'stop-sample-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'sampleTimed', value: true },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: '_flowProgress', value: 1.0 },
+      ],
+      completesAction: 'time-sample',
+    },
+    // Drain & Clear Viscometer (Student empties Liquid A before water)
+    {
+      id: 'inter-drain-viscometer',
+      trigger: { type: 'click', elementId: 'drain-viscometer' },
+      conditions: [{ type: 'flag', key: 'sampleTimed', equals: true }],
+      effects: [
+        { type: 'setFlag', key: 'viscoCleared', value: true },
+        { type: 'setFlag', key: 'suckedAboveMark', value: false },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: 'Clean & Drained Viscometer' },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
       ],
     },
     {
+      id: 'inter-rinse-drain-acetone',
+      trigger: { type: 'drop', source: 'acetone', target: 'visco-broad-end' },
+      conditions: [{ type: 'flag', key: 'sampleTimed', equals: true }],
+      effects: [
+        { type: 'setFlag', key: 'viscoCleared', value: true },
+        { type: 'setFlag', key: 'suckedAboveMark', value: false },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: 'Clean & Drained Viscometer' },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+      ],
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isRinsingAcetone' },
+    },
+    // Add distilled water for reference timing
+    {
       id: 'inter-add-water',
       trigger: { type: 'drop', source: 'distilled-water', target: 'visco-broad-end' },
-      conditions: [{ type: 'flag', key: 'sampleTimed', equals: true }],
-      blockMessage: 'Finish liquid sample timing first.',
+      conditions: [
+        { type: 'flag', key: 'sampleTimed', equals: true },
+        { type: 'flag', key: 'viscoCleared', equals: true },
+      ],
+      blockMessage: 'Drain and clear Liquid A from the viscometer before introducing distilled water.',
       effects: [
         { type: 'setFlag', key: 'waterReady', value: true },
+        { type: 'setFlag', key: 'waterIntroduced', value: true },
         { type: 'setFlag', key: 'suckedAboveMark', value: false },
-        { type: 'setVariable', key: 'flowProgress', value: 0 },
-        { type: 'setVariable', key: 'timerSeconds', value: 0 },
+        { type: 'setFlag', key: 'waterSucked', value: false },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+        { type: 'setVariable', key: '_timerSeconds', value: 0 },
+        { type: 'setVariable', key: 'flowTimeWater', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.6 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.45)' },
       ],
       completesAction: 'add-water',
-      animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouring' },
+      animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouringWater' },
     },
     {
       id: 'inter-suck-water',
@@ -281,12 +393,45 @@ export const viscosityOstwald: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'waterSucked', value: true },
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
-        { type: 'setVariable', key: 'flowProgress', value: 0 },
-        { type: 'setVariable', key: 'timerSeconds', value: 0 },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+        { type: 'setVariable', key: '_timerSeconds', value: 0 },
+        { type: 'setVariable', key: 'flowTimeWater', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
       ],
       completesAction: 'suck-water',
       animation: { type: 'suction', durationMs: 2000, animatingFlag: 'isSucking' },
+    },
+    // Start water flow timing
+    {
+      id: 'inter-start-water-flow',
+      trigger: { type: 'click', elementId: 'start-water-flow' },
+      conditions: [{ type: 'flag', key: 'suckedAboveMark', equals: true }],
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: true },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+      ],
+    },
+    // Pause water flow timing if stopped before reaching mark D
+    {
+      id: 'inter-pause-water-flow',
+      trigger: { type: 'click', elementId: 'pause-water-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
+      ],
+    },
+    // Complete water flow timing (student presses STOP at or after Mark D)
+    {
+      id: 'inter-stop-water-flow',
+      trigger: { type: 'click', elementId: 'stop-water-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'waterTimed', value: true },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: '_flowProgress', value: 1.0 },
+      ],
+      completesAction: 'time-water',
     },
   ],
 
@@ -302,20 +447,10 @@ export const viscosityOstwald: ExperimentConfig = {
         ],
       },
       increments: {
-        timerSeconds: 1,
-        flowProgress: 1 / 24.5, // flows to mark D in 24.5s
+        _timerSeconds: 1,
+        flowTimeSample: 1,
+        _flowProgress: 1 / 24.5, // flows to mark D in 24.5s
       },
-      onConditionMet: [
-        {
-          condition: { type: 'variable', key: 'flowProgress', op: '>=', value: 1 },
-          effects: [
-            { type: 'setFlag', key: 'timerRunning', value: false },
-            { type: 'setFlag', key: 'sampleTimed', value: true },
-            { type: 'setVariable', key: 'flowTimeSample', value: 24.5 },
-            { type: 'setVariable', key: 'timerSeconds', value: 24.5 },
-          ],
-        },
-      ],
     },
     {
       // Timing Distilled Water
@@ -327,20 +462,10 @@ export const viscosityOstwald: ExperimentConfig = {
         ],
       },
       increments: {
-        timerSeconds: 1,
-        flowProgress: 1 / 18.2, // flows to mark D in 18.2s
+        _timerSeconds: 1,
+        flowTimeWater: 1,
+        _flowProgress: 1 / 18.2, // flows to mark D in 18.2s
       },
-      onConditionMet: [
-        {
-          condition: { type: 'variable', key: 'flowProgress', op: '>=', value: 1 },
-          effects: [
-            { type: 'setFlag', key: 'timerRunning', value: false },
-            { type: 'setFlag', key: 'waterTimed', value: true },
-            { type: 'setVariable', key: 'flowTimeWater', value: 18.2 },
-            { type: 'setVariable', key: 'timerSeconds', value: 18.2 },
-          ],
-        },
-      ],
     },
   ],
 
@@ -354,9 +479,9 @@ export const viscosityOstwald: ExperimentConfig = {
       viscosityWater: 0.0089,     // poise at 25°C
     },
     formulas: {
-      viscositySample: {
+      viscosityOstwald: {
         label: 'Viscosity of Liquid A',
-        displayFormula: 'η_A = (t_A · d_A) / (t_W · d_W) · η_W = (24.5 · 0.79) / (18.2 · 0.997) · 0.0089',
+        displayFormula: 'η_A = (t_A · d_A) / (t_W · d_W) · η_W',
         computeFn: 'viscosityOstwald',
         inputs: ['flowTimeSample', 'densitySample', 'flowTimeWater', 'densityWater', 'viscosityWater'],
         unit: 'poise',
@@ -367,12 +492,22 @@ export const viscosityOstwald: ExperimentConfig = {
   // ── Calculation ──
   calculation: {
     title: "Ostwald Viscometer Observations & Calculations",
-    instruction: "Calculate the viscosity of Liquid A using your recorded flow times:",
+    instruction:
+      'According to Poiseuille’s Law, the rate of liquid flow through a capillary tube is inversely proportional to its viscosity coefficient.\n\n' +
+      'By comparing the flow times of Liquid A and Water through the same viscometer capillary between fiducial marks C and D, the relative viscosity relationship is:\n' +
+      'η_A / η_W = (t_A × d_A) / (t_W × d_W)\n\n' +
+      'Therefore:\n' +
+      'η_A = (t_A × d_A) / (t_W × d_W) × η_W\n\n' +
+      'Where:\n' +
+      '• t_A, t_W = measured flow times in seconds (from your stopwatch readings)\n' +
+      '• d_A = density of Liquid A = 0.79 g/cm³\n' +
+      '• d_W = density of water at 25°C = 0.997 g/cm³\n' +
+      '• η_W = viscosity of water at 25°C = 0.0089 poise',
     fields: [
       {
         id: 'viscosityValue',
-        label: "1. Coefficient of Viscosity η_A (in poise): η_A = (t_A·d_A)/(t_W·d_W)·η_W  [Given: t_A=24.5s, d_A=0.79, t_W=18.2s, d_W=0.997, η_W=0.0089 P]",
-        placeholder: 'e.g. 0.00946',
+        label: "1. Coefficient of Viscosity η_A (in poise): η_A = (t_A·d_A)/(t_W·d_W)·η_W  [Constants: d_A=0.79 g/cm³, d_W=0.997 g/cm³, η_W=0.0089 P]",
+        placeholder: 'Enter calculated η_A...',
         unit: 'poise',
         expectedFormulaName: 'viscosityOstwald',
         tolerance: 0.0005,
@@ -381,7 +516,7 @@ export const viscosityOstwald: ExperimentConfig = {
       {
         id: 'unitQuestion',
         label: "2. What is 1 Poise in SI units (Pa·s)? (Enter numerical value: 1 Poise = ___ Pa·s)",
-        placeholder: 'e.g. 0.1',
+        placeholder: 'Enter conversion factor',
         unit: 'Pa·s',
         expectedValue: 0.1,
         tolerance: 0.01,
@@ -454,8 +589,8 @@ export const viscosityOstwald: ExperimentConfig = {
     flowTimeWater: 0,
     densityWater: 0.997,
     viscosityWater: 0.0089,
-    timerSeconds: 0,
-    flowProgress: 0,
+    _timerSeconds: 0,
+    _flowProgress: 0,
   },
   initialFlags: {
     isMounted: false,
@@ -464,8 +599,10 @@ export const viscosityOstwald: ExperimentConfig = {
     sampleIntroduced: false,
     suckedAboveMark: false,
     sampleTimed: false,
+    stoppedTooEarly: false,
     waterReady: false,
     waterSucked: false,
+    waterIntroduced: false,
     waterTimed: false,
     timerRunning: false,
   },

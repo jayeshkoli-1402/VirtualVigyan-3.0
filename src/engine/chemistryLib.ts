@@ -411,12 +411,17 @@ function hydrogenMolarMass(variables?: Record<string, number>): number {
 
 /** Viscosity by Ostwald's Viscometer: eta_A = (t_A * d_A) / (t_W * d_W) * eta_W (poise) */
 function viscosityOstwald(variables: Record<string, number>): number {
-  const tA = variables['flowTimeSample'] ?? 24.5;
+  const tA = variables['flowTimeSample'] ?? 0;
   const dA = variables['densitySample'] ?? 0.79;
-  const tW = variables['flowTimeWater'] ?? 18.2;
-  const dW = variables['densityWater'] ?? 1.0;
+  const tW = variables['flowTimeWater'] ?? 0;
+  const dW = variables['densityWater'] ?? 0.997;
   const etaW = variables['viscosityWater'] ?? 0.0089; // poise for water at 25°C
-  if (tW * dW === 0) return 0;
+
+  // If required measured flow times or physical parameters are missing / not yet measured, return NaN
+  if (tA <= 0 || tW <= 0 || dA <= 0 || dW <= 0 || etaW <= 0) {
+    return NaN;
+  }
+
   return ((tA * dA) / (tW * dW)) * etaW;
 }
 

@@ -248,6 +248,7 @@ export const viscosityOstwald: ExperimentConfig = {
       effects: [
         { type: 'placeApparatus', apparatusId: 'viscometer', zoneId: 'stand-clamp-zone' },
         { type: 'setFlag', key: 'viscoMounted', value: true },
+        { type: 'setFlag', key: 'isMounted', value: true },
       ],
       completesAction: 'mount-viscometer',
     },
@@ -292,14 +293,22 @@ export const viscosityOstwald: ExperimentConfig = {
     {
       id: 'inter-suck-liquid',
       trigger: { type: 'drop', source: 'suction-bulb', target: 'visco-capillary-end' },
-      conditions: [{ type: 'flag', key: 'sampleIntroduced', equals: true }],
-      blockMessage: 'Introduce the liquid sample into the broad arm first.',
+      conditions: [
+        {
+          type: 'or',
+          conditions: [
+            { type: 'flag', key: 'sampleIntroduced', equals: true },
+            { type: 'flag', key: 'waterIntroduced', equals: true },
+          ],
+        },
+      ],
+      blockMessage: 'Introduce liquid into the broad limb first.',
       effects: [
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
+        { type: 'setFlag', key: 'waterSucked', value: true },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
         { type: 'setVariable', key: '_flowProgress', value: 0 },
         { type: 'setVariable', key: '_timerSeconds', value: 0 },
-        { type: 'setVariable', key: 'flowTimeSample', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
       ],
       completesAction: 'suck-liquid',
@@ -343,6 +352,7 @@ export const viscosityOstwald: ExperimentConfig = {
       conditions: [{ type: 'flag', key: 'sampleTimed', equals: true }],
       effects: [
         { type: 'setFlag', key: 'viscoCleared', value: true },
+        { type: 'setFlag', key: 'sampleIntroduced', value: false },
         { type: 'setFlag', key: 'suckedAboveMark', value: false },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: 'Clean & Drained Viscometer' },
@@ -355,6 +365,7 @@ export const viscosityOstwald: ExperimentConfig = {
       conditions: [{ type: 'flag', key: 'sampleTimed', equals: true }],
       effects: [
         { type: 'setFlag', key: 'viscoCleared', value: true },
+        { type: 'setFlag', key: 'sampleIntroduced', value: false },
         { type: 'setFlag', key: 'suckedAboveMark', value: false },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: 'Clean & Drained Viscometer' },
@@ -374,6 +385,7 @@ export const viscosityOstwald: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'waterReady', value: true },
         { type: 'setFlag', key: 'waterIntroduced', value: true },
+        { type: 'setFlag', key: 'sampleIntroduced', value: false },
         { type: 'setFlag', key: 'suckedAboveMark', value: false },
         { type: 'setFlag', key: 'waterSucked', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
@@ -385,22 +397,6 @@ export const viscosityOstwald: ExperimentConfig = {
       ],
       completesAction: 'add-water',
       animation: { type: 'pour', durationMs: 2200, animatingFlag: 'isPouringWater' },
-    },
-    {
-      id: 'inter-suck-water',
-      trigger: { type: 'drop', source: 'suction-bulb', target: 'visco-capillary-end' },
-      conditions: [{ type: 'flag', key: 'waterReady', equals: true }],
-      effects: [
-        { type: 'setFlag', key: 'waterSucked', value: true },
-        { type: 'setFlag', key: 'suckedAboveMark', value: true },
-        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
-        { type: 'setVariable', key: '_flowProgress', value: 0 },
-        { type: 'setVariable', key: '_timerSeconds', value: 0 },
-        { type: 'setVariable', key: 'flowTimeWater', value: 0 },
-        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
-      ],
-      completesAction: 'suck-water',
-      animation: { type: 'suction', durationMs: 2000, animatingFlag: 'isSucking' },
     },
     // Start water flow timing
     {
@@ -576,8 +572,14 @@ export const viscosityOstwald: ExperimentConfig = {
     {
       id: 'timing-before-suck',
       trigger: 'drop:suction-bulb→visco-capillary-end',
-      condition: { type: 'flag', key: 'sampleIntroduced', equals: false },
-      message: 'Add the test liquid to the broad limb before attempting suction.',
+      condition: {
+        type: 'and',
+        conditions: [
+          { type: 'flag', key: 'sampleIntroduced', equals: false },
+          { type: 'flag', key: 'waterIntroduced', equals: false },
+        ],
+      },
+      message: 'Add liquid to the broad limb before attempting suction.',
       blocking: true,
     },
   ],
@@ -594,12 +596,14 @@ export const viscosityOstwald: ExperimentConfig = {
   },
   initialFlags: {
     isMounted: false,
+    viscoMounted: false,
     cleanedChromic: false,
     isCleanedAndDry: false,
     sampleIntroduced: false,
     suckedAboveMark: false,
     sampleTimed: false,
     stoppedTooEarly: false,
+    viscoCleared: false,
     waterReady: false,
     waterSucked: false,
     waterIntroduced: false,

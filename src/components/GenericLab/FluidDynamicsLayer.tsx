@@ -170,141 +170,170 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
       )}
 
       {/* ── 1B. POURING / DISPENSING ANIMATION (Tilted Source + Laminar Stream + Droplets + Ripples) ── */}
-      {(animType === 'pour' || animType === 'dispense') && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${targetX}%`,
-            top: `${targetY}%`,
-            transform: 'translate(-50%, -100%)',
-            width: 0,
-            height: 0,
-            overflow: 'visible',
-          }}
-        >
-          {/* Tilted Source Reagent Dispenser */}
-          {SourceComponent && sourceApparatus && (
-            <div
-              style={{
-                position: 'absolute',
-                left: -70 * benchScale,
-                top: -120 * benchScale,
-                transformOrigin: 'bottom right',
-                animation: 'pourTilt 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards',
-                filter: 'drop-shadow(0 14px 18px rgba(0,0,0,0.35))',
-              }}
-            >
-              <div style={{ transform: `scale(${benchScale * 0.92})` }}>
-                <SourceComponent
-                  id={`pouring-${sourceApparatus.id}`}
-                  label={(sourceProps.label as string | undefined) ?? (sourceApparatus.initialProps?.label as string | undefined) ?? sourceApparatus.label}
-                  liquidColor={fluidColor}
-                  liquidLevel={0.75}
-                  flags={state.flags}
-                  variables={state.variables}
-                  {...sourceProps}
-                />
-              </div>
-            </div>
-          )}
+      {(animType === 'pour' || animType === 'dispense') && (() => {
+        const isTubeOpening = targetZoneId?.includes('visco') || targetZoneId?.includes('limb') || targetZoneId?.includes('tube');
+        const streamEndY = isTubeOpening ? 130 : 180;
+        const streamControlX = isTubeOpening ? 114 : 110;
+        const streamControlY = isTubeOpening ? 108 : 130;
+        // Bottle mouth is at SVG (25, 20) in a 50×90 viewBox, scaled by benchScale*0.92
+        // So mouth pixel offset from div origin = (25*0.92, 20*0.92) = (23, 18.4)
+        const mouthPixelX = 23;   // 25 * 0.92
+        const mouthPixelY = 18.4; // 20 * 0.92
+        // Position the bottle so its mouth lands at the stream start in container-space
+        // Stream SVG origin in container = (-120*bs, -130*bs), so SVG coord (X,Y) → container (X-120)*bs, (Y-130)*bs
+        // We want mouth container pos to equal stream start container pos
+        const streamStartX = isTubeOpening ? 110 : 104;
+        const streamStartY = isTubeOpening ? 88 : 80;
+        const bottleLeft = ((streamStartX - 120) - mouthPixelX) * benchScale;
+        const bottleTop = ((streamStartY - 130) - mouthPixelY) * benchScale;
 
-          {/* SVG Laminar Stream & Droplets & Ripples */}
-          <svg
-            width={240 * benchScale}
-            height={260 * benchScale}
-            viewBox="0 0 240 260"
+        return (
+          <div
             style={{
               position: 'absolute',
-              left: -120 * benchScale,
-              top: -130 * benchScale,
+              left: `${targetX}%`,
+              top: `${targetY}%`,
+              transform: 'translate(-50%, -100%)',
+              width: 0,
+              height: 0,
               overflow: 'visible',
-              animation: 'streamFade 2.2s ease-in-out forwards',
             }}
           >
-            <defs>
-              {/* Fluid stream depth gradient */}
-              <linearGradient id="fluidStreamGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={fluidColor} stopOpacity="0.95" />
-                <stop offset="70%" stopColor={fluidColor} stopOpacity="0.9" />
-                <stop offset="100%" stopColor={fluidColor} stopOpacity="0.98" />
-              </linearGradient>
+            {/* Tilted Source Reagent Dispenser - pivots precisely around its mouth */}
+            {SourceComponent && sourceApparatus && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: bottleLeft,
+                  top: bottleTop,
+                  transformOrigin: `${mouthPixelX * benchScale}px ${mouthPixelY * benchScale}px`,
+                  animation: 'pourTilt 2.2s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+                  filter: 'drop-shadow(0 12px 16px rgba(0,0,0,0.32))',
+                }}
+              >
+                <div style={{ transform: `scale(${benchScale * 0.92})` }}>
+                  <SourceComponent
+                    id={`pouring-${sourceApparatus.id}`}
+                    label={(sourceProps.label as string | undefined) ?? (sourceApparatus.initialProps?.label as string | undefined) ?? sourceApparatus.label}
+                    liquidColor={fluidColor}
+                    liquidLevel={0.75}
+                    flags={state.flags}
+                    variables={state.variables}
+                    {...sourceProps}
+                  />
+                </div>
+              </div>
+            )}
 
-              {/* Shimmer light streak */}
-              <linearGradient id="streamShimmer" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
-                <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
-                <stop offset="100%" stopColor="transparent" />
-              </linearGradient>
+            {/* SVG Laminar Stream & Droplets & Ripples */}
+            <svg
+              width={240 * benchScale}
+              height={260 * benchScale}
+              viewBox="0 0 240 260"
+              style={{
+                position: 'absolute',
+                left: -120 * benchScale,
+                top: -130 * benchScale,
+                overflow: 'visible',
+                animation: 'streamFade 2.2s ease-in-out forwards',
+              }}
+            >
+              <defs>
+                {/* Fluid stream depth gradient */}
+                <linearGradient id="fluidStreamGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={fluidColor} stopOpacity="0.95" />
+                  <stop offset="70%" stopColor={fluidColor} stopOpacity="0.9" />
+                  <stop offset="100%" stopColor={fluidColor} stopOpacity="0.98" />
+                </linearGradient>
 
-              {/* Filter for glowing liquid stream */}
-              <filter id="liquidGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
+                {/* Shimmer light streak */}
+                <linearGradient id="streamShimmer" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
+                  <stop offset="50%" stopColor="rgba(255,255,255,0.2)" />
+                  <stop offset="100%" stopColor="transparent" />
+                </linearGradient>
 
-            {/* Continuous Curved Laminar Fluid Stream */}
-            <g filter="url(#liquidGlow)">
-              <path
-                d="M 85 45 Q 110 95 120 190"
-                stroke="url(#fluidStreamGrad)"
-                strokeWidth={7}
-                strokeLinecap="round"
-                fill="none"
+                {/* Filter for glowing liquid stream */}
+                <filter id="liquidGlow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="1.5" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+              </defs>
+
+              {/* Continuous Curved Laminar Fluid Stream originating from exact bottle mouth */}
+              <g filter="url(#liquidGlow)">
+                {/* Main liquid stream from mouth to receiving opening */}
+                <path
+                  d={`M ${streamStartX} ${streamStartY} Q ${streamControlX} ${streamControlY} 120 ${streamEndY}`}
+                  stroke="url(#fluidStreamGrad)"
+                  strokeWidth={6}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                {/* Internal specular highlight streak */}
+                <path
+                  d={`M ${streamStartX + 0.5} ${streamStartY + 1} Q ${streamControlX + 0.5} ${streamControlY} 120.5 ${streamEndY}`}
+                  stroke="url(#streamShimmer)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  fill="none"
+                />
+              </g>
+
+              {/* Liquid bead at bottle mouth forming the stream origin */}
+              <ellipse
+                cx={streamStartX}
+                cy={streamStartY}
+                rx={4}
+                ry={2.2}
+                fill={fluidColor}
+                opacity={0.92}
               />
-              {/* Internal high-velocity fluid streak */}
-              <path
-                d="M 86 46 Q 110 95 119 190"
-                stroke="url(#streamShimmer)"
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                fill="none"
-              />
-            </g>
 
-            {/* Gravity-Accelerated Liquid Droplets */}
-            <circle cx="120" cy="110" r={3.5} fill={fluidColor}>
-              <animate attributeName="cy" values="60;190" dur="0.45s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.8;1;0.9" dur="0.45s" repeatCount="indefinite" />
-            </circle>
-
-            <circle cx="121" cy="150" r={3} fill={fluidColor}>
-              <animate attributeName="cy" values="90;192" dur="0.38s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.7;1;0.9" dur="0.38s" repeatCount="indefinite" />
-            </circle>
-
-            {/* Surface Impact Ripple Waves in receiving vessel */}
-            <g transform="translate(120, 192)">
-              {/* Ripple 1 */}
-              <ellipse cx="0" cy="0" rx="14" ry="4" fill="none" stroke={fluidColor} strokeWidth="1.5" opacity="0.8">
-                <animate attributeName="rx" values="4;30" dur="0.8s" repeatCount="indefinite" />
-                <animate attributeName="ry" values="1.5;7.5" dur="0.8s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.9;0" dur="0.8s" repeatCount="indefinite" />
-                <animate attributeName="stroke-width" values="2;0.5" dur="0.8s" repeatCount="indefinite" />
-              </ellipse>
-
-              {/* Ripple 2 */}
-              <ellipse cx="0" cy="0" rx="8" ry="2.5" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" opacity="0.6">
-                <animate attributeName="rx" values="2;24" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
-                <animate attributeName="ry" values="1;6" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
-              </ellipse>
-
-              {/* Impact splash beads */}
-              <circle cx="-6" cy="-4" r="1.8" fill={fluidColor}>
-                <animate attributeName="cy" values="0;-12;0" dur="0.55s" repeatCount="indefinite" />
-                <animate attributeName="cx" values="0;-14;-16" dur="0.55s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.8;0" dur="0.55s" repeatCount="indefinite" />
+              {/* Gravity-Accelerated Liquid Droplets along the stream */}
+              <circle cx={streamStartX + 3} cy={streamStartY + 15} r={2.8} fill={fluidColor}>
+                <animate attributeName="cy" values={`${streamStartY + 10};${streamEndY}`} dur="0.42s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;1;0.9" dur="0.42s" repeatCount="indefinite" />
               </circle>
-              <circle cx="6" cy="-4" r="1.8" fill={fluidColor}>
-                <animate attributeName="cy" values="0;-14;0" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
-                <animate attributeName="cx" values="0;14;18" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.8;0" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
+
+              <circle cx="120" cy={streamStartY + 25} r={2.2} fill={fluidColor}>
+                <animate attributeName="cy" values={`${streamStartY + 20};${streamEndY + 2}`} dur="0.36s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7;1;0.9" dur="0.36s" repeatCount="indefinite" />
               </circle>
-            </g>
-          </svg>
-        </div>
-      )}
+
+              {/* Surface Impact Ripple Waves in receiving opening */}
+              <g transform={`translate(120, ${streamEndY + 2})`}>
+                {/* Ripple 1 */}
+                <ellipse cx="0" cy="0" rx="12" ry="3.5" fill="none" stroke={fluidColor} strokeWidth="1.5" opacity="0.8">
+                  <animate attributeName="rx" values="3;20" dur="0.8s" repeatCount="indefinite" />
+                  <animate attributeName="ry" values="1;5" dur="0.8s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.9;0" dur="0.8s" repeatCount="indefinite" />
+                  <animate attributeName="stroke-width" values="2;0.5" dur="0.8s" repeatCount="indefinite" />
+                </ellipse>
+
+                {/* Ripple 2 */}
+                <ellipse cx="0" cy="0" rx="7" ry="2" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" opacity="0.6">
+                  <animate attributeName="rx" values="2;14" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
+                  <animate attributeName="ry" values="1;3.5" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0" dur="0.8s" begin="0.3s" repeatCount="indefinite" />
+                </ellipse>
+
+                {/* Impact splash beads */}
+                <circle cx="-4" cy="-2" r="1.4" fill={fluidColor}>
+                  <animate attributeName="cy" values="0;-8;0" dur="0.55s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="0;-8;-12" dur="0.55s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="1;0.8;0" dur="0.55s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="4" cy="-2" r="1.4" fill={fluidColor}>
+                  <animate attributeName="cy" values="0;-8;0" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
+                  <animate attributeName="cx" values="0;8;12" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="1;0.8;0" dur="0.5s" begin="0.15s" repeatCount="indefinite" />
+                </circle>
+              </g>
+            </svg>
+          </div>
+        );
+      })()}
 
       {/* ── 2. TITRATION JET STREAM & DROPLET ACCELERATION ANIMATION (Titrant from Burette) ── */}
       {(animType === 'titrate' || (animType === 'color-change' && activeFlag === 'isTitrating')) && (
@@ -440,41 +469,112 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
       )}
 
       {/* ── 3. SUCTION / MENISCUS DRAWING ANIMATION (Viscometer / Pipette Bulb) ── */}
-      {animType === 'suction' && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${targetX}%`,
-            top: `${targetY}%`,
-            transform: 'translate(-50%, -100%)',
-            width: 0,
-            height: 0,
-            overflow: 'visible',
-          }}
-        >
-          {SourceComponent && sourceApparatus && (
+      {animType === 'suction' && (() => {
+        const bulbScale = Math.min(benchScale * 0.68, 1.05);
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${targetX}%`,
+              top: `${targetY}%`,
+              width: 0,
+              height: 0,
+              overflow: 'visible',
+              zIndex: 30,
+            }}
+          >
+            {/* Dedicated Laboratory Suction Bulb & Flexible Tubing Assembly */}
             <div
               style={{
                 position: 'absolute',
-                left: -20 * benchScale,
-                top: -80 * benchScale,
+                left: -55 * bulbScale,
+                top: -104 * bulbScale,
+                transformOrigin: `${55 * bulbScale}px ${104 * bulbScale}px`,
                 animation: 'suctionPulse 2.0s cubic-bezier(0.25, 1, 0.5, 1) forwards',
-                filter: 'drop-shadow(0 10px 14px rgba(0,0,0,0.3))',
+                filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.28))',
+                overflow: 'visible',
               }}
             >
-              <div style={{ transform: `scale(${benchScale * 0.95})` }}>
-                <SourceComponent
-                  id={`suction-${sourceApparatus.id}`}
-                  liquidColor={fluidColor}
-                  flags={state.flags}
-                  variables={state.variables}
-                  {...sourceProps}
+              <svg
+                width={170 * bulbScale}
+                height={115 * bulbScale}
+                viewBox="0 0 170 115"
+                fill="none"
+                style={{ overflow: 'visible' }}
+              >
+                <defs>
+                  {/* Rubber bulb 3D shading */}
+                  <radialGradient id="suctionRubberGrad" cx="36%" cy="28%" r="65%">
+                    <stop offset="0%" stopColor="#fca5a5" />
+                    <stop offset="25%" stopColor="#ef4444" />
+                    <stop offset="60%" stopColor="#dc2626" />
+                    <stop offset="90%" stopColor="#991b1b" />
+                    <stop offset="100%" stopColor="#7f1d1d" />
+                  </radialGradient>
+                  {/* Silicone rubber tube gradient */}
+                  <linearGradient id="suctionTubeGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="rgba(251, 146, 60, 0.95)" />
+                    <stop offset="40%" stopColor="rgba(254, 215, 170, 0.9)" />
+                    <stop offset="100%" stopColor="rgba(234, 88, 12, 0.95)" />
+                  </linearGradient>
+                </defs>
+
+                {/* ── Top Pinch Valve (narrow cylindrical tip at very top) ── */}
+                <rect x="51.5" y="6" width="7" height="10" rx="2.5" fill="#991b1b" stroke="#7f1d1d" strokeWidth="1" />
+                <line x1="50.5" y1="11" x2="59.5" y2="11" stroke="#fca5a5" strokeWidth="1" />
+                <line x1="50.5" y1="12" x2="59.5" y2="12" stroke="#500724" strokeWidth="1" />
+
+                {/* ── Main Rubber Suction Bulb (large, recognizable pear/egg shape) ── */}
+                <ellipse cx="55" cy="38" rx="24" ry="25" fill="url(#suctionRubberGrad)" stroke="#7f1d1d" strokeWidth="1.8" />
+                {/* Surface specular highlight arc */}
+                <path d="M 40 22 C 34 29 34 46 41 55" stroke="rgba(255,255,255,0.6)" strokeWidth="2.6" strokeLinecap="round" fill="none" />
+                {/* Secondary highlight */}
+                <path d="M 44 24 C 39 31 39 44 43 51" stroke="rgba(255,255,255,0.3)" strokeWidth="1.4" strokeLinecap="round" fill="none" />
+                {/* Shadow depth arc */}
+                <path d="M 68 28 C 74 36 74 48 67 56" stroke="rgba(0,0,0,0.22)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+
+                {/* ── Lower Collar / Ferrule (metal connector between bulb and tube) ── */}
+                <rect x="49" y="60" width="12" height="8" rx="2" fill="#7f1d1d" stroke="#500724" strokeWidth="1.2" />
+                <line x1="48" y1="63" x2="62" y2="63" stroke="#991b1b" strokeWidth="1.2" />
+                <line x1="48" y1="65.5" x2="62" y2="65.5" stroke="#fca5a5" strokeWidth="0.8" opacity="0.7" />
+
+                {/* ── Flexible Silicone Rubber Suction Tube ── */}
+                <path
+                  d="M 55 67 L 55 98"
+                  stroke="url(#suctionTubeGrad)"
+                  strokeWidth="8.5"
+                  strokeLinecap="round"
                 />
-              </div>
+                {/* Tube specular center highlight */}
+                <path
+                  d="M 54.5 68 L 54.5 97"
+                  stroke="rgba(255,255,255,0.65)"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+
+                {/* ── Upward suction flow dashes inside tube ── */}
+                <line x1="55" y1="98" x2="55" y2="68" stroke="rgba(255,255,255,0.95)" strokeWidth="2.4" strokeDasharray="4 5">
+                  <animate attributeName="stroke-dashoffset" values="18;0" dur="0.32s" repeatCount="indefinite" />
+                </line>
+
+                {/* ── Glass Adapter Sleeve (insertion into capillary limb mouth) ── */}
+                <rect x="49" y="96" width="12" height="9" rx="2.5" fill="rgba(226, 232, 240, 0.92)" stroke="#475569" strokeWidth="1.3" />
+                <line x1="47.5" y1="99" x2="62.5" y2="99" stroke="#64748b" strokeWidth="1.4" />
+                <rect x="50" y="102" width="10" height="4" rx="1.5" fill="#334155" stroke="#1e293b" strokeWidth="1" />
+
+                {/* ── Prominent Label near the Red Bulb ── */}
+                <g transform="translate(86, 28)">
+                  <line x1="-8" y1="10" x2="0" y2="10" stroke="#ef4444" strokeWidth="1.2" strokeDasharray="2 1.5" />
+                  <rect x="0" y="0" width="76" height="20" rx="5" fill="rgba(255, 255, 255, 0.96)" stroke="#ef4444" strokeWidth="1.2" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.12))" />
+                  <circle cx="9" cy="10" r="3.5" fill="#ef4444" />
+                  <text x="17" y="13.5" fontSize="8.5" fontWeight="800" fill="#dc2626" fontFamily="var(--font-sans)" letterSpacing="0.02em">Suction Bulb</text>
+                </g>
+              </svg>
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        );
+      })()}
 
       {/* ── 4. HEATING & CONVECTION STEAM VAPORS ── */}
       {animType === 'heat' && (
@@ -508,23 +608,23 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
       <style>{`
         @keyframes pourTilt {
           0% {
-            transform: rotate(0deg) translate(0, 0);
+            transform: rotate(0deg);
             opacity: 0;
           }
           15% {
-            transform: rotate(36deg) translate(10px, -4px);
+            transform: rotate(38deg);
             opacity: 1;
           }
           80% {
-            transform: rotate(44deg) translate(14px, -6px);
+            transform: rotate(44deg);
             opacity: 1;
           }
           92% {
-            transform: rotate(16deg) translate(4px, -2px);
+            transform: rotate(15deg);
             opacity: 0.9;
           }
           100% {
-            transform: rotate(0deg) translate(0, 0);
+            transform: rotate(0deg);
             opacity: 0;
           }
         }
@@ -587,23 +687,27 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
 
         @keyframes suctionPulse {
           0% {
-            transform: translate(0, 0) scale(1);
+            transform: scale(0.98);
             opacity: 0;
           }
-          20% {
-            transform: translate(0, 5px) scale(0.95);
+          15% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          35% {
+            transform: scale(0.94);
             opacity: 1;
           }
           75% {
-            transform: translate(0, 5px) scale(0.92);
+            transform: scale(0.94);
             opacity: 1;
           }
           90% {
-            transform: translate(0, 0) scale(1);
+            transform: scale(1);
             opacity: 0.9;
           }
           100% {
-            transform: translate(0, -10px) scale(1);
+            transform: scale(1);
             opacity: 0;
           }
         }

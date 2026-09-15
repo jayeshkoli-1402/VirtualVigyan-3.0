@@ -354,20 +354,20 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <div
             style={{
               position: 'absolute',
-              top: 14,
+              bottom: 10,
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 30,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
               border: `1.5px solid ${isTiming ? (reachedD ? '#ef4444' : '#059669') : isCompleted ? '#10b981' : '#0284c7'}`,
               borderRadius: 'var(--radius-lg)',
-              padding: '10px 18px',
-              boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              padding: '8px 16px',
+              boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
               display: 'flex',
               alignItems: 'center',
-              gap: 14,
+              gap: 12,
               animation: 'fadeIn 0.3s ease-out',
-              maxWidth: '92%',
+              maxWidth: '94%',
             }}
           >
             <div
@@ -757,6 +757,10 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
 
   const { setNodeRef, isOver } = useDroppable({ id: zone.id });
 
+  // Reagent drop targets over placed apparatuses should only display when actively dragging a compatible item
+  const isReagentTarget = zone.accepts?.some(a => !['viscometer', 'burette', 'conical-flask', 'beaker'].includes(a)) ?? false;
+  const isZoneVisible = isOver || isActive || (!hasItem && !isReagentTarget);
+
   return (
     <div
       ref={setNodeRef}
@@ -770,28 +774,32 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
         border: `2px dashed ${
           isOver ? '#2563eb' :
           isActive ? '#60a5fa' :
-          hasItem ? 'transparent' :
+          hasItem || (!isZoneVisible) ? 'transparent' :
           'rgba(148, 163, 184, 0.22)'
         }`,
         background: isOver
-          ? 'rgba(37, 99, 235, 0.08)'
+          ? 'rgba(37, 99, 235, 0.12)'
           : isActive
-            ? 'rgba(96, 165, 250, 0.05)'
+            ? 'rgba(96, 165, 250, 0.08)'
             : 'transparent',
         transition: 'all 0.2s ease',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 5,
+        zIndex: isOver || isActive ? 22 : 5,
         pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
-      {!hasItem && !isOver && (
+      {!hasItem && !isOver && isZoneVisible && (
         <span style={{
-          fontSize: '0.6rem',
-          color: 'rgba(148, 163, 184, 0.55)',
+          fontSize: '0.62rem',
+          fontWeight: isActive ? 700 : 500,
+          color: isActive ? '#1d4ed8' : 'rgba(148, 163, 184, 0.65)',
+          background: isActive ? 'rgba(255, 255, 255, 0.94)' : 'transparent',
+          borderRadius: 4,
+          boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
           textAlign: 'center',
-          padding: 4,
+          padding: '2px 6px',
           pointerEvents: 'none',
         }}>
           {zone.label}

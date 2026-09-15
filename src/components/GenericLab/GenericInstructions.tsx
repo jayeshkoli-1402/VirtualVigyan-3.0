@@ -75,7 +75,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   }
 
   return (
-    <div style={{ padding: 12, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ padding: '12px 14px 20px 14px', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{
@@ -98,19 +98,29 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
 
       {/* Current instruction */}
       <div style={{
-        padding: '10px 12px',
+        padding: '12px 14px',
         borderRadius: 'var(--radius-md)',
-        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.06), rgba(13, 148, 136, 0.06))',
-        border: '1px solid rgba(37, 99, 235, 0.15)',
-        fontSize: '0.8rem',
-        lineHeight: 1.5,
-        color: 'var(--text-primary)',
+        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 148, 136, 0.06))',
+        border: '1.5px solid rgba(37, 99, 235, 0.22)',
+        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
       }}>
-        <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#2563eb', marginBottom: 4,
-          textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{
+          fontSize: '0.78rem',
+          fontWeight: 700,
+          color: '#1d4ed8',
+          letterSpacing: '0.02em',
+          marginBottom: 6,
+        }}>
           {currentStep?.label ?? 'Step'}
         </div>
-        {getInstruction()}
+        <div style={{
+          fontSize: '0.8125rem',
+          lineHeight: 1.5,
+          color: 'var(--text-primary)',
+          fontWeight: 450,
+        }}>
+          {getInstruction()}
+        </div>
       </div>
 
       {/* Advance button */}
@@ -196,21 +206,40 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
         </div>
       )}
 
-      {/* Chemistry info */}
+      {/* Chemistry / Governing Principle info card */}
       {config.chemistry.reaction && (
         <div style={{
-          padding: '8px 10px',
-          borderRadius: 'var(--radius-sm)',
-          background: 'rgba(124, 58, 237, 0.05)',
-          border: '1px solid rgba(124, 58, 237, 0.1)',
-          fontSize: '0.7rem',
-          color: 'var(--text-secondary)',
-          fontFamily: 'var(--font-mono)',
+          marginTop: 'auto',
+          marginBottom: 6,
+          padding: '12px 14px',
+          borderRadius: 'var(--radius-md)',
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(139, 92, 246, 0.05))',
+          border: '1.5px solid rgba(99, 102, 241, 0.25)',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
         }}>
-          <div style={{ fontSize: '0.6rem', fontWeight: 600, color: '#7c3aed', marginBottom: 2 }}>
-            Reaction
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            color: '#6366f1',
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+            marginBottom: 6,
+          }}>
+            <span>⚖️</span>
+            <span>{config.chemistry.reactionType || 'Governing Principle'}</span>
           </div>
-          {config.chemistry.reaction}
+          <div style={{
+            fontSize: '0.76rem',
+            lineHeight: 1.45,
+            color: 'var(--text-primary)',
+            fontFamily: 'var(--font-mono)',
+            wordBreak: 'break-word',
+          }}>
+            {config.chemistry.reaction}
+          </div>
         </div>
       )}
     </div>

@@ -1477,9 +1477,15 @@ const ReagentBottle: React.FC<ApparatusProps> = ({
       <rect x="18" y="20" width="14" height="12" rx="2"
         stroke="#94a3b8" strokeWidth="1.5" fill="rgba(241,245,249,0.2)" />
 
-      {/* Stopper / Cap */}
-      <rect x="16" y="14" width="18" height="8" rx="2.5" fill="#475569" stroke="#334155" strokeWidth="1" />
-      <rect x="19" y="16" width="12" height="4" rx="1.5" fill="#64748b" />
+      {/* Stopper / Cap (removed when unstoppered/pouring) */}
+      {!id?.startsWith('pouring-') ? (
+        <g id="bottle-stopper">
+          <rect x="16" y="14" width="18" height="8" rx="2.5" fill="#475569" stroke="#334155" strokeWidth="1" />
+          <rect x="19" y="16" width="12" height="4" rx="1.5" fill="#64748b" />
+        </g>
+      ) : (
+        <ellipse cx="25" cy="20" rx="6.5" ry="2" fill="rgba(241,245,249,0.35)" stroke="#94a3b8" strokeWidth="1.2" />
+      )}
 
       {/* Label Plaque */}
       {label && (
@@ -2597,7 +2603,17 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
 
       {/* ── Liquid Layer ── */}
       {liquidLevel > 0 && (
-        <g opacity="0.92">
+        <g
+          opacity="0.92"
+          style={{
+            animation: (flags.isPouringChromic || flags.isPouringSample || flags.isPouringWater)
+              ? 'viscoFillIn 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) forwards'
+              : flags.isRinsingAcetone
+                ? 'streamFade 2.0s ease-in-out forwards'
+                : undefined,
+            transformOrigin: '70px 240px',
+          }}
+        >
           {/* Continuous liquid volume: Bulb A + U-bend + right capillary connection */}
           <g clipPath="url(#lowerLimbClip)">
             {/* Liquid filling from bulbAY down through U-tube */}
@@ -2621,7 +2637,7 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
           </g>
 
           {/* Liquid in Upper Bulb B (on right capillary limb) during flow from Mark C to D */}
-          {hasSucked && currentProgress < 1 && (
+          {hasSucked && (
             <g clipPath="url(#upperBulbClip)">
               {/* Draining liquid column based on exact student progress */}
               <rect
@@ -2632,15 +2648,17 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
                 fill={liquidColor}
               />
               {/* Curved liquid meniscus surface */}
-              <ellipse
-                cx="98"
-                cy={meniscusY}
-                rx="14"
-                ry="2.6"
-                fill="rgba(255,255,255,0.45)"
-                stroke={liquidColor}
-                strokeWidth="0.8"
-              />
+              {meniscusY <= lowerMarkY && (
+                <ellipse
+                  cx="98"
+                  cy={meniscusY}
+                  rx="14"
+                  ry="2.6"
+                  fill="rgba(255,255,255,0.45)"
+                  stroke={liquidColor}
+                  strokeWidth="0.8"
+                />
+              )}
             </g>
           )}
 
@@ -2661,22 +2679,80 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
       {/* Capillary bore centerline in narrow right limb */}
       <line x1="98" y1="114" x2="98" y2="185" stroke="#475569" strokeWidth="1.2" strokeDasharray="3 2" opacity="0.6" />
 
+      {/* ── Continuous Dynamic Capillary Flow Streamlines During Timing ── */}
+      {flags.timerRunning && (
+        <g opacity="0.85">
+          {/* Capillary bore downward fluid stream */}
+          <line x1="98" y1="116" x2="98" y2="212" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeDasharray="6 8" strokeLinecap="round">
+            <animate attributeName="stroke-dashoffset" values="0;28" dur="0.55s" repeatCount="indefinite" />
+          </line>
+          {/* Fluid flow around lower U-bend into Bulb A */}
+          <path
+            d="M 98 214 C 98 242 40 242 40 214"
+            stroke="rgba(255,255,255,0.55)"
+            strokeWidth="2.2"
+            strokeDasharray="8 10"
+            fill="none"
+            strokeLinecap="round"
+          >
+            <animate attributeName="stroke-dashoffset" values="36;0" dur="0.85s" repeatCount="indefinite" />
+          </path>
+        </g>
+      )}
+
+      {/* ── Upward Suction Fluid Streamlines in Capillary Limb During Suction ── */}
+      {flags.isSucking && (
+        <g opacity="0.9">
+          <line x1="98" y1="212" x2="98" y2="55" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeDasharray="5 6" strokeLinecap="round">
+            <animate attributeName="stroke-dashoffset" values="22;0" dur="0.4s" repeatCount="indefinite" />
+          </line>
+        </g>
+      )}
+
       {/* ── Upper Timing Mark (Mark C) ── */}
       <line x1="88" y1={upperMarkY} x2="110" y2={upperMarkY} stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
-      <text x="115" y={upperMarkY + 4} fontSize="13" fontWeight="900" fill="#dc2626">C</text>
+      <g transform={`translate(115, ${upperMarkY + 4})`}>
+        <text x="0" y="0" fontSize="13" fontWeight="900" fill="#dc2626" stroke="rgba(255,255,255,0.85)" strokeWidth="2" paintOrder="stroke fill">C</text>
+      </g>
 
       {/* ── Lower Timing Mark (Mark D) ── */}
       <line x1="88" y1={lowerMarkY} x2="110" y2={lowerMarkY} stroke="#dc2626" strokeWidth="3" strokeLinecap="round" />
-      <text x="115" y={lowerMarkY + 4} fontSize="13" fontWeight="900" fill="#dc2626">D</text>
+      <g transform={`translate(115, ${lowerMarkY + 4})`}>
+        <text x="0" y="0" fontSize="13" fontWeight="900" fill="#dc2626" stroke="rgba(255,255,255,0.85)" strokeWidth="2" paintOrder="stroke fill">D</text>
+      </g>
 
-      {/* Limb & Bulb Labels for accurate pedagogy */}
-      <text x="40" y="172" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#1e293b">Bulb A</text>
-      <text x="98" y="86" textAnchor="middle" fontSize="9.5" fontWeight="800" fill="#1e293b">Bulb B</text>
+      {/* ── Clean, High-Contrast Limb & Bulb Labels (Positioned outside liquid flow paths) ── */}
+      {/* Broad Limb Header */}
+      <g transform="translate(38, 8)">
+        <rect x="-24" y="-7.5" width="48" height="13" rx="3" fill="rgba(255, 255, 255, 0.94)" stroke="#cbd5e1" strokeWidth="0.8" />
+        <text x="0" y="2" textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#334155" letterSpacing="0.02em">Broad Limb</text>
+      </g>
 
-      {/* Descriptive limb indicators */}
-      <text x="40" y="14" textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748b">Broad Limb</text>
-      <text x="98" y="14" textAnchor="middle" fontSize="8" fontWeight="700" fill="#64748b">Capillary Limb</text>
-      <text x="98" y="150" textAnchor="middle" fontSize="7.5" fontStyle="italic" fill="#64748b">Capillary</text>
+      {/* Capillary Limb Header */}
+      <g transform="translate(98, 8)">
+        <rect x="-28" y="-7.5" width="56" height="13" rx="3" fill="rgba(255, 255, 255, 0.94)" stroke="#cbd5e1" strokeWidth="0.8" />
+        <text x="0" y="2" textAnchor="middle" fontSize="7.5" fontWeight="700" fill="#334155" letterSpacing="0.02em">Capillary Limb</text>
+      </g>
+
+      {/* Bulb B Tag (Positioned cleanly between limbs, avoiding liquid path) */}
+      <g transform="translate(64, 85)">
+        <rect x="-18" y="-7.5" width="36" height="15" rx="3" fill="rgba(255, 255, 255, 0.94)" stroke="#cbd5e1" strokeWidth="0.8" />
+        <text x="0" y="3" textAnchor="middle" fontSize="8" fontWeight="700" fill="#1e293b">Bulb B</text>
+        <line x1="18" y1="0" x2="24" y2="0" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 1" />
+      </g>
+
+      {/* Bulb A Tag (Positioned cleanly between limbs, avoiding liquid path) */}
+      <g transform="translate(68, 168)">
+        <rect x="-18" y="-7.5" width="36" height="15" rx="3" fill="rgba(255, 255, 255, 0.94)" stroke="#cbd5e1" strokeWidth="0.8" />
+        <text x="0" y="3" textAnchor="middle" fontSize="8" fontWeight="700" fill="#1e293b">Bulb A</text>
+        <line x1="-18" y1="0" x2="-24" y2="0" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 1" />
+      </g>
+
+      {/* Capillary Tag (Positioned outside liquid column with leader tick) */}
+      <g transform="translate(116, 150)">
+        <line x1="-12" y1="0" x2="-3" y2="0" stroke="#64748b" strokeWidth="1" strokeDasharray="2 1.5" />
+        <text x="0" y="3" fontSize="8" fontWeight="700" fill="#475569">Capillary</text>
+      </g>
 
       {/* Glass reflections & highlights */}
       <path d="M 35 25 L 35 135" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5" strokeLinecap="round" />
@@ -2687,12 +2763,31 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
       <rect x="25" y="70" width="30" height="11" rx="2.5" fill="#1e293b" stroke="#0f172a" strokeWidth="1" opacity="0.85" />
       <circle cx="40" cy="75.5" r="2.5" fill="#94a3b8" />
 
-      {/* Apparatus Label */}
-      {label && (
-        <text x="68" y="272" textAnchor="middle" fontSize="10.5" fontWeight="800" fill="#0f172a">
-          {label}
+      {/* ── Apparatus Title Badge (Clean, high-contrast placard associated with apparatus) ── */}
+      <g transform="translate(68, 268)">
+        <rect
+          x="-58"
+          y="-9"
+          width="116"
+          height="18"
+          rx="5"
+          fill="rgba(255, 255, 255, 0.95)"
+          stroke="rgba(37, 99, 235, 0.35)"
+          strokeWidth="1.2"
+          filter="drop-shadow(0 2px 5px rgba(0,0,0,0.15))"
+        />
+        <text
+          x="0"
+          y="3.5"
+          textAnchor="middle"
+          fontSize="9.5"
+          fontWeight="800"
+          fill="#1e3a8a"
+          letterSpacing="0.02em"
+        >
+          {label || "Ostwald's Viscometer"}
         </text>
-      )}
+      </g>
     </svg>
   );
 };

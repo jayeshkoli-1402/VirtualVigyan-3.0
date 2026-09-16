@@ -77,6 +77,13 @@ export const conductometricTitration: ExperimentConfig = {
       icon: '💧',
       initialProps: { liquidColor: 'rgba(56, 189, 248, 0.35)', label: 'Pure H₂O' },
     },
+    {
+      id: 'stirrer',
+      component: 'MagneticStirrer',
+      label: 'Magnetic Stirrer & Teflon Bead',
+      icon: '🔄',
+      initialProps: { width: 140, height: 95, label: 'Magnetic Stirrer' },
+    },
   ],
 
   // ── Drop Zones ──
@@ -125,6 +132,18 @@ export const conductometricTitration: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.0,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'MagneticStirrer',
+        position: { x: 50, y: 72 },
+        scale: 0.95,
+        props: { label: 'Magnetic Stirrer' },
+      },
+      {
+        component: 'ConductivityBridge',
+        position: { x: 80, y: 65 },
+        scale: 0.9,
+        props: { label: 'Digital Conductometer' },
       },
     ],
   },

@@ -434,7 +434,8 @@ export function createExperimentReducer(
 
       // ── Stopcock (Continuous Flow) ──
       case 'SET_STOPCOCK': {
-        const openAmount = Math.max(0, Math.min(1, action.payload.openAmount));
+        const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
+        const openAmount = isBuretteFilled === false ? 0 : Math.max(0, Math.min(1, action.payload.openAmount));
         return {
           ...state,
           variables: { ...state.variables, stopcockOpen: openAmount },
@@ -445,11 +446,31 @@ export function createExperimentReducer(
         const stopcockOpen = state.variables['stopcockOpen'] ?? 0;
         if (stopcockOpen <= 0) return state;
 
+        // Check if burette is filled! If buretteFilled is explicitly false, do not flow liquid
+        const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
+        if (isBuretteFilled === false) {
+          return {
+            ...state,
+            variables: { ...state.variables, stopcockOpen: 0 },
+            flags: { ...state.flags, isDropAnimating: false },
+          };
+        }
+
         const maxFlowRate = state.variables['maxFlowRate'] ?? 0.5; // mL/s default
         const deltaSeconds = action.payload.deltaMs / 1000;
         const flowAmount = stopcockOpen * maxFlowRate * deltaSeconds;
         const newVariables = { ...state.variables };
         const currentVolume = newVariables['volumeAdded'] ?? 0;
+
+        // If burette is empty (50 mL capacity reached), stop flowing
+        if (currentVolume >= 50) {
+          return {
+            ...state,
+            variables: { ...state.variables, stopcockOpen: 0 },
+            flags: { ...state.flags, isDropAnimating: false },
+          };
+        }
+
         newVariables['volumeAdded'] = Math.round((currentVolume + flowAmount) * 1000) / 1000;
 
         // Automatically increment specific experiment titration volume variables if they exist in variables

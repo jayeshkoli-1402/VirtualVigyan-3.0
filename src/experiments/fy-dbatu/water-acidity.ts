@@ -76,6 +76,20 @@ export const waterAcidity: ExperimentConfig = {
       icon: '🧪',
       initialProps: { liquidColor: 'rgba(255, 255, 255, 0.7)', label: 'Phenolphthalein' },
     },
+    {
+      id: 'measuring-cylinder',
+      component: 'MeasuringCylinder',
+      label: '100 mL Measuring Cylinder',
+      icon: '📏',
+      initialProps: { width: 68, height: 185, maxVolume: 100 },
+    },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 0.08, label: '0.080 g' },
+    },
   ],
 
   // ── Drop Zones ──
@@ -124,6 +138,12 @@ export const waterAcidity: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'DigitalBalance',
+        position: { x: 80, y: 72 },
+        scale: 0.95,
+        props: { label: 'Analytical Balance' },
       },
     ],
   },

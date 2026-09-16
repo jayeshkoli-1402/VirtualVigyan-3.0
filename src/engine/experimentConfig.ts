@@ -15,6 +15,8 @@
  * ═══════════════════════════════════════════════════════════════════
  */
 
+import type { VesselMixture, ChemicalAddition } from './stoichiometrySolver';
+
 // ── Top-Level Experiment Config ──────────────────────────────────
 
 export type ExperimentConfig = {
@@ -602,6 +604,12 @@ export type ExperimentState = {
 
   /** Whether the experiment is finished */
   finished: boolean;
+
+  /** Universal vessel mixtures keyed by apparatus ID */
+  vesselMixtures?: Record<string, VesselMixture>;
+
+  /** ID of vessel currently being inspected in the Chemical Inspector Modal */
+  activeVesselInspectionId?: string | null;
 };
 
 
@@ -618,4 +626,6 @@ export type ExperimentAction =
   | { type: 'SUBMIT_CALCULATION'; payload: { answers: Record<string, number> } }
   | { type: 'ANIMATION_COMPLETE'; payload: { animationFlag: string; interactionId: string } }
   | { type: 'ADD_MISTAKE'; payload: { message: string } }
+  | { type: 'INSPECT_VESSEL'; payload: { vesselId: string | null } }
+  | { type: 'MIX_CHEMICAL'; payload: { vesselId: string; addition: ChemicalAddition } }
   | { type: 'RESET' };

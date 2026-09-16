@@ -146,3 +146,19 @@ There are zero automated tests. All validation was done manually. The `engine/` 
 4. **Bench Banners (`GenericBench.tsx`):** Observation, Effervescence, and Pop Sound banners repositioned to top-left empty space (`top: 14, left: 14`), completely clearing center apparatus.
 5. **Stopcock UI (`GenericBench.tsx`):** Docked cleanly in bottom-right empty space (`bottom: 16, right: 16`).
 6. **Legacy Lab Bench (`src/components/LabBench.tsx`):** Repositioned clamp drop zone badge to wide-open empty space to the right of the stand (`x + width + 8`), and base drop zone badge above the stand base plate.
+
+### 25. Universal Multi-Chemical Reaction & Stoichiometry Engine (IMPLEMENTED)
+**Was:** Previously, the virtual lab engine was primarily state-machine driven—it knew how to follow scripted steps, but did not know what would happen at a fundamental chemical/thermodynamic level if students added arbitrary chemical species $X_1, X_2 \dots X_n$ in variable quantities, unscripted combinations, or in large excess.
+**Fix:** Built a complete, 100% client-side deterministic reaction and stoichiometry solver:
+1. **`src/engine/chemicalDatabase.ts`:** Database of 50+ chemical species with formulas, molar masses ($M_r$), densities, physical states, $pK_a$, base colors, and safety hazard warnings.
+2. **`src/engine/reactionMatrix.ts`:** Rule-based reaction matrix encompassing acid-base neutralization, carbonate effervescence, single displacement, double displacement & precipitation (BaSO₄, AgCl, PbI₂ "Golden Rain", Cu(OH)₂, Fe(OH)₃), redox, limewater carbon dioxide confirmation, and thiosulfate turbidity kinetics.
+3. **`src/engine/stoichiometrySolver.ts`:** Deterministic solver calculating:
+   - Limiting reagent extent $\xi = \min_i(n_i / \nu_i)$ and exact unreacted excess.
+   - Thermodynamic reaction heat $q = -\sum \xi \Delta H$ and vessel temperature surge $\Delta T = q / (m \cdot c_p)$.
+   - Exact pH based on net $[H^+]$ / $[OH^-]$, weak acid equilibria, and buffer equations.
+   - Insoluble precipitate mass ($g$) and optical opacity.
+   - Dynamic gas evolution rate ($mL$) and effervescence bubbling.
+4. **`src/components/GenericLab/ChemicalInspectorModal.tsx` & `GenericBench.tsx`:**
+   - Added "🧪 Inspect Reaction" button in workbench action bar and on placed vessel badges.
+   - Interactive chemical inspection modal showing live molar composition ($n$, $C$), limiting/excess reagents, precipitate mass, pH gauge, temperature, reaction logs with scientific explanations, and an interactive "Reagent Playground" to pour arbitrary reagents $X_1 \dots X_n$ with variable quantities.
+5. **`scripts/test_stoichiometry.mjs`:** 29 automated test assertions validating limiting reagents, equivalence points, precipitates, gas volumes, and temperatures (100% pass rate).

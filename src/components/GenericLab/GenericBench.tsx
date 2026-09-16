@@ -11,6 +11,8 @@ import { getApparatusComponent } from '../../apparatus';
 import { getSolutionColor } from '../../engine/chemistryLib';
 import { evaluateCondition } from '../../engine/experimentRunner';
 import { FluidDynamicsLayer } from './FluidDynamicsLayer';
+import { ChemicalInspectorModal } from './ChemicalInspectorModal';
+import { createEmptyMixture } from '../../engine/stoichiometrySolver';
 
 type GenericBenchProps = {
   config: ExperimentConfig;
@@ -98,6 +100,15 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     state.flags,
     config.chemistry.colorModelArgs,
   );
+
+  // Determine primary reaction vessel (flask, beaker, etc.)
+  const primaryVesselConfig = config.apparatus.find(a =>
+    ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(a.component)
+  );
+  const primaryVesselId = primaryVesselConfig?.id ?? Object.keys(state.placedApparatus).find(id => {
+    const app = config.apparatus.find(a => a.id === id);
+    return app && ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(app.component);
+  }) ?? 'flask';
 
 
 
@@ -631,8 +642,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   left: '50%',
                   transform: 'translateX(-50%) translateY(4px)',
                   whiteSpace: 'nowrap',
-                  pointerEvents: 'none',
                   zIndex: 30,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  pointerEvents: 'auto',
                 }}
               >
                 <span
@@ -647,10 +661,40 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                     border: '1px solid var(--border, rgba(203, 213, 225, 0.8))',
                     boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
                     letterSpacing: '0.02em',
+                    pointerEvents: 'none',
                   }}
                 >
                   {apparatusConfig.label}
                 </span>
+
+                {isVessel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: apparatusId } });
+                    }}
+                    title={`Inspect chemical reactions & stoichiometry inside ${apparatusConfig.label}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
+                      padding: '2px 7px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(129, 140, 248, 0.8)',
+                      boxShadow: '0 2px 5px rgba(79, 70, 229, 0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>🧪</span>
+                    <span>Inspect</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -770,6 +814,35 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <span style={{ fontSize: '0.85rem' }}>💧</span>
           <span>{stopcockOpen > 0 ? `Cork: ${Math.round(stopcockOpen * 100)}%` : 'Open Cork'}</span>
         </button>
+
+        {/* Reaction & Stoichiometry Inspector Button */}
+        <button
+          type="button"
+          id="btn-generic-inspect-chemistry"
+          onClick={() => {
+            const vesselId = primaryVesselId || 'flask';
+            dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId } });
+          }}
+          title="Inspect molecular concentrations, limiting reagents, reactions, and thermodynamics"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: '1px solid #6366f1',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.22))',
+            color: '#4f46e5',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>🧪</span>
+          <span>Inspect Reaction</span>
+        </button>
       </div>
 
       {/* Live volume reading indicator (Positioned in top-right empty space) */}
@@ -819,6 +892,25 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           ✓ Mark Endpoint
         </button>
       )}
+
+      {/* ── Real-Time Reaction & Stoichiometry Inspector Modal ── */}
+      {state.activeVesselInspectionId && (() => {
+        const vesselId = state.activeVesselInspectionId;
+        const mixture = state.vesselMixtures?.[vesselId] ?? createEmptyMixture(vesselId, 25);
+        const appConfig = config.apparatus.find(a => a.id === vesselId);
+        const vesselLabel = appConfig?.label ?? 'Reaction Vessel';
+
+        return (
+          <ChemicalInspectorModal
+            mixture={mixture}
+            vesselLabel={vesselLabel}
+            onClose={() => dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: null } })}
+            onAddChemical={(addition) => {
+              dispatch({ type: 'MIX_CHEMICAL', payload: { vesselId, addition } });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };

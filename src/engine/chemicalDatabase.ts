@@ -772,12 +772,157 @@ export const CHEMICAL_DATABASE: Record<string, ChemicalSpecies> = {
     hazards: [],
     description: 'Forms an intense dark blue-black inclusion complex with free triiodide (I₃⁻).',
   },
+  acetone: {
+    id: 'acetone',
+    name: 'Acetone (Volatile Organic Solvent)',
+    formula: 'C₃H₆O',
+    molarMass: 58.08,
+    density: 0.79,
+    type: 'organic',
+    baseColor: 'rgba(240, 249, 255, 0.40)',
+    stateAtRoomTemp: 'liquid',
+    solubilityLimit: Infinity,
+    hazards: ['Highly Flammable Liquid & Vapor', 'Eye & Respiratory Irritant'],
+    description: 'Volatile, miscible ketone solvent used for rapid degreasing, rinsing, and drying glassware.',
+  },
+  chromic_acid: {
+    id: 'chromic_acid',
+    name: 'Chromic Acid Cleaning Solution',
+    formula: 'H₂CrO₄',
+    molarMass: 118.01,
+    density: 1.20,
+    type: 'acid',
+    baseColor: 'rgba(234, 88, 12, 0.85)',
+    stateAtRoomTemp: 'aqueous',
+    pKa: 0.74,
+    hazards: ['Strong Oxidizer', 'Corrosive', 'Carcinogen (Cr VI)'],
+    commonConcentrationM: 0.5,
+    description: 'Powerful oxidizing acid mixture (K₂Cr₂O₇ + conc. H₂SO₄) for stripping stubborn organic film from capillary tubes.',
+  },
+  liquid_sample_a: {
+    id: 'liquid_sample_a',
+    name: 'Liquid Sample A (Test Viscosity Sample)',
+    formula: 'C₃H₈O₃(aq)',
+    molarMass: 92.09,
+    density: 1.04,
+    type: 'organic',
+    baseColor: 'rgba(14, 165, 233, 0.75)',
+    stateAtRoomTemp: 'liquid',
+    solubilityLimit: Infinity,
+    hazards: [],
+    description: 'Aqueous calibration test liquid for Ostwald viscometry and relative flow timing.',
+  },
+  oil_sample: {
+    id: 'oil_sample',
+    name: 'Vegetable / Lubricating Oil Sample',
+    formula: 'R-COOH / Triglyceride',
+    molarMass: 282.0,
+    density: 0.92,
+    type: 'organic',
+    baseColor: 'rgba(251, 191, 36, 0.75)',
+    stateAtRoomTemp: 'liquid',
+    solubilityLimit: 0,
+    hazards: [],
+    description: 'Fatty acid-containing oil sample undergoing ethanolic KOH titration for acid value determination.',
+  },
+  cacl2: {
+    id: 'cacl2',
+    name: 'Calcium Chloride (Standard Hard Water)',
+    formula: 'CaCl₂',
+    molarMass: 110.98,
+    density: 1.02,
+    type: 'salt',
+    baseColor: 'rgba(240, 249, 255, 0.40)',
+    stateAtRoomTemp: 'aqueous',
+    solubilityLimit: 74.5,
+    hazards: [],
+    commonConcentrationM: 0.01,
+    description: 'Primary standard for standardizing EDTA solution in water hardness determinations.',
+  },
+  k2cro4: {
+    id: 'k2cro4',
+    name: 'Potassium Chromate Indicator',
+    formula: 'K₂CrO₄',
+    molarMass: 194.19,
+    density: 1.05,
+    type: 'indicator',
+    baseColor: 'rgba(234, 179, 8, 0.85)',
+    stateAtRoomTemp: 'aqueous',
+    hazards: ['Carcinogen', 'Skin sensitizer'],
+    commonConcentrationM: 0.05,
+    description: 'Precipitation titration indicator in Mohr method; forms reddish-brown Ag₂CrO₄ at endpoint.',
+  },
+  mnso4: {
+    id: 'mnso4',
+    name: 'Manganous Sulfate Solution',
+    formula: 'MnSO₄',
+    molarMass: 151.00,
+    density: 1.08,
+    type: 'salt',
+    baseColor: 'rgba(253, 230, 138, 0.45)',
+    stateAtRoomTemp: 'aqueous',
+    hazards: ['Harmful if swallowed'],
+    commonConcentrationM: 0.2,
+    description: 'Winkler reagent A; reacts with dissolved oxygen to form manganese basic oxide precipitate.',
+  },
+  buffer_4: {
+    id: 'buffer_4',
+    name: 'Standard pH 4.00 Calibration Buffer',
+    formula: 'KHC₈H₄O₄ (Potassium Hydrogen Phthalate)',
+    molarMass: 204.22,
+    density: 1.01,
+    type: 'acid',
+    baseColor: 'rgba(248, 113, 113, 0.45)',
+    stateAtRoomTemp: 'aqueous',
+    hazards: [],
+    commonConcentrationM: 0.05,
+    description: 'Standard buffer for calibrating glass electrode on digital pH meters at pH 4.00.',
+  },
+  buffer_9: {
+    id: 'buffer_9',
+    name: 'Standard pH 9.20 Calibration Buffer',
+    formula: 'Na₂B₄O₇·10H₂O (Borax Buffer)',
+    molarMass: 381.37,
+    density: 1.01,
+    type: 'base',
+    baseColor: 'rgba(96, 165, 250, 0.45)',
+    stateAtRoomTemp: 'aqueous',
+    hazards: [],
+    commonConcentrationM: 0.01,
+    description: 'Standard buffer for two-point pH meter glass electrode calibration at pH 9.20.',
+  },
+  neutral_alcohol: {
+    id: 'neutral_alcohol',
+    name: 'Neutralized Ethanol-Ether Solvent',
+    formula: 'C₂H₅OH + (C₂H₅)₂O',
+    molarMass: 46.07,
+    density: 0.81,
+    type: 'organic',
+    baseColor: 'rgba(240, 249, 255, 0.35)',
+    stateAtRoomTemp: 'liquid',
+    solubilityLimit: Infinity,
+    hazards: ['Highly Flammable'],
+    description: 'Neutralized solvent for dissolving oil sample without contributing to titratable acidity.',
+  },
 };
 
 /** Helper to retrieve a chemical species by ID or normalized name */
 export function getChemicalSpecies(idOrName: string): ChemicalSpecies | undefined {
-  const norm = idOrName.toLowerCase().trim().replace(/[-\s]/g, '_');
+  let norm = idOrName.toLowerCase().trim().replace(/[-\s]/g, '_');
   if (CHEMICAL_DATABASE[norm]) return CHEMICAL_DATABASE[norm];
+
+  // Common aliases in engineering chemistry experiments
+  if (norm.includes('thiosulphate') || norm.includes('thiosulfate')) return CHEMICAL_DATABASE['na2s2o3'];
+  if (norm.includes('water') || norm === 'h2o' || norm.includes('cond_water')) return CHEMICAL_DATABASE['h2o'];
+  if (norm.includes('sample') && (norm.includes('liquid') || norm.includes('visco'))) return CHEMICAL_DATABASE['liquid_sample_a'];
+  if (norm.includes('sample') && (norm.includes('hard') || norm.includes('water') || norm.includes('cacl2'))) return CHEMICAL_DATABASE['cacl2'];
+  if (norm.includes('sample') && norm.includes('oil')) return CHEMICAL_DATABASE['oil_sample'];
+  if (norm.includes('sample') && norm.includes('hcl')) return CHEMICAL_DATABASE['hcl'];
+  if (norm.includes('chromic')) return CHEMICAL_DATABASE['chromic_acid'];
+  if (norm.includes('acetone')) return CHEMICAL_DATABASE['acetone'];
+  if (norm.includes('ebt') || norm.includes('eriochrome')) return CHEMICAL_DATABASE['eriochrome_black_t'];
+  if (norm.includes('phenolphthalein')) return CHEMICAL_DATABASE['phenolphthalein'];
+  if (norm.includes('methyl_orange')) return CHEMICAL_DATABASE['methyl_orange'];
 
   // Try matching by name or formula
   for (const chem of Object.values(CHEMICAL_DATABASE)) {

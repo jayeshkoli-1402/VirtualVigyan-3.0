@@ -496,6 +496,10 @@ export type ScoringEvaluator =
       correctPoints: number;
       /** Points if incorrect (default: 0) */
       incorrectPoints?: number;
+      /** Calculate marks proportionally based on proximity to actual standard answer */
+      proportional?: boolean;
+      /** Fixed known theoretical answer */
+      actualStandard?: number;
     }
   | {
       type: 'custom';
@@ -610,6 +614,17 @@ export type ExperimentState = {
 
   /** ID of vessel currently being inspected in the Chemical Inspector Modal */
   activeVesselInspectionId?: string | null;
+
+  /** ID of the interaction currently playing an animation */
+  activeAnimationInteractionId?: string | null;
+
+  /** Active dynamic fluid animation metadata (direct target and source for pouring/dripping) */
+  activeAnimation?: {
+    type: string;
+    sourceApparatusId?: string | null;
+    targetZoneId?: string | null;
+    color?: string | null;
+  } | null;
 };
 
 
@@ -620,6 +635,7 @@ export type ExperimentAction =
   | { type: 'DROP_ITEM'; payload: { itemId: string; zoneId: string } }
   | { type: 'CLICK_ELEMENT'; payload: { elementId: string } }
   | { type: 'SET_STOPCOCK'; payload: { apparatusId: string; openAmount: number } }
+  | { type: 'ADD_SINGLE_DROP'; payload?: { apparatusId?: string; dropVolumeMl?: number } }
   | { type: 'TICK_FLOW'; payload: { deltaMs: number } }
   | { type: 'TICK'; payload: { deltaMs: number } }
   | { type: 'ADVANCE_STEP' }

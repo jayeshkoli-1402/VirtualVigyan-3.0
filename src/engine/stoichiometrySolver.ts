@@ -247,6 +247,23 @@ export function computeMixtureAppearance(
       baseG = 239;
       baseB = 172; // Pale green
       baseA = 0.60;
+    } else {
+      // 2b. Universal check for any chemical with distinct baseColor in CHEMICAL_DATABASE
+      for (const [chemId, amt] of Object.entries(moles)) {
+        if (amt > 1e-6 && chemId !== 'h2o' && chemId !== 'nacl') {
+          const species = getChemicalSpecies(chemId);
+          if (species?.baseColor) {
+            const match = species.baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (match) {
+              baseR = parseInt(match[1], 10);
+              baseG = parseInt(match[2], 10);
+              baseB = parseInt(match[3], 10);
+              baseA = match[4] ? parseFloat(match[4]) : 0.85;
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
@@ -305,10 +322,22 @@ export function mixChemicals(
   current: VesselMixture,
   addition: ChemicalAddition,
 ): VesselMixture {
-  const species = getChemicalSpecies(addition.substanceId);
+  let species = getChemicalSpecies(addition.substanceId);
   if (!species) {
-    // Unrecognized substance: just return current
-    return current;
+    // Generate ad-hoc species on the fly so volume and species never get discarded
+    species = {
+      id: addition.substanceId,
+      name: addition.substanceId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      formula: addition.substanceId.toUpperCase(),
+      molarMass: 100.0,
+      density: 1.0,
+      type: 'salt',
+      baseColor: 'rgba(230, 244, 255, 0.45)',
+      stateAtRoomTemp: 'liquid',
+      hazards: [],
+      commonConcentrationM: 0.1,
+      description: 'Laboratory chemical reagent solution.',
+    };
   }
 
   // 1. Calculate incoming moles & volume
@@ -479,7 +508,7 @@ export function mixChemicals(
 
   return {
     vesselId: current.vesselId,
-    volumeMl: Math.round(totalVolumeMl * 10) / 10,
+    volumeMl: Math.round(totalVolumeMl * 1000) / 1000,
     temperatureC: Math.round(totalTempC * 10) / 10,
     pH,
     moles: updatedMoles,

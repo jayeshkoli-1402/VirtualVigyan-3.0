@@ -92,21 +92,23 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
   useEffect(() => {
     const activeAnims = Object.entries(state.animations).filter(([, v]) => v);
     for (const [flag] of activeAnims) {
-      // Find the interaction that started this animation
-      const interaction = config.interactions.find(
-        i => i.animation?.animatingFlag === flag
-      );
-      if (interaction?.animation) {
-        const timer = setTimeout(() => {
-          dispatch({
-            type: 'ANIMATION_COMPLETE',
-            payload: { animationFlag: flag, interactionId: interaction.id },
-          });
-        }, interaction.animation.durationMs);
-        return () => clearTimeout(timer);
-      }
+      // Find the exact interaction that started this animation
+      const interaction = state.activeAnimationInteractionId
+        ? config.interactions.find(i => i.id === state.activeAnimationInteractionId)
+        : config.interactions.find(i => i.animation?.animatingFlag === flag);
+
+      const duration = interaction?.animation?.durationMs ?? 2000;
+      const interId = interaction?.id ?? state.activeAnimationInteractionId ?? 'anim';
+
+      const timer = setTimeout(() => {
+        dispatch({
+          type: 'ANIMATION_COMPLETE',
+          payload: { animationFlag: flag, interactionId: interId },
+        });
+      }, duration);
+      return () => clearTimeout(timer);
     }
-  }, [state.animations, config.interactions]);
+  }, [state.animations, state.activeAnimationInteractionId, config.interactions, dispatch]);
 
   // ── Drag handlers ──
   const handleDragStart = useCallback((event: DragStartEvent) => {

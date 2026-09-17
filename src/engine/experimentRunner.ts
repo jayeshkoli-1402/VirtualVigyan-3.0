@@ -18,6 +18,171 @@ import type {
   ConditionConfig,
 } from './experimentConfig';
 import { computeFormula } from './chemistryLib';
+import {
+  mixChemicals,
+  createEmptyMixture,
+  type VesselMixture,
+  type ChemicalAddition,
+} from './stoichiometrySolver';
+
+// ── Chemical Reagent Detection Helpers ───────────────────────────
+
+/** Helper to detect if a dropped item or ID represents a chemical reagent addition */
+export function detectChemicalAddition(
+  itemId: string,
+  _config?: ExperimentConfig,
+  state?: ExperimentState,
+): ChemicalAddition | null {
+  const norm = itemId.toLowerCase();
+
+  // Mineral & Organic Acids
+  if (norm.includes('hcl')) {
+    return { substanceId: 'hcl', volumeMl: 10, molarity: state?.variables['molarityHCl'] ?? 0.1 };
+  }
+  if (norm.includes('h2so4') || norm.includes('sulfuric')) {
+    return { substanceId: 'h2so4', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('hno3') || norm.includes('nitric')) {
+    return { substanceId: 'hno3', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('acetic') || norm.includes('ch3cooh')) {
+    return { substanceId: 'ch3cooh', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('oxalic')) {
+    return { substanceId: 'oxalic_acid', volumeMl: 10, molarity: 0.05 };
+  }
+
+  // Bases & Alkalis
+  if (norm.includes('naoh') || norm.includes('caustic')) {
+    return { substanceId: 'naoh', volumeMl: 10, molarity: state?.variables['molarityNaOH'] ?? 0.1 };
+  }
+  if (norm.includes('koh')) {
+    return { substanceId: 'koh', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('limewater') || norm.includes('ca(oh)2') || norm.includes('ca_oh2')) {
+    return { substanceId: 'ca_oh2', volumeMl: 20, molarity: 0.02 };
+  }
+
+  // Carbonates & Bicarbonates
+  if (norm.includes('na2co3') || (norm.includes('sodium') && norm.includes('carbonate'))) {
+    return { substanceId: 'na2co3', volumeMl: 10, molarity: 0.05 };
+  }
+  if (norm.includes('nahco3') || norm.includes('bicarbonate')) {
+    return { substanceId: 'nahco3', volumeMl: 10, molarity: 0.1 };
+  }
+
+  // Salts & Analytical Reagents
+  if (norm.includes('bacl2') || norm.includes('barium')) {
+    return { substanceId: 'bacl2', volumeMl: 10, molarity: state?.variables['m1'] ?? 0.1 };
+  }
+  if (norm.includes('na2so4') || (norm.includes('sodium') && norm.includes('sulfate'))) {
+    return { substanceId: 'na2so4', volumeMl: 10, molarity: state?.variables['m2'] ?? 0.1 };
+  }
+  if (norm.includes('cuso4') || norm.includes('copper-sulfate') || norm.includes('blue-vitriol')) {
+    return { substanceId: 'cuso4', volumeMl: 25, molarity: 0.1 };
+  }
+  if (norm.includes('feso4') || norm.includes('iron-sulfate')) {
+    return { substanceId: 'feso4', volumeMl: 25, molarity: 0.1 };
+  }
+  if (norm.includes('fecl3') || norm.includes('ferric')) {
+    return { substanceId: 'fecl3', volumeMl: 15, molarity: 0.1 };
+  }
+  if (norm.includes('kmno4') || norm.includes('permanganate')) {
+    return { substanceId: 'kmno4', volumeMl: 10, molarity: 0.02 };
+  }
+  if (norm.includes('agno3') || norm.includes('silver-nitrate')) {
+    return { substanceId: 'agno3', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('nacl') || (norm.includes('salt') && !norm.includes('stand'))) {
+    return { substanceId: 'nacl', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('ki') || norm.includes('iodide')) {
+    return { substanceId: 'ki', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('lead') || norm.includes('pb_no3_2')) {
+    return { substanceId: 'pb_no3_2', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('thiosulfate') || norm.includes('na2s2o3')) {
+    return { substanceId: 'na2s2o3', volumeMl: 15, molarity: 0.1 };
+  }
+
+  // Metals
+  if (norm.includes('zinc') || norm === 'zn') {
+    return { substanceId: 'zn', massGrams: 2.0 };
+  }
+  if (norm.includes('copper-turnings') || norm === 'cu' || norm.includes('copper-metal')) {
+    return { substanceId: 'cu', massGrams: 2.0 };
+  }
+  if (norm.includes('iron-nail') || norm.includes('iron-filings') || norm === 'fe') {
+    return { substanceId: 'fe', massGrams: 2.5 };
+  }
+  if (norm.includes('magnesium') || norm === 'mg') {
+    return { substanceId: 'mg', massGrams: 0.5 };
+  }
+
+  // Indicators & Complexation
+  if (norm.includes('phenolphthalein') || (norm.includes('indicator') && !norm.includes('methyl') && !norm.includes('ebt'))) {
+    return { substanceId: 'phenolphthalein', volumeMl: 0.1, molarity: 0.005 };
+  }
+  if (norm.includes('methyl') || norm.includes('methyl-orange')) {
+    return { substanceId: 'methyl_orange', volumeMl: 0.1, molarity: 0.005 };
+  }
+  if (norm.includes('ebt') || norm.includes('eriochrome')) {
+    return { substanceId: 'eriochrome_black_t', volumeMl: 0.1, molarity: 0.002 };
+  }
+  if (norm.includes('buffer') || norm.includes('nh4cl')) {
+    return { substanceId: 'buffer_ph10', volumeMl: 2.0, molarity: 1.0 };
+  }
+  if (norm.includes('edta')) {
+    return { substanceId: 'edta', volumeMl: 5.0, molarity: 0.01 };
+  }
+
+  // Solvents
+  if (norm.includes('water') || norm.includes('distilled') || norm === 'h2o') {
+    return { substanceId: 'h2o', volumeMl: 20 };
+  }
+
+  return null;
+}
+
+/** Helper to locate which vessel an item is dropped into */
+export function findTargetVesselId(
+  zoneId: string,
+  config: ExperimentConfig,
+  state: ExperimentState,
+): string | null {
+  const vesselTypes = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'MeasuringCylinder'];
+
+  // 1. Check if zoneId directly matches a placed vessel
+  for (const [appId, placedZone] of Object.entries(state.placedApparatus)) {
+    if (placedZone === zoneId) {
+      const app = config.apparatus.find(a => a.id === appId);
+      if (app && vesselTypes.includes(app.component)) {
+        return appId;
+      }
+    }
+  }
+
+  // 2. Check if any vessel matches the zone name (e.g. 'flask-zone' -> 'flask')
+  const cleanZone = zoneId.replace('-zone', '');
+  const directMatch = config.apparatus.find(a => a.id === cleanZone || a.id.includes(cleanZone));
+  if (directMatch && vesselTypes.includes(directMatch.component)) {
+    return directMatch.id;
+  }
+
+  // 3. Fallback to first placed vessel on the bench
+  for (const appId of Object.keys(state.placedApparatus)) {
+    const app = config.apparatus.find(a => a.id === appId);
+    if (app && vesselTypes.includes(app.component)) {
+      return appId;
+    }
+  }
+
+  // 4. Default to first vessel defined in config
+  const anyVessel = config.apparatus.find(a => vesselTypes.includes(a.component));
+  return anyVessel ? anyVessel.id : null;
+}
+
 
 // ── Condition Evaluation ─────────────────────────────────────────
 
@@ -243,9 +408,19 @@ export function createInitialState(config: ExperimentConfig): ExperimentState {
   const generatedValues = config.generateInitialValues?.() ?? {};
 
   const initialApparatusProps: Record<string, Record<string, unknown>> = {};
+  const initialVesselMixtures: Record<string, VesselMixture> = {};
+  const vesselComponents = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'MeasuringCylinder'];
+
   for (const app of config.apparatus) {
     if (app.initialProps) {
       initialApparatusProps[app.id] = { ...app.initialProps };
+    }
+    if (vesselComponents.includes(app.component)) {
+      const initVol =
+        (app.initialProps?.liquidVolume as number) ??
+        (app.initialProps?.volume as number) ??
+        (config.initialVariables?.['sampleVolume'] ?? 0);
+      initialVesselMixtures[app.id] = createEmptyMixture(app.id, initVol);
     }
   }
 
@@ -263,6 +438,8 @@ export function createInitialState(config: ExperimentConfig): ExperimentState {
     score: null,
     scoreBreakdown: null,
     finished: false,
+    vesselMixtures: initialVesselMixtures,
+    activeVesselInspectionId: null,
   };
 }
 
@@ -305,6 +482,38 @@ export function createExperimentReducer(
         const interactions = findMatchingInteractions(config, 'drop', itemId, zoneId);
 
         if (interactions.length === 0) {
+          // Check if student dropped a chemical reagent into a reaction vessel (unscripted experimentation)
+          const chemAddition = detectChemicalAddition(itemId, config, state);
+          const targetVessel = findTargetVesselId(zoneId, config, state);
+
+          if (chemAddition && targetVessel) {
+            const mixtures = { ...(state.vesselMixtures ?? {}) };
+            const currentMix = mixtures[targetVessel] ?? createEmptyMixture(targetVessel);
+            const updatedMix = mixChemicals(currentMix, chemAddition);
+            mixtures[targetVessel] = updatedMix;
+
+            const latestEvent = updatedMix.recentEvents[0];
+            const reactionMsg = latestEvent
+              ? `🧪 Reaction: ${latestEvent.equation} (ΔT: +${latestEvent.deltaT.toFixed(1)}°C)`
+              : `Added ${chemAddition.substanceId.toUpperCase()} to ${targetVessel}.`;
+
+            return {
+              ...state,
+              vesselMixtures: mixtures,
+              apparatusProps: {
+                ...state.apparatusProps,
+                [targetVessel]: {
+                  ...(state.apparatusProps[targetVessel] ?? {}),
+                  liquidColor: updatedMix.dominantColor,
+                  temperature: updatedMix.temperatureC,
+                  pH: updatedMix.pH,
+                  effervescenceRate: updatedMix.effervescenceRate,
+                },
+              },
+              mistakes: [...state.mistakes, reactionMsg],
+            };
+          }
+
           // No interaction defined for this drop — check if zone accepts this item
           const zone = config.dropZones.find(z => z.id === zoneId);
           if (zone && !zone.accepts.includes(itemId)) {
@@ -365,6 +574,32 @@ export function createExperimentReducer(
               animations: { ...newState.animations, [interaction.animation.animatingFlag]: true },
             };
           }
+        }
+
+        // Apply stoichiometry reaction solver to vessel
+        const chemAddition = detectChemicalAddition(itemId, config, state);
+        const targetVessel = findTargetVesselId(zoneId, config, state);
+
+        if (chemAddition && targetVessel) {
+          const mixtures = { ...(newState.vesselMixtures ?? {}) };
+          const currentMix = mixtures[targetVessel] ?? createEmptyMixture(targetVessel);
+          const updatedMix = mixChemicals(currentMix, chemAddition);
+          mixtures[targetVessel] = updatedMix;
+
+          newState = {
+            ...newState,
+            vesselMixtures: mixtures,
+            apparatusProps: {
+              ...newState.apparatusProps,
+              [targetVessel]: {
+                ...(newState.apparatusProps[targetVessel] ?? {}),
+                liquidColor: updatedMix.dominantColor,
+                temperature: updatedMix.temperatureC,
+                pH: updatedMix.pH,
+                effervescenceRate: updatedMix.effervescenceRate,
+              },
+            },
+          };
         }
 
         // Mark action as completed
@@ -630,6 +865,42 @@ export function createExperimentReducer(
           ...state,
           mistakes: [...state.mistakes, action.payload.message],
         };
+
+      // ── Chemical Stoichiometry & Inspection ──
+      case 'INSPECT_VESSEL':
+        return {
+          ...state,
+          activeVesselInspectionId: action.payload.vesselId,
+        };
+
+      case 'MIX_CHEMICAL': {
+        const { vesselId, addition } = action.payload;
+        const mixtures = { ...(state.vesselMixtures ?? {}) };
+        const currentMix = mixtures[vesselId] ?? createEmptyMixture(vesselId);
+        const updatedMix = mixChemicals(currentMix, addition);
+        mixtures[vesselId] = updatedMix;
+
+        const latestEvent = updatedMix.recentEvents[0];
+        const reactionMsg = latestEvent
+          ? `🧪 Reaction: ${latestEvent.equation} (ΔT: +${latestEvent.deltaT.toFixed(1)}°C)`
+          : `Added ${addition.substanceId.toUpperCase()} to ${vesselId}.`;
+
+        return {
+          ...state,
+          vesselMixtures: mixtures,
+          apparatusProps: {
+            ...state.apparatusProps,
+            [vesselId]: {
+              ...(state.apparatusProps[vesselId] ?? {}),
+              liquidColor: updatedMix.dominantColor,
+              temperature: updatedMix.temperatureC,
+              pH: updatedMix.pH,
+              effervescenceRate: updatedMix.effervescenceRate,
+            },
+          },
+          mistakes: latestEvent ? [...state.mistakes, reactionMsg] : state.mistakes,
+        };
+      }
 
       default:
         return state;

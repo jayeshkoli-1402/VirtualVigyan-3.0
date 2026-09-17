@@ -39,12 +39,15 @@ import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
 import { AboutModal } from './components/home/AboutModal';
 import { HowItWorksModal } from './components/home/HowItWorksModal';
+import LandingPage from './components/landing/LandingPage';
+import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
 
 type ActiveExperiment = 'select' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
 const AppContent: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
+  const [showLanding, setShowLanding] = useState(true);
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
   const [activeTab, setActiveTab] = useState<NavItem>('home');
@@ -277,6 +280,49 @@ const AppContent: React.FC = () => {
 
   const headerInfo = getHeaderInfo();
 
+  // If landing page is active, render LandingPage with AuthModal
+  if (showLanding) {
+    return (
+      <>
+        <LandingPage
+          onEnterApp={() => setShowLanding(false)}
+          onOpenLogin={() => {
+            setAuthModalTab('login');
+            setAuthModalOpen(true);
+          }}
+          onOpenTeacherPortal={() => {
+            setShowLanding(false);
+            setActiveTab('teacher');
+            setActiveExperiment('teacher');
+          }}
+          onStartExperiment={(expId?: string) => {
+            setShowLanding(false);
+            if (expId) {
+              if (expId === 'titration') handleSelectExperiment('titration');
+              else if (expId === 'conservation') handleSelectExperiment('conservation');
+              else setActiveExperiment(expId);
+            } else {
+              setActiveExperiment('select');
+            }
+          }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialTab={authModalTab}
+          onRoleRedirect={(role) => {
+            setShowLanding(false);
+            if (role === 'admin') setActiveExperiment('admin');
+            else if (role === 'teacher') setActiveExperiment('teacher');
+            else setActiveExperiment('select');
+          }}
+        />
+      </>
+    );
+  }
+
   // If in 'select' mode, render the full new Dashboard shell matching the user's mockup
   if (activeExperiment === 'select') {
     return (
@@ -296,6 +342,10 @@ const AppContent: React.FC = () => {
               setActiveTab(tab);
               setActiveExperiment('select');
             }
+          }}
+          onReturnToLanding={() => {
+            setShowLanding(true);
+            setActiveExperiment('select');
           }}
           isMobile={isMobile}
           isOpenMobile={mobileSidebarOpen}
@@ -445,22 +495,8 @@ const AppContent: React.FC = () => {
             ← Back to Dashboard
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 'var(--radius-md)',
-                background: headerInfo.color,
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 14,
-              }}
-            >
-              ⚗️
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <VirtualVigyanLogo size={28} />
             <div>
               <h1
                 style={{

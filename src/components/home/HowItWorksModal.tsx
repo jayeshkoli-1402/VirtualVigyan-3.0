@@ -1,9 +1,10 @@
 import React from 'react';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface HowItWorksModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStartExploring: () => void;
+  onStartExploring?: () => void;
 }
 
 export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
@@ -16,15 +17,15 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
   const steps = [
     {
       num: '1',
-      title: 'Choose an Experiment',
-      desc: 'Select from our verified catalog of engineering, analytical, and board practicals.',
+      title: 'Select a Chemistry Experiment',
+      desc: 'Choose from Class 9 to FY B.Tech modules including volumetric titration and conservation of mass.',
       icon: '🧪',
     },
     {
       num: '2',
-      title: 'Assemble & Interact',
-      desc: 'Drag apparatus from the toolbox onto the workbench. Click corks, control burette stopcocks, and swirl solutions.',
-      icon: '✋',
+      title: 'Interact with Lab Apparatus',
+      desc: 'Drag and drop burettes, conical flasks, pipettes, and reagents onto the digital bench.',
+      icon: '⚗️',
     },
     {
       num: '3',
@@ -60,6 +61,8 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
         style={{
           width: '100%',
           maxWidth: 540,
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: 20,
           border: '1px solid var(--border)',
@@ -68,12 +71,15 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              How VirtualVigyan Works
-            </h3>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
-              A 4-step walkthrough of your digital chemistry lab experience
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <VirtualVigyanLogo size={32} />
+            <div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                How VirtualVigyan Works
+              </h3>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                A 4-step walkthrough of your digital chemistry lab experience
+              </div>
             </div>
           </div>
           <button
@@ -135,7 +141,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
         <button
           onClick={() => {
             onClose();
-            onStartExploring();
+            if (onStartExploring) onStartExploring();
           }}
           style={{
             all: 'unset',

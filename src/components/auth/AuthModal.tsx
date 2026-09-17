@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserRole } from '../../auth/types';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -110,9 +111,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
         style={{
           width: '100%',
           maxWidth: 490,
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: 28,
-          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           border: '2px solid rgba(255, 255, 255, 0.4)',
@@ -129,23 +131,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              className="clay-badge"
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 16,
-                background: 'linear-gradient(145deg, #10b981, #0284c7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-                color: '#fff',
-                boxShadow: '4px 6px 14px rgba(5, 150, 105, 0.35), inset 2px 2px 3px rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              🔬
-            </div>
+            <VirtualVigyanLogo size={42} />
             <div>
               <h2
                 style={{

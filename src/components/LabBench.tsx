@@ -125,17 +125,17 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
         <rect x={0} y={392} width={280} height={2} rx={1} fill="rgba(255, 255, 255, 0.04)" />
 
         {/* Retort stand - vertical pole */}
-        <rect x={75} y={10} width={4} height={320} rx={2} fill="url(#metalGradient)" />
+        <rect x={75} y={10} width={4} height={320} rx={2} fill="url(#metalGradient)" opacity={0.42} />
 
         {/* Retort stand - base */}
-        <rect x={40} y={320} width={80} height={6} rx={3} fill="url(#metalGradient)" />
+        <rect x={40} y={320} width={80} height={6} rx={3} fill="url(#metalGradient)" opacity={0.42} />
 
         {/* Clamp (visible when burette is mounted) */}
         {state.buretteMounted && (
           <path
             d="M 79 40 Q 100 40 110 38 L 128 38 L 128 48 L 110 48 Q 100 46 79 46 Z"
             fill="url(#metalGradient)"
-            opacity={0.8}
+            opacity={0.5}
           />
         )}
 
@@ -439,11 +439,16 @@ const DropZoneOverlay: React.FC<{
       ? 'rgba(219, 234, 254, 0.22)'
       : 'transparent';
 
-  // Badge position: centered horizontally on zone with ample width so full name is NEVER truncated
+  // Badge position: placed in empty space to avoid colliding with retort pole & apparatus
   const badgeWidth = 110;
   const badgeHeight = 24;
-  const badgeX = Math.max(5, Math.min(270 - badgeWidth, x + width / 2 - badgeWidth / 2));
-  const badgeY = y + height / 2 - badgeHeight / 2;
+  const isClampZone = zoneId.includes('clamp');
+  const badgeX = isClampZone
+    ? Math.min(270 - badgeWidth, x + width + 8)
+    : Math.max(5, Math.min(270 - badgeWidth, x + width / 2 - badgeWidth / 2));
+  const badgeY = isClampZone
+    ? y + 30
+    : Math.max(10, y - badgeHeight - 6);
 
   return (
     <g id={`dropzone-${zoneId}`}>

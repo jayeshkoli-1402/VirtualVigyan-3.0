@@ -65,6 +65,13 @@ export const acidValueOil: ExperimentConfig = {
       icon: '♨️',
       initialProps: { width: 150, height: 110 },
     },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 5.00, label: '5.000 g' },
+    },
   ],
 
   // ── Drop Zones ──
@@ -113,6 +120,12 @@ export const acidValueOil: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'DigitalBalance',
+        position: { x: 80, y: 72 },
+        scale: 0.95,
+        props: { label: 'Analytical Balance' },
       },
     ],
   },

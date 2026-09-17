@@ -7,6 +7,7 @@ interface TopHeaderProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   onOpenAuthModal: () => void;
+  onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
   onToggleMobileSidebar?: () => void;
   isMobile?: boolean;
 }
@@ -17,10 +18,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   theme,
   onToggleTheme,
   onOpenAuthModal,
+  onNavigateToAuth,
   onToggleMobileSidebar,
   isMobile = false,
 }) => {
-  const { user, logout, changeUserRole } = useAuth();
+  const { user, logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -38,13 +40,15 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   }, []);
 
   // Display name & initials
-  const displayName = user?.name || 'Prof. Rajesh Sharma';
-  const displayRole = user?.role ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Teacher';
-  const initials = displayName
-    .split(' ')
-    .map((w) => w.charAt(0).toUpperCase())
-    .slice(0, 2)
-    .join('') || 'RS';
+  const displayName = user ? user.name : 'Guest';
+  const displayRole = user ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Sign In';
+  const initials = user
+    ? user.name
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('') || 'U'
+    : '🔑';
 
   return (
     <header
@@ -252,81 +256,133 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
 
-        {/* User Profile Area */}
+        {/* User Profile / Auth Trigger Area */}
         <div style={{ position: 'relative' }}>
-          <button
-            id="btn-user-profile-menu"
-            onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '4px 6px 4px 4px',
-              borderRadius: 9999,
-              transition: 'all 0.15s ease',
-            }}
-          >
-            {/* Circle Avatar with Initials */}
-            <div
+          {user ? (
+            <button
+              id="btn-user-profile-menu"
+              onClick={() => setProfileMenuOpen(!profileMenuOpen)}
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: '#14382c',
-                color: '#ffffff',
+                all: 'unset',
+                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.84rem',
-                fontWeight: 800,
-                letterSpacing: '0.04em',
-                flexShrink: 0,
+                gap: 10,
+                padding: '4px 8px 4px 4px',
+                borderRadius: 9999,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+                transition: 'all 0.15s ease',
               }}
             >
-              {initials}
-            </div>
-
-            {/* User Name & Role */}
-            <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+              {/* Circle Avatar with Initials */}
               <div
                 style={{
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {displayName}
-              </div>
-              <div
-                style={{
-                  fontSize: '0.7rem',
-                  color: 'var(--text-muted)',
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: user.role === 'teacher' ? '#0284c7' : user.role === 'admin' ? '#7c3aed' : '#059669',
+                  color: '#ffffff',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 4,
+                  justifyContent: 'center',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.04em',
+                  flexShrink: 0,
                 }}
               >
-                <span>{displayRole}</span>
-                <span style={{ fontSize: '0.6rem' }}>˅</span>
+                {initials}
               </div>
-            </div>
-          </button>
 
-          {/* Profile Dropdown Menu */}
-          {profileMenuOpen && (
+              {/* User Name & Role */}
+              <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {displayName}
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <span>{displayRole}</span>
+                  <span style={{ fontSize: '0.6rem' }}>˅</span>
+                </div>
+              </div>
+            </button>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                id="btn-header-sign-in"
+                onClick={() => (onNavigateToAuth ? onNavigateToAuth('student') : onOpenAuthModal())}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '7px 14px',
+                  borderRadius: 9999,
+                  background: 'linear-gradient(135deg, #059669, #0284c7)',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>🎓</span>
+                <span>Sign In</span>
+              </button>
+
+              <button
+                id="btn-header-teacher-portal"
+                onClick={() => (onNavigateToAuth ? onNavigateToAuth('teacher') : onOpenAuthModal())}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '7px 12px',
+                  borderRadius: 9999,
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>👨‍🏫</span>
+                <span>Teacher</span>
+              </button>
+            </div>
+          )}
+
+          {/* Profile Dropdown Menu (when logged in) */}
+          {user && profileMenuOpen && (
             <div
               style={{
                 position: 'absolute',
-                top: 48,
+                top: 46,
                 right: 0,
                 background: 'var(--bg-card)',
                 border: '1px solid var(--border)',
                 borderRadius: 12,
                 boxShadow: 'var(--shadow-lg)',
                 padding: '8px 6px',
-                width: 200,
+                width: 220,
                 zIndex: 100,
               }}
             >
@@ -335,87 +391,59 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   {displayName}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                  {user?.email || 'rajesh.sharma@dbatu.ac.in'}
+                  {user.email}
                 </div>
               </div>
 
-              {/* Role Switcher */}
-              <div style={{ padding: '6px 12px', fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                Active Role
-              </div>
-              {(['student', 'teacher', 'admin'] as const).map((r) => (
+              {/* Quick links */}
+              <div style={{ padding: '6px 0' }}>
                 <button
-                  key={r}
                   onClick={() => {
-                    if (user && changeUserRole) changeUserRole(user.id, r);
                     setProfileMenuOpen(false);
+                    if (onNavigateToAuth) onNavigateToAuth('student');
                   }}
                   style={{
                     all: 'unset',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'space-between',
+                    gap: 8,
                     width: '100%',
                     padding: '6px 12px',
                     borderRadius: 6,
                     fontSize: '0.78rem',
-                    color: (user?.role || 'teacher') === r ? '#2563eb' : 'var(--text-secondary)',
-                    fontWeight: (user?.role || 'teacher') === r ? 700 : 500,
+                    color: 'var(--text-primary)',
                     boxSizing: 'border-box',
                   }}
                 >
-                  <span>{r.charAt(0).toUpperCase() + r.slice(1)}</span>
-                  {(user?.role || 'teacher') === r && <span>✓</span>}
+                  <span>🔐</span>
+                  <span>Auth Page / Switch Account</span>
                 </button>
-              ))}
+              </div>
 
-              <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
 
-              {/* Logout / Login Switch */}
-              {user ? (
-                <button
-                  onClick={() => {
-                    logout();
-                    setProfileMenuOpen(false);
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    display: 'block',
-                    width: '100%',
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    fontSize: '0.78rem',
-                    color: '#dc2626',
-                    fontWeight: 600,
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  Sign Out
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    onOpenAuthModal();
-                    setProfileMenuOpen(false);
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    display: 'block',
-                    width: '100%',
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    fontSize: '0.78rem',
-                    color: '#2563eb',
-                    fontWeight: 600,
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  Sign In / Register
-                </button>
-              )}
+              {/* Logout */}
+              <button
+                onClick={() => {
+                  logout();
+                  setProfileMenuOpen(false);
+                }}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  display: 'block',
+                  width: '100%',
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  fontSize: '0.78rem',
+                  color: '#dc2626',
+                  fontWeight: 600,
+                  boxSizing: 'border-box',
+                }}
+              >
+                Sign Out
+              </button>
             </div>
           )}
         </div>

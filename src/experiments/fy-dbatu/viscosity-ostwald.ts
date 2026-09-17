@@ -73,6 +73,34 @@ export const viscosityOstwald: ExperimentConfig = {
       label: 'Suction Bulb & Tube',
       icon: '🎈',
     },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 18.24, label: '18.240 g' },
+    },
+    {
+      id: 'pycnometer',
+      component: 'SpecificGravityBottle',
+      label: '25 mL Specific Gravity Bottle',
+      icon: '🧴',
+      initialProps: { liquidLevel: 0.8, width: 75, height: 115, label: '25 mL Sp. Gr.' },
+    },
+    {
+      id: 'water-bath',
+      component: 'WaterBath',
+      label: 'Constant Temp Water Bath (30°C)',
+      icon: '♨️',
+      initialProps: { width: 130, height: 90, label: 'Water Bath 30°C' },
+    },
+    {
+      id: 'thermometer',
+      component: 'Thermometer',
+      label: 'Laboratory Thermometer',
+      icon: '🌡️',
+      initialProps: { temperature: 30, width: 35, height: 150 },
+    },
   ],
 
   // ── Drop Zones ──
@@ -103,6 +131,14 @@ export const viscosityOstwald: ExperimentConfig = {
       rejectMessage: 'Attach suction tube to the narrow capillary limb.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'viscometer' },
     },
+    {
+      id: 'balance-pan-zone',
+      label: 'Weigh on Digital Balance',
+      accepts: ['pycnometer'],
+      position: { x: 80, y: 72 },
+      size: { width: 18, height: 20 },
+      rejectMessage: 'Place the pycnometer onto the analytical balance pan.',
+    },
   ],
 
   // ── Bench ──
@@ -110,6 +146,8 @@ export const viscosityOstwald: ExperimentConfig = {
     backgroundElements: [
       { component: 'RetortStand', props: { hideLowerClamp: true }, position: { x: 44, y: 52 }, scale: 1.1 },
       { component: 'Stopwatch', position: { x: 78, y: 50 }, scale: 1.05 },
+      { component: 'WaterBath', position: { x: 18, y: 72 }, scale: 0.95 },
+      { component: 'DigitalBalance', position: { x: 80, y: 72 }, scale: 0.95 },
     ],
   },
 
@@ -125,7 +163,21 @@ export const viscosityOstwald: ExperimentConfig = {
     {
       id: 'clean',
       label: '2. Clean & Dry',
-      instruction: 'Clean the viscometer with chromic acid, rinse with acetone, and dry completely.',
+      instruction: 'Clean the viscometer with chromic acid, drain it to waste, rinse with acetone, and dry completely.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'isCleanedAndDry', equals: true },
+          instruction: '✓ Viscometer thoroughly cleaned and dried with acetone! Proceed to adding test sample.',
+        },
+        {
+          condition: { type: 'flag', key: 'chromicDrained', equals: true },
+          instruction: 'Chromic acid drained! Now pour Acetone into the broad limb to rinse and dry completely.',
+        },
+        {
+          condition: { type: 'flag', key: 'cleanedChromic', equals: true },
+          instruction: 'Viscometer filled with Chromic Acid. Click "Drain Chromic Acid to Waste" below to empty it.',
+        },
+      ],
       requiredActions: ['rinse-acetone'],
       type: 'lab',
     },
@@ -150,25 +202,11 @@ export const viscosityOstwald: ExperimentConfig = {
       dynamicInstructions: [
         {
           condition: { type: 'flag', key: 'sampleTimed', equals: true },
-          instruction: '✓ Flow complete — measured flow time recorded! Click "Continue to Next Step".',
-        },
-        {
-          condition: { type: 'flag', key: 'stoppedTooEarly', equals: true },
-          instruction: '⚠️ Meniscus has not reached mark D yet. Continue the measurement.',
-        },
-        {
-          condition: {
-            type: 'and',
-            conditions: [
-              { type: 'flag', key: 'timerRunning', equals: true },
-              { type: 'variable', key: '_flowProgress', op: '>=', value: 0.98 },
-            ],
-          },
-          instruction: '⏱️ Meniscus reached mark D — stop the stopwatch.',
+          instruction: '✓ Flow timing stopped! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue".',
         },
         {
           condition: { type: 'flag', key: 'timerRunning', equals: true },
-          instruction: '⏱️ Liquid flowing from C → D — Stopwatch running...',
+          instruction: '⏱️ Flowing from C → D... Press "Stop Timing" whenever meniscus reaches Mark D.',
         },
       ],
       requiredActions: ['time-sample'],
@@ -182,25 +220,11 @@ export const viscosityOstwald: ExperimentConfig = {
       dynamicInstructions: [
         {
           condition: { type: 'flag', key: 'waterTimed', equals: true },
-          instruction: '✓ Flow complete — water efflux time recorded! Click "Continue to Calculations".',
-        },
-        {
-          condition: { type: 'flag', key: 'stoppedTooEarly', equals: true },
-          instruction: '⚠️ Meniscus has not reached mark D yet. Continue the measurement.',
-        },
-        {
-          condition: {
-            type: 'and',
-            conditions: [
-              { type: 'flag', key: 'timerRunning', equals: true },
-              { type: 'variable', key: '_flowProgress', op: '>=', value: 0.98 },
-            ],
-          },
-          instruction: '⏱️ Meniscus reached mark D — stop the stopwatch.',
+          instruction: '✓ Water flow timing stopped! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue to Calculations".',
         },
         {
           condition: { type: 'flag', key: 'timerRunning', equals: true },
-          instruction: '⏱️ Water flowing from C → D — Stopwatch running...',
+          instruction: '⏱️ Water flowing from C → D... Press "Stop Timing" whenever meniscus reaches Mark D.',
         },
         {
           condition: { type: 'flag', key: 'suckedAboveMark', equals: true },
@@ -243,6 +267,16 @@ export const viscosityOstwald: ExperimentConfig = {
   // ── Interactions ──
   interactions: [
     {
+      id: 'inter-weigh-pycnometer',
+      trigger: { type: 'drop', source: 'pycnometer', target: 'balance-pan-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'pycnometer', zoneId: 'balance-pan-zone' },
+        { type: 'setFlag', key: 'pycnometerWeighed', value: true },
+        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'massGrams', value: 40.74 },
+        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'label', value: '40.740 g' },
+      ],
+    },
+    {
       id: 'inter-mount',
       trigger: { type: 'drop', source: 'viscometer', target: 'stand-clamp-zone' },
       effects: [
@@ -259,10 +293,20 @@ export const viscosityOstwald: ExperimentConfig = {
       blockMessage: 'Mount the viscometer vertically on the stand first.',
       effects: [
         { type: 'setFlag', key: 'cleanedChromic', value: true },
-        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.3 },
-        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidColor', value: 'rgba(234, 88, 12, 0.4)' },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.35 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidColor', value: 'rgba(234, 88, 12, 0.85)' },
       ],
       animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouringChromic' },
+    },
+    {
+      id: 'inter-drain-chromic',
+      trigger: { type: 'click', elementId: 'drain-chromic' },
+      conditions: [{ type: 'flag', key: 'cleanedChromic', equals: true }],
+      effects: [
+        { type: 'setFlag', key: 'chromicDrained', value: true },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: "Ostwald's Viscometer (Drained)" },
+      ],
     },
     {
       id: 'inter-rinse-acetone',
@@ -270,6 +314,7 @@ export const viscosityOstwald: ExperimentConfig = {
       conditions: [{ type: 'flag', key: 'cleanedChromic', equals: true }],
       blockMessage: 'Wash with chromic acid first to remove organic grease.',
       effects: [
+        { type: 'setFlag', key: 'chromicDrained', value: true },
         { type: 'setFlag', key: 'isCleanedAndDry', value: true },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'label', value: "Ostwald's Viscometer" },
@@ -312,7 +357,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
       ],
       completesAction: 'suck-liquid',
-      animation: { type: 'suction', durationMs: 2000, animatingFlag: 'isSucking' },
+      animation: { type: 'suction', durationMs: 2400, animatingFlag: 'isSucking', effectsAfterAnimation: true },
     },
     // Start sample flow timing
     {
@@ -324,16 +369,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
       ],
     },
-    // Pause sample flow timing if stopped before reaching mark D
-    {
-      id: 'inter-pause-sample-flow',
-      trigger: { type: 'click', elementId: 'pause-sample-flow' },
-      effects: [
-        { type: 'setFlag', key: 'timerRunning', value: false },
-        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
-      ],
-    },
-    // Complete sample flow timing (student presses STOP at or after Mark D)
+    // Complete sample flow timing at any moment chosen by student
     {
       id: 'inter-stop-sample-flow',
       trigger: { type: 'click', elementId: 'stop-sample-flow' },
@@ -341,9 +377,22 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'sampleTimed', value: true },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
-        { type: 'setVariable', key: '_flowProgress', value: 1.0 },
       ],
       completesAction: 'time-sample',
+    },
+    // Option to retry sample timing if student chooses
+    {
+      id: 'inter-retry-sample-timing',
+      trigger: { type: 'click', elementId: 'retry-sample-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'sampleTimed', value: false },
+        { type: 'setFlag', key: 'suckedAboveMark', value: true },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+        { type: 'setVariable', key: '_timerSeconds', value: 0 },
+        { type: 'setVariable', key: 'flowTimeSample', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
+      ],
     },
     // Drain & Clear Viscometer (Student empties Liquid A before water)
     {
@@ -408,16 +457,7 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
       ],
     },
-    // Pause water flow timing if stopped before reaching mark D
-    {
-      id: 'inter-pause-water-flow',
-      trigger: { type: 'click', elementId: 'pause-water-flow' },
-      effects: [
-        { type: 'setFlag', key: 'timerRunning', value: false },
-        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
-      ],
-    },
-    // Complete water flow timing (student presses STOP at or after Mark D)
+    // Complete water flow timing at any moment chosen by student
     {
       id: 'inter-stop-water-flow',
       trigger: { type: 'click', elementId: 'stop-water-flow' },
@@ -425,9 +465,23 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'waterTimed', value: true },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
-        { type: 'setVariable', key: '_flowProgress', value: 1.0 },
       ],
       completesAction: 'time-water',
+    },
+    // Option to retry water timing if student chooses
+    {
+      id: 'inter-retry-water-timing',
+      trigger: { type: 'click', elementId: 'retry-water-flow' },
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'waterTimed', value: false },
+        { type: 'setFlag', key: 'suckedAboveMark', value: true },
+        { type: 'setFlag', key: 'waterSucked', value: true },
+        { type: 'setVariable', key: '_flowProgress', value: 0 },
+        { type: 'setVariable', key: '_timerSeconds', value: 0 },
+        { type: 'setVariable', key: 'flowTimeWater', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
+      ],
     },
   ],
 
@@ -503,10 +557,11 @@ export const viscosityOstwald: ExperimentConfig = {
       {
         id: 'viscosityValue',
         label: "1. Coefficient of Viscosity η_A (in poise): η_A = (t_A·d_A)/(t_W·d_W)·η_W  [Constants: d_A=0.79 g/cm³, d_W=0.997 g/cm³, η_W=0.0089 P]",
-        placeholder: 'Enter calculated η_A...',
+        placeholder: 'Enter calculated η_A (e.g. 0.0095)...',
         unit: 'poise',
+        expectedValue: 0.009493,
         expectedFormulaName: 'viscosityOstwald',
-        tolerance: 0.0005,
+        tolerance: 0.0008,
         toleranceType: 'absolute',
       },
       {
@@ -534,18 +589,20 @@ export const viscosityOstwald: ExperimentConfig = {
       evaluator: { type: 'booleanCheck', flag: 'isCleanedAndDry', truePoints: 20 },
     },
     {
-      name: 'Flow Measurement Precision',
+      name: 'Flow Measurement Completion',
       maxPoints: 20,
       evaluator: { type: 'booleanCheck', flag: 'waterTimed', truePoints: 20 },
     },
     {
-      name: 'Viscosity Calculation (η_A)',
+      name: 'Viscosity Accuracy (Closeness to Theoretical Standard)',
       maxPoints: 25,
       evaluator: {
         type: 'calculationCorrect',
         fieldId: 'viscosityValue',
         correctPoints: 25,
         incorrectPoints: 0,
+        proportional: true,
+        actualStandard: 0.009493, // True standard: (24.5 * 0.79)/(18.2 * 0.997) * 0.0089 = 0.009493 P
       },
     },
     {

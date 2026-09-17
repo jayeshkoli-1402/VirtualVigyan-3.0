@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface TeacherDashboardProps {
   onLaunchExperiment: (id: string) => void;
+  onNavigateToAuth?: (role?: 'student' | 'teacher') => void;
 }
 
-const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment }) => {
+const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment, onNavigateToAuth }) => {
   const { user, allUsers } = useAuth();
   const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation', 'titration', 'exp-ostwald-viscometer']);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -72,22 +74,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment 
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <div
-            className="clay-badge"
-            style={{
-              width: 62,
-              height: 62,
-              borderRadius: 20,
-              background: 'linear-gradient(145deg, #38bdf8, #0284c7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 30,
-              boxShadow: '6px 8px 20px rgba(2, 132, 199, 0.35), inset 2px 2px 4px rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            👨‍🏫
-          </div>
+          <VirtualVigyanLogo size={48} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h2
@@ -122,6 +109,32 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment 
             </p>
           </div>
         </div>
+
+        {user?.role !== 'teacher' && onNavigateToAuth && (
+          <button
+            id="btn-teacher-dashboard-signin"
+            onClick={() => onNavigateToAuth('teacher')}
+            className="clay-btn"
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              padding: '10px 18px',
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #2563eb, #0284c7)',
+              color: '#ffffff',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+            }}
+          >
+            <span>👨‍🏫</span>
+            <span>Sign In to Faculty Account</span>
+            <span>→</span>
+          </button>
+        )}
       </div>
 
       {/* Claymorphic KPI Stats */}

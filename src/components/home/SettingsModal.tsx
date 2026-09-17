@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -39,6 +40,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         style={{
           width: '100%',
           maxWidth: 440,
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: 16,
           border: '1px solid var(--border)',
@@ -47,9 +50,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-            Lab Environment Settings
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <VirtualVigyanLogo size={28} />
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+              Lab Environment Settings
+            </h3>
+          </div>
           <button
             onClick={onClose}
             style={{

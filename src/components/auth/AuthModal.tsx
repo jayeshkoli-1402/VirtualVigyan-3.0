@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserRole } from '../../auth/types';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -15,7 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onRoleRedirect,
   initialTab = 'login',
 }) => {
-  const { login, register } = useAuth();
+  const { login, register, firestoreLocked } = useAuth();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(initialTab);
 
   // Login form state
@@ -35,50 +36,65 @@ const AuthModal: React.FC<AuthModalProps> = ({
   // UI state
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setIsSubmitting(true);
 
-    const res = login(loginIdentifier, loginPassword);
-    if (res.success && res.role) {
-      setSuccessMessage(res.message || 'Logged in successfully!');
-      setTimeout(() => {
-        setSuccessMessage(null);
-        onClose();
-        if (onRoleRedirect) onRoleRedirect(res.role!);
-      }, 500);
-    } else {
-      setErrorMessage(res.message || 'Login failed.');
+    try {
+      const res = await login(loginIdentifier, loginPassword);
+      setIsSubmitting(false);
+      if (res.success && res.role) {
+        setSuccessMessage(res.message || 'Logged in successfully!');
+        setTimeout(() => {
+          setSuccessMessage(null);
+          onClose();
+          if (onRoleRedirect) onRoleRedirect(res.role!);
+        }, 500);
+      } else {
+        setErrorMessage(res.message || 'Login failed.');
+      }
+    } catch {
+      setIsSubmitting(false);
+      setErrorMessage('An unexpected error occurred. Please try again.');
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setIsSubmitting(true);
 
-    const res = register({
-      role: regRole,
-      name: regName,
-      email: regEmail,
-      password: regPassword,
-      grade: regRole === 'student' ? regGrade : undefined,
-      school: regRole === 'student' ? regSchool : undefined,
-      institution: regRole === 'teacher' ? regInstitution : undefined,
-      department: regRole === 'teacher' ? regDepartment : undefined,
-    });
+    try {
+      const res = await register({
+        role: regRole,
+        name: regName,
+        email: regEmail,
+        password: regPassword,
+        grade: regRole === 'student' ? regGrade : undefined,
+        school: regRole === 'student' ? regSchool : undefined,
+        institution: regRole === 'teacher' ? regInstitution : undefined,
+        department: regRole === 'teacher' ? regDepartment : undefined,
+      });
+      setIsSubmitting(false);
 
-    if (res.success && res.role) {
-      setSuccessMessage(res.message || 'Account created!');
-      setTimeout(() => {
-        setSuccessMessage(null);
-        onClose();
-        if (onRoleRedirect) onRoleRedirect(res.role!);
-      }, 600);
-    } else {
-      setErrorMessage(res.message || 'Registration failed.');
+      if (res.success && res.role) {
+        setSuccessMessage(res.message || 'Account created!');
+        setTimeout(() => {
+          setSuccessMessage(null);
+          onClose();
+          if (onRoleRedirect) onRoleRedirect(res.role!);
+        }, 600);
+      } else {
+        setErrorMessage(res.message || 'Registration failed.');
+      }
+    } catch {
+      setIsSubmitting(false);
+      setErrorMessage('An unexpected error occurred during registration.');
     }
   };
 
@@ -110,9 +126,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
         style={{
           width: '100%',
           maxWidth: 490,
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: 28,
-          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           border: '2px solid rgba(255, 255, 255, 0.4)',
@@ -129,23 +146,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div
-              className="clay-badge"
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 16,
-                background: 'linear-gradient(145deg, #10b981, #0284c7)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 22,
-                color: '#fff',
-                boxShadow: '4px 6px 14px rgba(5, 150, 105, 0.35), inset 2px 2px 3px rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              🔬
-            </div>
+            <VirtualVigyanLogo size={42} />
             <div>
               <h2
                 style={{
@@ -258,6 +259,29 @@ const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         </div>
 
+        {/* Firestore Mode Info Badge */}
+        {firestoreLocked && (
+          <div
+            className="clay-badge"
+            style={{
+              margin: '12px 24px 0',
+              padding: '8px 14px',
+              borderRadius: 12,
+              background: 'rgba(234, 179, 8, 0.1)',
+              border: '1px solid rgba(234, 179, 8, 0.3)',
+              color: '#d97706',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
+            <span>🔒</span>
+            <span>Firestore in Locked Mode. Local profile cache active.</span>
+          </div>
+        )}
+
         {/* Feedback alert toasts */}
         {errorMessage && (
           <div
@@ -369,6 +393,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 id="btn-submit-login"
+                disabled={isSubmitting}
                 className="clay-btn clay-btn-emerald"
                 style={{
                   marginTop: 6,
@@ -377,9 +402,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   fontSize: '0.94rem',
                   fontWeight: 800,
                   letterSpacing: '0.01em',
+                  opacity: isSubmitting ? 0.75 : 1,
+                  cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                <span>Sign In to VirtualVigyan</span>
+                <span>{isSubmitting ? 'Authenticating with Firebase...' : 'Sign In to VirtualVigyan'}</span>
                 <span>→</span>
               </button>
 
@@ -756,11 +783,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Create Password (min. 4 chars)
+                  Create Password (min. 6 chars)
                 </label>
                 <input
                   type="password"
                   required
+                  minLength={6}
                   placeholder="••••••••"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
@@ -777,6 +805,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="submit"
                 id="btn-submit-register"
+                disabled={isSubmitting}
                 className={`clay-btn ${regRole === 'student' ? 'clay-btn-emerald' : 'clay-btn-blue'}`}
                 style={{
                   marginTop: 6,
@@ -784,9 +813,17 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   borderRadius: 18,
                   fontSize: '0.94rem',
                   fontWeight: 800,
+                  opacity: isSubmitting ? 0.75 : 1,
+                  cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                <span>{regRole === 'student' ? '🎓 Register as Student' : '👨‍🏫 Register as Teacher'}</span>
+                <span>
+                  {isSubmitting
+                    ? 'Creating Account...'
+                    : regRole === 'student'
+                      ? '🎓 Register as Student'
+                      : '👨‍🏫 Register as Teacher'}
+                </span>
                 <span>→</span>
               </button>
             </form>

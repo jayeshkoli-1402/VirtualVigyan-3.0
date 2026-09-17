@@ -32,31 +32,56 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
 }) => {
   // Find currently active animation
   const activeAnimationEntries = Object.entries(state.animations).filter(([, isActive]) => isActive);
-  if (activeAnimationEntries.length === 0) return null;
+  if (activeAnimationEntries.length === 0 && !state.activeAnimation) return null;
 
-  const [activeFlag] = activeAnimationEntries[0];
+  const [activeFlag] = activeAnimationEntries.length > 0 ? activeAnimationEntries[0] : ['isPouring'];
 
-  // Find the interaction corresponding to this animation flag
-  const interaction = config.interactions.find(
+  const directAnim = state.activeAnimation;
+  const directInteraction = state.activeAnimationInteractionId
+    ? config.interactions.find(i => i.id === state.activeAnimationInteractionId)
+    : null;
+
+  // Find the interaction corresponding to this animation
+  const interaction = directInteraction ?? config.interactions.find(
     (i) => i.animation?.animatingFlag === activeFlag
   );
 
-  if (!interaction || !interaction.animation) return null;
+  const animType = directAnim?.type ?? interaction?.animation?.type ?? 'pour';
 
-  const animType = interaction.animation.type;
-  const sourceApparatusId = interaction.trigger.type === 'drop' ? interaction.trigger.source : null;
-  const targetZoneId = interaction.trigger.type === 'drop' ? interaction.trigger.target : null;
+  let sourceApparatusId = directAnim?.sourceApparatusId ?? (interaction?.trigger.type === 'drop' ? interaction.trigger.source : null);
+  let targetZoneId = directAnim?.targetZoneId ?? (interaction?.trigger.type === 'drop' ? interaction.trigger.target : null);
 
   const sourceApparatus = sourceApparatusId
-    ? config.apparatus.find((a) => a.id === sourceApparatusId)
+    ? config.apparatus.find((a) => a.id === sourceApparatusId || sourceApparatusId?.includes(a.id) || a.id.includes(sourceApparatusId!))
     : null;
-  const targetZone = targetZoneId
+
+  let targetZone = targetZoneId
     ? config.dropZones.find((z) => z.id === targetZoneId)
     : null;
 
-  const SourceComponent = sourceApparatus ? getApparatusComponent(sourceApparatus.component) : null;
+  // SAFETY: If dropped to beaker zone, target MUST be beaker drop zone, never burette!
+  const triggerTarget = interaction?.trigger.type === 'drop' ? interaction.trigger.target : null;
+  if (targetZoneId?.includes('beaker') || triggerTarget?.includes('beaker')) {
+    const beakerZone = config.dropZones.find(z => z.id.includes('beaker'));
+    if (beakerZone) targetZone = beakerZone;
+  } else if (targetZoneId?.includes('flask') || triggerTarget?.includes('flask')) {
+    const flaskZone = config.dropZones.find(z => z.id.includes('flask'));
+    if (flaskZone) targetZone = flaskZone;
+  } else if (targetZoneId?.includes('burette') || triggerTarget?.includes('burette')) {
+    const buretteZone = config.dropZones.find(z => z.id.includes('burette'));
+    if (buretteZone) targetZone = buretteZone;
+  }
+
+  // Resolve Source Component (Reagent bottle or Dropper if not explicitly in config apparatus)
+  const SourceComponent = sourceApparatus
+    ? getApparatusComponent(sourceApparatus.component)
+    : (sourceApparatusId?.includes('dropper') || sourceApparatusId?.includes('indicator'))
+      ? getApparatusComponent('Dropper')
+      : getApparatusComponent('ReagentBottle');
+
   const sourceProps = (sourceApparatus ? state.apparatusProps[sourceApparatus.id] : {}) ?? {};
   const fluidColor =
+    directAnim?.color ??
     (sourceProps.liquidColor as string | undefined) ??
     (sourceApparatus?.initialProps?.liquidColor as string | undefined) ??
     solutionColor ??
@@ -90,7 +115,7 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
           }}
         >
           {/* Vertical Dropper Dispenser hovering above target */}
-          {SourceComponent && sourceApparatus && (
+          {SourceComponent && (
             <div
               style={{
                 position: 'absolute',
@@ -102,7 +127,8 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
             >
               <div style={{ transform: `scale(${benchScale * 0.95})` }}>
                 <SourceComponent
-                  id={`dripping-${sourceApparatus.id}`}
+                  id={`dripping-${sourceApparatusId ?? 'dropper'}`}
+                  label={(sourceProps.label as string | undefined) ?? (sourceApparatus?.initialProps?.label as string | undefined) ?? sourceApparatus?.label ?? sourceApparatusId?.replace(/-/g, ' ').toUpperCase()}
                   liquidColor={fluidColor}
                   liquidLevel={0.75}
                   flags={state.flags}
@@ -171,10 +197,12 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
 
       {/* ── 1B. POURING / DISPENSING ANIMATION (Tilted Source + Laminar Stream + Droplets + Ripples) ── */}
       {(animType === 'pour' || animType === 'dispense') && (() => {
+        const isBurette = targetZoneId?.includes('burette');
+        const isBeaker = targetZoneId?.includes('beaker');
         const isTubeOpening = targetZoneId?.includes('visco') || targetZoneId?.includes('limb') || targetZoneId?.includes('tube');
-        const streamEndY = isTubeOpening ? 130 : 180;
+        const streamEndY = isBurette ? 115 : isTubeOpening ? 130 : isBeaker ? 155 : 180;
         const streamControlX = isTubeOpening ? 114 : 110;
-        const streamControlY = isTubeOpening ? 108 : 130;
+        const streamControlY = isTubeOpening ? 108 : isBeaker ? 120 : 130;
         // Bottle mouth is at SVG (25, 20) in a 50×90 viewBox, scaled by benchScale*0.92
         // So mouth pixel offset from div origin = (25*0.92, 20*0.92) = (23, 18.4)
         const mouthPixelX = 23;   // 25 * 0.92
@@ -200,7 +228,7 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
             }}
           >
             {/* Tilted Source Reagent Dispenser - pivots precisely around its mouth */}
-            {SourceComponent && sourceApparatus && (
+            {SourceComponent && (
               <div
                 style={{
                   position: 'absolute',
@@ -213,8 +241,8 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
               >
                 <div style={{ transform: `scale(${benchScale * 0.92})` }}>
                   <SourceComponent
-                    id={`pouring-${sourceApparatus.id}`}
-                    label={(sourceProps.label as string | undefined) ?? (sourceApparatus.initialProps?.label as string | undefined) ?? sourceApparatus.label}
+                    id={`pouring-${sourceApparatusId ?? 'reagent'}`}
+                    label={(sourceProps.label as string | undefined) ?? (sourceApparatus?.initialProps?.label as string | undefined) ?? sourceApparatus?.label ?? sourceApparatusId?.replace(/-/g, ' ').toUpperCase()}
                     liquidColor={fluidColor}
                     liquidLevel={0.75}
                     flags={state.flags}

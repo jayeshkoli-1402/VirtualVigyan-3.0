@@ -1,4 +1,6 @@
 import React from 'react';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useAuth } from '../../auth/AuthContext';
 
 export type NavItem =
   | 'home'
@@ -7,12 +9,15 @@ export type NavItem =
   | 'theory-notes'
   | 'progress'
   | 'teacher'
+  | 'auth'
   | 'settings'
   | 'about';
 
 interface AppSidebarProps {
   activeTab: NavItem;
   onSelectTab: (tab: NavItem) => void;
+  onReturnToLanding?: () => void;
+  onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
   isMobile?: boolean;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -21,26 +26,29 @@ interface AppSidebarProps {
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   activeTab,
   onSelectTab,
+  onReturnToLanding,
+  onNavigateToAuth,
   isMobile = false,
   isOpenMobile = false,
   onCloseMobile,
 }) => {
-  const primaryNav = [
+  const { user, logout } = useAuth();
+  const navLinks: Array<{ id: NavItem; label: string; icon: string }> = [
     { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'experiments', label: 'Experiments', icon: '🧪' },
-    { id: 'classes', label: 'Classes', icon: '📖' },
-    { id: 'theory-notes', label: 'Theory & Notes', icon: '📄' },
-    { id: 'progress', label: 'My Progress', icon: '📈' },
-    { id: 'teacher', label: 'Teacher Portal', icon: '👥' },
-  ] as const;
+    { id: 'experiments', label: 'Browse Experiments', icon: '🧪' },
+    { id: 'classes', label: 'My Classes', icon: '📚' },
+    { id: 'theory-notes', label: 'Theory & Notes', icon: '📖' },
+    { id: 'progress', label: 'Progress & Analytics', icon: '📊' },
+    { id: 'teacher', label: 'Teacher Portal', icon: '👨‍🏫' },
+  ];
 
   const secondaryNav = [
     { id: 'settings', label: 'Settings', icon: '⚙️' },
     { id: 'about', label: 'About', icon: 'ℹ️' },
   ] as const;
 
-  const handleNavClick = (id: NavItem) => {
-    onSelectTab(id);
+  const handleNavClick = (tab: NavItem) => {
+    onSelectTab(tab);
     if (isMobile && onCloseMobile) {
       onCloseMobile();
     }
@@ -72,7 +80,19 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
       <div>
         {/* Brand Logo Header */}
         <div
-          onClick={() => handleNavClick('home')}
+          onClick={() => {
+            if (onReturnToLanding) onReturnToLanding();
+            else handleNavClick('home');
+          }}
+          title="Return to VirtualVigyan Landing Page"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              if (onReturnToLanding) onReturnToLanding();
+              else handleNavClick('home');
+            }
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -83,64 +103,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             marginBottom: 16,
           }}
         >
-          {/* Beaker / Flask SVG Icon */}
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: 'rgba(37, 99, 235, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M9 3H15M10 3V8L4.5 18C3.8 19.3 4.8 21 6.3 21H17.7C19.2 21 20.2 19.3 19.5 18L14 8V3"
-                stroke="#2563eb"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M6.5 16C8.5 15 10 16.5 12 15.5C14 14.5 15.5 16 17.5 15.5L18.5 18C18.2 18.5 17.8 19 17 19H7C6.2 19 5.8 18.5 5.5 18L6.5 16Z"
-                fill="#38bdf8"
-                opacity="0.8"
-              />
-            </svg>
-          </div>
-
-          <div>
-            <div
-              style={{
-                fontFamily: 'var(--font-heading)',
-                fontSize: '1.08rem',
-                fontWeight: 800,
-                color: 'var(--text-primary)',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.15,
-              }}
-            >
-              VirtualVigyan
-            </div>
-            <div
-              style={{
-                fontSize: '0.66rem',
-                color: 'var(--text-muted)',
-                fontWeight: 500,
-                marginTop: 2,
-              }}
-            >
-              Interactive Chemistry Lab
-            </div>
-          </div>
+          <VirtualVigyanLogo size={32} showText subtitle="Interactive Chemistry Lab" />
         </div>
 
         {/* Primary Nav Menu */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {primaryNav.map((item) => {
+          {navLinks.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
@@ -229,11 +197,184 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
             );
           })}
+
+          {/* Explicit Return to Landing Page Button */}
+          {onReturnToLanding && (
+            <button
+              type="button"
+              onClick={() => {
+                onReturnToLanding();
+                if (isMobile && onCloseMobile) onCloseMobile();
+              }}
+              title="Return to VirtualVigyan Landing Page"
+              style={{
+                width: '100%',
+                border: '1px solid rgba(37, 99, 235, 0.15)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '9px 14px',
+                borderRadius: 10,
+                fontSize: '0.84rem',
+                fontWeight: 600,
+                color: '#2563eb',
+                background: 'rgba(37, 99, 235, 0.06)',
+                marginTop: 6,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.12)';
+                e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.3)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.06)';
+                e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.15)';
+              }}
+            >
+              <span style={{ fontSize: '1rem', width: 20, textAlign: 'center' }}>🌐</span>
+              <span>Landing Page</span>
+            </button>
+          )}
         </nav>
       </div>
 
-      {/* ── Bottom Section: Accessible Education Card & Brand Footer ── */}
-      <div style={{ marginTop: 24, paddingTop: 12 }}>
+      {/* ── Bottom Section: Account Card & Accessible Education ── */}
+      <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        {/* User Account / Auth Card */}
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: user
+              ? 'var(--bg-secondary)'
+              : 'linear-gradient(135deg, rgba(5, 150, 105, 0.08), rgba(2, 132, 199, 0.08))',
+            border: '1px solid var(--border)',
+            marginBottom: 12,
+          }}
+        >
+          {user ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span style={{ fontSize: 16 }}>{user.avatar || '👤'}</span>
+                  <div
+                    style={{
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: user.role === 'teacher' ? '#0284c7' : user.role === 'admin' ? '#7c3aed' : '#059669',
+                    color: '#fff',
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.role}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth(user.role === 'teacher' ? 'teacher' : 'student');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: '#2563eb',
+                  }}
+                >
+                  Switch / Re-login
+                </button>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                <button
+                  onClick={logout}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: '#ef4444',
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
+                Student & Teacher Portal
+              </div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.25 }}>
+                Sign in to save scores and manage lab cohorts.
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  id="btn-sidebar-student-login"
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth('student');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    background: '#059669',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                  }}
+                >
+                  🎓 Student
+                </button>
+                <button
+                  id="btn-sidebar-teacher-login"
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth('teacher');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    background: '#0284c7',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)',
+                  }}
+                >
+                  👨‍🏫 Teacher
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Leaf / Mission Card */}
         <div
           style={{

@@ -29,6 +29,7 @@ import GenericLab from './components/GenericLab/GenericLab';
 import { getExperimentById } from './experiments';
 import { AuthProvider } from './auth/AuthContext';
 import AuthModal from './components/auth/AuthModal';
+import { AuthPage } from './components/auth/AuthPage';
 import AdminPanel from './components/admin/AdminPanel';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
@@ -39,12 +40,16 @@ import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
 import { AboutModal } from './components/home/AboutModal';
 import { HowItWorksModal } from './components/home/HowItWorksModal';
+import LandingPage from './components/landing/LandingPage';
+import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
 
-type ActiveExperiment = 'select' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
+type ActiveExperiment = 'select' | 'auth' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
 const AppContent: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
+  const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
+  const [showLanding, setShowLanding] = useState(true);
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
   const [activeTab, setActiveTab] = useState<NavItem>('home');
@@ -277,6 +282,79 @@ const AppContent: React.FC = () => {
 
   const headerInfo = getHeaderInfo();
 
+  const handleNavigateToAuth = (role: 'student' | 'teacher' = 'student') => {
+    setAuthRole(role);
+    setActiveExperiment('auth');
+  };
+
+  // ── Dedicated Authentication Page (Student & Teacher Login) ──
+  if (activeExperiment === 'auth') {
+    return (
+      <AuthPage
+        initialRole={authRole}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onBackToLab={() => {
+          setActiveExperiment('select');
+          setActiveTab('home');
+        }}
+        onRoleRedirect={(role) => {
+          if (role === 'admin') {
+            setActiveExperiment('admin');
+          } else if (role === 'teacher') {
+            setActiveExperiment('teacher');
+          } else {
+            setActiveExperiment('select');
+            setActiveTab('home');
+          }
+        }}
+      />
+    );
+  }
+
+  // If landing page is active, render LandingPage with AuthModal
+  if (showLanding) {
+    return (
+      <>
+        <LandingPage
+          onEnterApp={() => setShowLanding(false)}
+          onOpenLogin={() => {
+            setAuthModalTab('login');
+            setAuthModalOpen(true);
+          }}
+          onOpenTeacherPortal={() => {
+            setShowLanding(false);
+            setActiveTab('teacher');
+            setActiveExperiment('teacher');
+          }}
+          onStartExperiment={(expId?: string) => {
+            setShowLanding(false);
+            if (expId) {
+              if (expId === 'titration') handleSelectExperiment('titration');
+              else if (expId === 'conservation') handleSelectExperiment('conservation');
+              else setActiveExperiment(expId);
+            } else {
+              setActiveExperiment('select');
+            }
+          }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          initialTab={authModalTab}
+          onRoleRedirect={(role) => {
+            setShowLanding(false);
+            if (role === 'admin') setActiveExperiment('admin');
+            else if (role === 'teacher') setActiveExperiment('teacher');
+            else setActiveExperiment('select');
+          }}
+        />
+      </>
+    );
+  }
+
   // If in 'select' mode, render the full new Dashboard shell matching the user's mockup
   if (activeExperiment === 'select') {
     return (
@@ -292,11 +370,18 @@ const AppContent: React.FC = () => {
             } else if (tab === 'teacher') {
               setActiveTab('teacher');
               setActiveExperiment('teacher');
+            } else if (tab === 'auth') {
+              handleNavigateToAuth('student');
             } else {
               setActiveTab(tab);
               setActiveExperiment('select');
             }
           }}
+          onReturnToLanding={() => {
+            setShowLanding(true);
+            setActiveExperiment('select');
+          }}
+          onNavigateToAuth={handleNavigateToAuth}
           isMobile={isMobile}
           isOpenMobile={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
@@ -311,9 +396,9 @@ const AppContent: React.FC = () => {
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenAuthModal={() => {
-              setAuthModalTab('login');
-              setAuthModalOpen(true);
+              handleNavigateToAuth('student');
             }}
+            onNavigateToAuth={handleNavigateToAuth}
             isMobile={isMobile}
             onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           />
@@ -445,22 +530,8 @@ const AppContent: React.FC = () => {
             ← Back to Dashboard
           </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: 'var(--radius-md)',
-                background: headerInfo.color,
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 14,
-              }}
-            >
-              ⚗️
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <VirtualVigyanLogo size={28} />
             <div>
               <h1
                 style={{
@@ -554,6 +625,7 @@ const AppContent: React.FC = () => {
         {activeExperiment === 'teacher' && (
           <TeacherDashboard
             onLaunchExperiment={(id) => setActiveExperiment(id)}
+            onNavigateToAuth={handleNavigateToAuth}
           />
         )}
 

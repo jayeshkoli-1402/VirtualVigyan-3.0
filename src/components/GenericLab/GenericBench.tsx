@@ -11,6 +11,8 @@ import { getApparatusComponent } from '../../apparatus';
 import { getSolutionColor } from '../../engine/chemistryLib';
 import { evaluateCondition } from '../../engine/experimentRunner';
 import { FluidDynamicsLayer } from './FluidDynamicsLayer';
+import { ChemicalInspectorModal } from './ChemicalInspectorModal';
+import { createEmptyMixture } from '../../engine/stoichiometrySolver';
 
 type GenericBenchProps = {
   config: ExperimentConfig;
@@ -36,11 +38,33 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     }
   }, [state.variables.stopcockOpen]);
 
+  // Burette presence and liquid fill detection (Universal across all practicals)
+  const hasBurette = Boolean(
+    config.apparatus.some(a => a.component === 'Burette') ||
+    config.bench.backgroundElements?.some(b => b.component === 'Burette' || b.component === 'BuretteStand') ||
+    Object.keys(state.placedApparatus).some(id => id.includes('burette')) ||
+    config.steps.some(s => s.id === 'titrating' || s.id.includes('titrat'))
+  );
+
+  const isBuretteFilled = Boolean(
+    hasBurette && (
+      state.flags.buretteFilled === true ||
+      state.flags['burette-filled'] === true ||
+      ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
+    ) &&
+    state.flags.buretteFilled !== false &&
+    state.flags['burette-filled'] !== false
+  );
+
   // Listen for burette stopcock rotation events from SVG interactive cork handles
   React.useEffect(() => {
     const handler = (e: Event) => {
       const custom = e as CustomEvent<{ open: number; id: string }>;
       if (typeof custom.detail?.open === 'number') {
+        if (!hasBurette || !isBuretteFilled) {
+          setStopcockOpen(0);
+          return;
+        }
         const newOpen = custom.detail.open;
         setStopcockOpen(newOpen);
         dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: newOpen } });
@@ -48,11 +72,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     };
     window.addEventListener('burette_stopcock_change', handler);
     return () => window.removeEventListener('burette_stopcock_change', handler);
-  }, [dispatch]);
+  }, [dispatch, hasBurette, isBuretteFilled]);
 
   // Continuous flow animation and titration variable advancement when stopcock is open
   React.useEffect(() => {
-    if (stopcockOpen <= 0) return;
+    if (!hasBurette || !isBuretteFilled || stopcockOpen <= 0) return;
 
     const interval = setInterval(() => {
       dispatch({ type: 'TICK_FLOW', payload: { deltaMs: 100 } });
@@ -69,7 +93,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [stopcockOpen, dispatch, config.interactions, state]);
+  }, [stopcockOpen, dispatch, config.interactions, state, hasBurette, isBuretteFilled]);
 
   // Responsive scale factor for desktop & tablet
   const [windowWidth, setWindowWidth] = React.useState(
@@ -92,6 +116,30 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     state.flags,
     config.chemistry.colorModelArgs,
   );
+
+  // Determine primary reaction vessel (flask, beaker, viscometer, etc.)
+  const vesselComponents = [
+    'ConicalFlask',
+    'Beaker',
+    'BODBottle',
+    'TestTube',
+    'VolumetricFlask',
+    'MeasuringCylinder',
+    'OstwaldViscometer',
+    'Viscometer',
+    'SpecificGravityBottle',
+    'SeparatingFunnel',
+    'Calorimeter',
+  ];
+
+  // Prioritize placed vessel on workbench; fallback to config apparatus
+  const placedVesselId = Object.keys(state.placedApparatus).find(id => {
+    const app = config.apparatus.find(a => a.id === id);
+    return app && vesselComponents.includes(app.component);
+  });
+  const configVessel = config.apparatus.find(a => vesselComponents.includes(a.component));
+  const primaryVesselId = placedVesselId ?? configVessel?.id ?? 'flask';
+  const primaryVesselLabel = config.apparatus.find(a => a.id === primaryVesselId)?.label ?? 'Reaction Vessel';
 
 
 
@@ -177,31 +225,30 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         benchScale={benchScale}
       />
 
-      {/* ── Active Reaction Observation Banner ── */}
+      {/* ── Active Reaction Observation Banner (Positioned in top-left empty space) ── */}
       {config.steps[state.currentStepIndex]?.id === 'observe' && (
         <div
           style={{
             position: 'absolute',
             top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 14,
             zIndex: 30,
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
             border: '1.5px solid #0284c7',
             borderRadius: 'var(--radius-lg)',
-            padding: '10px 18px',
-            boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 12,
             animation: 'fadeIn 0.3s ease-out',
-            maxWidth: '90%',
+            maxWidth: '360px',
           }}
         >
           <div
             style={{
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
               background: 'rgba(2, 132, 199, 0.12)',
               display: 'flex',
@@ -217,7 +264,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Reaction Active • Vigorous Effervescence
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
               H₂ gas bubbles are rapidly evolving. Zinc dissolves forming ZnSO₄ solution.
             </div>
           </div>
@@ -242,33 +289,32 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
-      {/* ── Pop Sound Verified Banner ── */}
+      {/* ── Pop Sound Verified Banner (Positioned in top-left empty space) ── */}
       {state.flags['popSoundHeard'] && config.steps[state.currentStepIndex]?.id === 'test-gas' && (
         <div
           style={{
             position: 'absolute',
             top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 14,
             zIndex: 30,
             background: 'linear-gradient(135deg, rgba(254, 242, 242, 0.98), rgba(255, 255, 255, 0.98))',
             border: '1.5px solid #ef4444',
             borderRadius: 'var(--radius-lg)',
-            padding: '10px 18px',
-            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 12,
             animation: 'fadeIn 0.3s ease-out',
-            maxWidth: '90%',
+            maxWidth: '360px',
           }}
         >
-          <div style={{ fontSize: 22 }}>💥</div>
+          <div style={{ fontSize: 20 }}>💥</div>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               POP Sound Observed • H₂ Gas Confirmed!
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
               Hydrogen burns rapidly with a characteristic pop sound.
             </div>
           </div>
@@ -292,6 +338,73 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
+      {/* ── Viscometry Cleaning & Draining Banner (Step 2) ── */}
+      {config.steps[state.currentStepIndex]?.id === 'clean' && (() => {
+        const hasChromic = !!state.flags['cleanedChromic'] && ((state.apparatusProps['viscometer']?.liquidLevel as number ?? 0) > 0);
+        const isDrained = !!state.flags['chromicDrained'];
+        const isCleanedAndDry = !!state.flags['isCleanedAndDry'];
+
+        if (!hasChromic && !isDrained && !isCleanedAndDry) return null;
+
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 10,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 30,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
+              border: `1.5px solid ${isCleanedAndDry ? '#10b981' : hasChromic ? '#ea580c' : '#0284c7'}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '8px 16px',
+              boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              animation: 'fadeIn 0.3s ease-out',
+              maxWidth: '94%',
+            }}
+          >
+            <div style={{ fontSize: 18 }}>
+              {isCleanedAndDry ? '✅' : hasChromic ? '🧪' : '💨'}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isCleanedAndDry ? '#059669' : hasChromic ? '#ea580c' : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {isCleanedAndDry ? 'Viscometer Cleaned & Dried' : hasChromic ? 'Chromic Acid Wash' : 'Ready For Acetone Rinse'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+                {isCleanedAndDry
+                  ? 'Viscometer is thoroughly cleaned, dry, and ready for test liquid introduction.'
+                  : hasChromic
+                    ? 'Viscometer washed with chromic acid. Click below to drain it into the waste jar.'
+                    : 'Chromic acid drained! Now pour Acetone into the broad limb to rinse and dry completely.'}
+              </div>
+            </div>
+
+            {/* Drain Chromic Acid to Waste Button */}
+            {hasChromic && !isCleanedAndDry && (
+              <button
+                id="btn-drain-chromic"
+                className="btn-primary"
+                onClick={() => {
+                  dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'drain-chromic' } });
+                }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: 'linear-gradient(135deg, #ea580c, #c2410c)',
+                  boxShadow: '0 4px 12px rgba(234, 88, 12, 0.35)',
+                }}
+              >
+                🚰 Drain Chromic Acid to Waste
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── Viscometry Capillary Flow & Timing Banner ── */}
       {(config.steps[state.currentStepIndex]?.id === 'flow-timing' || config.steps[state.currentStepIndex]?.id === 'water-reference') && (() => {
         const stepId = config.steps[state.currentStepIndex]?.id;
@@ -299,49 +412,62 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const isSample = stepId === 'flow-timing';
         const isCleared = isSample || !!state.flags['viscoCleared'];
         const isCompleted = isSample ? !!state.flags['sampleTimed'] : !!state.flags['waterTimed'];
-        const flowProg = (state.variables['_flowProgress'] ?? state.variables['flowProgress'] ?? 0) as number;
-        const reachedD = flowProg >= 0.98;
-        const stoppedTooEarly = !!state.flags['stoppedTooEarly'];
         const readyAtC = isSample
           ? !!state.flags['suckedAboveMark']
           : (isCleared && !!state.flags['waterIntroduced'] && !!state.flags['suckedAboveMark']);
 
-        const sampleTime = (state.variables['flowTimeSample'] ?? state.variables['_timerSeconds'] ?? 24.5) as number;
-        const waterTime = (state.variables['flowTimeWater'] ?? state.variables['_timerSeconds'] ?? 18.2) as number;
+        const sampleTime = (state.variables['flowTimeSample'] ?? state.variables['_timerSeconds'] ?? 0) as number;
+        const waterTime = (state.variables['flowTimeWater'] ?? state.variables['_timerSeconds'] ?? 0) as number;
+        const currentTime = isSample ? sampleTime : waterTime;
+        const rawProgress = (state.variables['_flowProgress'] ?? 0) as number;
+        const flowProg = rawProgress;
+        const bulbBProg = Math.max(0, Math.min(1, flowProg));
+        const isBelowD = flowProg > 1.0;
+        const isBalanced = flowProg >= 1.5;
 
         let statusText = '';
         if (isSample) {
           if (isTiming) {
-            statusText = reachedD ? 'Meniscus reached mark D — stop the stopwatch.' : 'Liquid flowing from C → D — Stopwatch running';
-          } else if (isCompleted) {
-            statusText = `Flow complete — measured t_A = ${sampleTime.toFixed(1)} s`;
-          } else if (stoppedTooEarly) {
-            statusText = 'Meniscus has not reached mark D yet. Continue the measurement.';
+            statusText = isBalanced
+              ? `Hydrostatic balance reached at ${sampleTime.toFixed(1)} s! Both limbs equalized. Press Stop Timing.`
+              : isBelowD
+                ? `Timing Liquid A: ${sampleTime.toFixed(1)} s. Meniscus flowed below Mark D towards balance. Stop whenever ready.`
+                : `Timing Liquid A: ${sampleTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop whenever ready.`;
+          } else if (isCompleted || sampleTime > 0) {
+            statusText = isBalanced
+              ? `Both sides balanced at hydrostatic equilibrium (${sampleTime.toFixed(1)} s). You can restart from Mark C, or continue.`
+              : isBelowD
+                ? `Flow paused below Mark D at ${sampleTime.toFixed(1)} s. Resume dropping to balance, restart from Mark C, or continue.`
+                : `Flow paused at ${sampleTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% of Bulb B). Resume dropping, restart, or continue with current reading.`;
           } else {
-            statusText = 'Liquid A ready above mark C — start the stopwatch to begin timing.';
+            statusText = 'Liquid A ready above Mark C. Start the stopwatch to begin timing.';
           }
         } else {
           if (!isCleared) {
-            statusText = 'Drain and clear Liquid A from the viscometer before introducing distilled water.';
+            statusText = 'Drain Liquid A from viscometer before introducing distilled water.';
           } else if (!state.flags['waterIntroduced']) {
-            statusText = 'Viscometer cleared! Introduce distilled water into the broad limb.';
+            statusText = 'Introduce distilled water into the broad limb.';
           } else if (!state.flags['suckedAboveMark']) {
-            statusText = 'Attach suction tube to capillary limb to draw water above mark C.';
+            statusText = 'Attach suction tube to capillary limb to draw water above Mark C.';
           } else if (isTiming) {
-            statusText = reachedD ? 'Meniscus reached mark D — stop the stopwatch.' : 'Water flowing from C → D — Stopwatch running';
-          } else if (isCompleted) {
-            statusText = `Flow complete — measured t_W = ${waterTime.toFixed(1)} s`;
-          } else if (stoppedTooEarly) {
-            statusText = 'Meniscus has not reached mark D yet. Continue the measurement.';
+            statusText = isBalanced
+              ? `Hydrostatic balance reached at ${waterTime.toFixed(1)} s! Both limbs equalized. Press Stop Timing.`
+              : isBelowD
+                ? `Timing Distilled Water: ${waterTime.toFixed(1)} s. Meniscus flowed below Mark D towards balance. Stop whenever ready.`
+                : `Timing Distilled Water: ${waterTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop whenever ready.`;
+          } else if (isCompleted || waterTime > 0) {
+            statusText = isBalanced
+              ? `Both sides balanced at hydrostatic equilibrium (${waterTime.toFixed(1)} s). You can restart from Mark C, or continue to calculations.`
+              : isBelowD
+                ? `Water flow paused below Mark D at ${waterTime.toFixed(1)} s. Resume dropping to balance, restart from Mark C, or continue to calculations.`
+                : `Water flow paused at ${waterTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% of Bulb B). Resume dropping, restart, or continue to calculations.`;
           } else {
-            statusText = 'Water ready above mark C — start the stopwatch to begin timing.';
+            statusText = 'Water ready above Mark C. Start the stopwatch to begin timing.';
           }
         }
 
         const handleStop = () => {
-          const elementId = flowProg < 0.98
-            ? (isSample ? 'pause-sample-flow' : 'pause-water-flow')
-            : (isSample ? 'stop-sample-flow' : 'stop-water-flow');
+          const elementId = isSample ? 'stop-sample-flow' : 'stop-water-flow';
           dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
         };
 
@@ -359,7 +485,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               transform: 'translateX(-50%)',
               zIndex: 30,
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
-              border: `1.5px solid ${isTiming ? (reachedD ? '#ef4444' : '#059669') : isCompleted ? '#10b981' : '#0284c7'}`,
+              border: `1.5px solid ${isTiming ? '#059669' : (isCompleted || currentTime > 0) ? '#10b981' : '#0284c7'}`,
               borderRadius: 'var(--radius-lg)',
               padding: '8px 16px',
               boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
@@ -375,7 +501,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                background: isTiming ? (reachedD ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)') : 'rgba(2, 132, 199, 0.12)',
+                background: isTiming ? 'rgba(16, 185, 129, 0.15)' : 'rgba(2, 132, 199, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -383,11 +509,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 flexShrink: 0,
               }}
             >
-              {isTiming ? (reachedD ? '🚨' : '⏱️') : isCompleted ? '✅' : '🧪'}
+              {isTiming ? '⏱️' : (isCompleted || currentTime > 0) ? '✅' : '🧪'}
             </div>
             <div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isTiming ? (reachedD ? '#dc2626' : '#059669') : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {isTiming ? (reachedD ? 'Meniscus At Mark D • Stop Watch' : 'Capillary Flow Active • Stopwatch Running') : 'Viscometer Flow Measurement'}
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isTiming ? '#059669' : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {isTiming ? 'Capillary Flow Active • Stopwatch Running' : 'Viscometer Flow Measurement'}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
                 {statusText}
@@ -414,8 +540,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               </button>
             )}
 
-            {/* Start / Resume Timing Button */}
-            {!isTiming && !isCompleted && readyAtC && (
+            {/* Initial Start Timing Button */}
+            {!isTiming && !isCompleted && currentTime === 0 && readyAtC && (
               <button
                 id={isSample ? 'btn-start-sample-flow' : 'btn-start-water-flow'}
                 className="btn-primary"
@@ -424,17 +550,15 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   fontSize: '0.75rem',
                   padding: '6px 14px',
                   whiteSpace: 'nowrap',
-                  background: stoppedTooEarly
-                    ? 'linear-gradient(135deg, #f59e0b, #d97706)'
-                    : 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
                   boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                 }}
               >
-                {stoppedTooEarly ? '▶ Continue Timing' : '▶ Start Timing'}
+                ▶ Start Timing
               </button>
             )}
 
-            {/* Stop Timing Button (Explicit Student Control) */}
+            {/* Stop Timing Button (Student Can Stop At Any Moment) */}
             {isTiming && (
               <button
                 id={isSample ? 'btn-stop-sample-flow' : 'btn-stop-water-flow'}
@@ -444,21 +568,58 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   fontSize: '0.75rem',
                   padding: '6px 14px',
                   whiteSpace: 'nowrap',
-                  background: reachedD
-                    ? 'linear-gradient(135deg, #ef4444, #b91c1c)'
-                    : 'linear-gradient(135deg, #dc2626, #991b1b)',
-                  boxShadow: reachedD
-                    ? '0 0 16px rgba(239, 68, 68, 0.6)'
-                    : '0 4px 12px rgba(220, 38, 38, 0.35)',
-                  animation: reachedD ? 'pulse 1s infinite' : 'none',
+                  background: 'linear-gradient(135deg, #dc2626, #991b1b)',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.35)',
                 }}
               >
                 ■ Stop Timing
               </button>
             )}
 
-            {/* Continue button after successful timing */}
-            {isCompleted && (
+            {/* Resume Dropping Button (Student can stop and continue from where they left off, all the way to balance) */}
+            {!isTiming && (isCompleted || currentTime > 0) && readyAtC && flowProg < 1.5 && (
+              <button
+                id={isSample ? 'btn-resume-sample-flow' : 'btn-resume-water-flow'}
+                className="btn-primary"
+                onClick={handleStart}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 14px',
+                  whiteSpace: 'nowrap',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+                }}
+              >
+                ▶ Resume Dropping
+              </button>
+            )}
+
+            {/* Option to Restart from Mark C if student wants another attempt */}
+            {!isTiming && (isCompleted || currentTime > 0) && (
+              <button
+                id={isSample ? 'btn-retry-sample-flow' : 'btn-retry-water-flow'}
+                onClick={() => {
+                  const elementId = isSample ? 'retry-sample-flow' : 'retry-water-flow';
+                  dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
+                }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '6px 12px',
+                  whiteSpace: 'nowrap',
+                  background: 'rgba(255, 255, 255, 0.95)',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#475569',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+              >
+                ↺ Restart from Mark C
+              </button>
+            )}
+
+            {/* Continue button after student stops timing */}
+            {!isTiming && (isCompleted || currentTime > 0) && (
               <button
                 id="btn-bench-advance"
                 className="btn-primary"
@@ -474,7 +635,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
                 }}
               >
-                Continue →
+                {isSample ? 'Continue to Water Reference →' : 'Continue to Calculations →'}
               </button>
             )}
           </div>
@@ -495,8 +656,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               top: `${elem.position.y}%`,
               transform: `translate(-50%, -50%) scale(${(elem.scale ?? 1) * benchScale})`,
               zIndex: elem.component === 'BuretteStand' ? 12 : 2,
-              opacity: isStand ? 0.95 : (elem.component === 'BuretteStand' ? 1 : 0.95),
-              filter: isStand ? 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
+              opacity: isStand ? 0.42 : (elem.component === 'BuretteStand' ? 1 : 0.95),
+              filter: isStand ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.18))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
               pointerEvents: elem.component === 'Stopwatch' ? 'auto' : 'none',
               transition: 'opacity 0.3s ease',
             }}
@@ -513,19 +674,16 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 },
                 onToggleStopwatch: () => {
                   const stepId = config.steps[state.currentStepIndex]?.id;
-                  const flowProg = (state.variables['_flowProgress'] ?? state.variables['flowProgress'] ?? 0) as number;
                   if (stepId === 'flow-timing') {
                     if (state.flags['timerRunning']) {
-                      const elementId = flowProg < 0.98 ? 'pause-sample-flow' : 'stop-sample-flow';
-                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
-                    } else if (!state.flags['sampleTimed'] && state.flags['suckedAboveMark']) {
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stop-sample-flow' } });
+                    } else if (state.flags['suckedAboveMark']) {
                       dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'start-sample-flow' } });
                     }
                   } else if (stepId === 'water-reference') {
                     if (state.flags['timerRunning']) {
-                      const elementId = flowProg < 0.98 ? 'pause-water-flow' : 'stop-water-flow';
-                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId } });
-                    } else if (!state.flags['waterTimed'] && state.flags['viscoCleared'] && state.flags['waterIntroduced'] && state.flags['suckedAboveMark']) {
+                      dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stop-water-flow' } });
+                    } else if (state.flags['viscoCleared'] && state.flags['waterIntroduced'] && state.flags['suckedAboveMark']) {
                       dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'start-water-flow' } });
                     }
                   }
@@ -576,6 +734,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const isBurette = apparatusConfig.component === 'Burette' || apparatusConfig.component === 'BuretteStand';
         const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(apparatusConfig.component);
         const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod'].includes(apparatusConfig.component);
+        const isHardware = ['RetortStand', 'Tripod', 'WireGauze'].includes(apparatusConfig.component);
         const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : 10;
 
         return (
@@ -604,7 +763,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               <Component
                 id={apparatusId}
                 liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
-                flags={{ ...state.flags, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+                flags={{ ...state.flags, ...state.animations, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
                 variables={{ ...state.variables, stopcockOpen }}
                 extraProps={{
                   stopcockOpen,
@@ -614,8 +773,74 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   },
                 }}
                 {...dynamicProps}
+                label=""
               />
             </div>
+
+            {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
+            {apparatusConfig.label && !isHardware && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%) translateY(4px)',
+                  whiteSpace: 'nowrap',
+                  zIndex: 30,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  pointerEvents: 'auto',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    color: 'var(--text-secondary, #334155)',
+                    background: 'var(--bg-card, rgba(255, 255, 255, 0.96))',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    border: '1px solid var(--border, rgba(203, 213, 225, 0.8))',
+                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+                    letterSpacing: '0.02em',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {apparatusConfig.label}
+                </span>
+
+                {isVessel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: apparatusId } });
+                    }}
+                    title={`Inspect chemical reactions & stoichiometry inside ${apparatusConfig.label}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
+                      padding: '2px 7px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(129, 140, 248, 0.8)',
+                      boxShadow: '0 2px 5px rgba(79, 70, 229, 0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>🧪</span>
+                    <span>Inspect</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
@@ -663,12 +888,17 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
         </button>
 
-        {/* Stir Solution button */}
+        {/* Magnetic Stirrer Toggle */}
         <button
           type="button"
-          id="btn-generic-stir-solution"
-          onClick={() => setIsStirring(prev => !prev)}
-          title="Toggle rapid magnetic stirring and liquid vortex mixing"
+          id="btn-generic-toggle-stirrer"
+          onClick={() => {
+            const next = !isStirring;
+            setIsStirring(next);
+            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'magnetic-stirrer' } });
+            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stir-solution' } });
+          }}
+          title="Turn magnetic stirrer motor ON or OFF"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -678,20 +908,132 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             fontSize: '0.72rem',
             fontWeight: 600,
             cursor: 'pointer',
-            border: isStirring ? '1px solid var(--success)' : '1px solid var(--border)',
-            background: isStirring ? 'var(--success)' : 'var(--bg-secondary)',
+            border: isStirring ? '1px solid #0284c7' : '1px solid var(--border)',
+            background: isStirring ? '#0284c7' : 'var(--bg-secondary)',
             color: isStirring ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: isStirring ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
+            boxShadow: isStirring ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
-          <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
+          <span style={{ fontSize: '0.85rem' }}>🧲</span>
+          <span>{isStirring ? 'Stirrer (RUN)' : 'Stirrer Plate'}</span>
+        </button>
+
+        {/* Burette Titration Controls (Only for experiments featuring a burette) */}
+        {hasBurette && (
+          <>
+            {/* Single Drop Dispense (+0.05 mL) for precise titration endpoint control */}
+            <button
+              type="button"
+              id="btn-generic-single-drop"
+              onClick={() => {
+                if (!isBuretteFilled) {
+                  window.dispatchEvent(new CustomEvent('burette_empty_click'));
+                  return;
+                }
+                dispatch({ type: 'ADD_SINGLE_DROP', payload: { dropVolumeMl: 0.05 } });
+              }}
+              title="Dispense exactly 1 drop (0.05 mL) — essential for finding the exact titration endpoint without overshooting!"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '5px 10px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                border: '1px solid #0284c7',
+                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(3, 105, 161, 0.20))',
+                color: '#0284c7',
+                boxShadow: '0 2px 6px rgba(2, 132, 199, 0.18)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span style={{ fontSize: '0.85rem' }}>💧</span>
+              <span>+1 Drop (0.05 mL)</span>
+            </button>
+
+            {/* Burette Cork / Stopcock Quick Step Tap Button */}
+            <button
+              type="button"
+              id="btn-generic-tap-cork"
+              onClick={() => {
+                if (!isBuretteFilled) {
+                  window.dispatchEvent(new CustomEvent('burette_empty_click'));
+                  return;
+                }
+                let nextOpen = 0;
+                if (stopcockOpen === 0) nextOpen = 0.15;
+                else if (stopcockOpen < 0.25) nextOpen = 0.35;
+                else if (stopcockOpen < 0.50) nextOpen = 0.65;
+                else nextOpen = 0;
+                setStopcockOpen(nextOpen);
+                dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: nextOpen } });
+                window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: nextOpen, id: 'burette' } }));
+              }}
+              title="Click to cycle burette flow rate: Closed → Fine Drip (15%) → Slow Drops (35%) → Stream (65%) → Closed"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '5px 10px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                border: stopcockOpen > 0 ? '1px solid #2563eb' : '1px solid var(--border)',
+                background: stopcockOpen > 0 ? '#2563eb' : 'var(--bg-secondary)',
+                color: stopcockOpen > 0 ? '#ffffff' : 'var(--text-secondary)',
+                boxShadow: stopcockOpen > 0 ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span style={{ fontSize: '0.85rem' }}>🚰</span>
+              <span>
+                {stopcockOpen === 0
+                  ? 'Cork: Closed'
+                  : stopcockOpen <= 0.20
+                  ? 'Fine Drip (15%)'
+                  : stopcockOpen <= 0.45
+                  ? 'Slow Drops (35%)'
+                  : `Flow: ${Math.round(stopcockOpen * 100)}%`}
+              </span>
+            </button>
+          </>
+        )}
+
+        {/* Reaction & Stoichiometry Inspector Button */}
+        <button
+          type="button"
+          id="btn-generic-inspect-chemistry"
+          onClick={() => {
+            dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: primaryVesselId } });
+          }}
+          title={`Inspect live molecular concentrations, reactions, and volume for ${primaryVesselLabel}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: '1px solid #6366f1',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.22))',
+            color: '#4f46e5',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>🧪</span>
+          <span>Inspect {primaryVesselLabel.length > 18 ? 'Reaction' : primaryVesselLabel}</span>
         </button>
       </div>
 
-      {/* Volume / measurement display */}
-      {state.variables['volumeAdded'] !== undefined && state.flags['hasIndicator'] && (
+      {/* Live volume reading indicator (Positioned in top-right empty space) */}
+      {hasBurette && (isBuretteFilled || (state.variables['volumeAdded'] ?? 0) > 0) && (
         <div style={{
           position: 'absolute',
           top: 12,
@@ -710,8 +1052,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
-      {/* Stopcock control (rendered when a stopcock interaction exists) */}
-      {config.interactions.some(i => i.trigger.type === 'stopcock') && state.flags['stopcockEnabled'] && (
+      {/* Stopcock control (docked cleanly in bottom-right empty space to avoid colliding with glassware) */}
+      {hasBurette && config.interactions.some(i => i.trigger.type === 'stopcock') && state.flags['stopcockEnabled'] && (
         <StopcockUI
           state={state}
           dispatch={dispatch}
@@ -737,6 +1079,25 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           ✓ Mark Endpoint
         </button>
       )}
+
+      {/* ── Real-Time Reaction & Stoichiometry Inspector Modal ── */}
+      {state.activeVesselInspectionId && (() => {
+        const vesselId = state.activeVesselInspectionId;
+        const mixture = state.vesselMixtures?.[vesselId] ?? createEmptyMixture(vesselId, 0);
+        const appConfig = config.apparatus.find(a => a.id === vesselId);
+        const vesselLabel = appConfig?.label ?? 'Reaction Vessel';
+
+        return (
+          <ChemicalInspectorModal
+            mixture={mixture}
+            vesselLabel={vesselLabel}
+            onClose={() => dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: null } })}
+            onAddChemical={(addition) => {
+              dispatch({ type: 'MIX_CHEMICAL', payload: { vesselId, addition } });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
@@ -791,27 +1152,43 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
         pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
+      {/* Drop Zone Label: Positioned in clean empty space with dedicated opaque pill to avoid colliding with instruments */}
       {!hasItem && !isOver && isZoneVisible && (
-        <span style={{
-          fontSize: '0.62rem',
-          fontWeight: isActive ? 700 : 500,
-          color: isActive ? '#1d4ed8' : 'rgba(148, 163, 184, 0.65)',
-          background: isActive ? 'rgba(255, 255, 255, 0.94)' : 'transparent',
-          borderRadius: 4,
-          boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
-          textAlign: 'center',
-          padding: '2px 6px',
-          pointerEvents: 'none',
-        }}>
-          {zone.label}
-        </span>
+        <div
+          style={{
+            position: 'absolute',
+            top: zone.position.y < 25 ? '105%' : '-14px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            pointerEvents: 'none',
+            zIndex: 10,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              fontSize: '0.60rem',
+              fontWeight: 700,
+              color: '#1e40af',
+              background: 'rgba(255, 255, 255, 0.96)',
+              padding: '2px 8px',
+              borderRadius: 10,
+              border: '1.2px solid rgba(59, 130, 246, 0.45)',
+              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.12)',
+              letterSpacing: '0.02em',
+            }}
+          >
+            📍 {zone.label}
+          </span>
+        </div>
       )}
     </div>
   );
 };
 
 
-// ── Stopcock UI ──────────────────────────────────────────────────
+// ── Stopcock UI (Docked in empty space) ──────────────────────────
 
 type StopcockUIProps = {
   state: ExperimentState;
@@ -831,31 +1208,33 @@ const StopcockUI: React.FC<StopcockUIProps> = ({ state, dispatch }) => {
     dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: 0 } });
   };
 
-  // Flow tick interval
-  React.useEffect(() => {
-    if (stopcockOpen <= 0) return;
-    const interval = setInterval(() => {
-      dispatch({ type: 'TICK_FLOW', payload: { deltaMs: 50 } });
-    }, 50);
-    return () => clearInterval(interval);
-  }, [stopcockOpen, dispatch]);
-
   return (
     <div
       style={{
         position: 'absolute',
-        left: '48%',
-        top: '55%',
-        zIndex: 15,
+        bottom: 16,
+        right: 16,
+        zIndex: 25,
         cursor: 'pointer',
         userSelect: 'none',
         touchAction: 'none',
+        background: 'var(--bg-card, rgba(255,255,255,0.95))',
+        padding: '6px 12px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
       }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <svg width="30" height="30" viewBox="0 0 30 30">
+      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+        Stopcock:
+      </span>
+      <svg width="24" height="24" viewBox="0 0 30 30">
         <g transform={`rotate(${rotation}, 15, 15)`}>
           <rect x="6" y="13" width="18" height="4" rx="2"
             fill={stopcockOpen > 0 ? '#2563eb' : '#94a3b8'}

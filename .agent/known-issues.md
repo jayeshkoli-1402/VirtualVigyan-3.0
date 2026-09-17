@@ -105,9 +105,60 @@ There are zero automated tests. All validation was done manually. The `engine/` 
 **Was:** In `GenericBench.tsx`, the workbench canvas background was hardcoded to `radial-gradient(ellipse at 50% 30%, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)`. In Dark Mode, this left a glaring white bench surface contrasting harshly with the dark header and panels.
 **Fix:** Replaced hardcoded `#ffffff` with CSS custom properties `radial-gradient(ellipse at 50% 30%, var(--bg-card) 0%, var(--bg-inset) 60%, var(--bg-secondary) 100%)`, smoothly adapting between Light Mode (clean bright lab bench) and Dark Mode (deep navy/slate workbench atmosphere).
 
-### 22. Retort stand faded ghost appearance & DBATU categorization (FIXED)
+### 22. Retort stand appearance & DBATU categorization (CALIBRATED)
 **Was:** `RetortStand` SVG had hardcoded `opacity: 0.38` and `GenericBench.tsx` applied `opacity: 0.35`, resulting in `0.38 * 0.35 = 0.13` (13% opacity). DBATU experiments were also misclassified under Class 11 & Class 12 in the experiment selector and curriculum views.
-**Fix:** Restored full `opacity: 1.0` in `RetortStand` SVG with sharp metallic gradients and cast-iron base with realistic drop shadow (`opacity: 0.95`, `filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35))`). Categorized all 9 DBATU engineering practicals under `F.Y. B.Tech (DBATU)` with dedicated filter pill.
+**Fix:** Restored full vector rendering in `RetortStand` SVG and calibrated bench background opacity to `0.42` with soft ambient drop shadow (`drop-shadow(0 3px 6px rgba(0,0,0,0.18))`). This keeps the retort stand visible as a realistic metallic background fixture without overpowering or distracting from the active, interactive glassware and liquid levels. Categorized all 9 DBATU engineering practicals under `F.Y. B.Tech (DBATU)` with dedicated filter pill.
 
+### 23. Burette stopcock operable and liquid dripping without adding liquid first (FIXED)
+**Was:** When dragging a 50 mL burette to the retort stand in titration experiments, the interactive cork handle displayed "↻ Click Right to Open / Slow Drop (20%)" and allowed students to click or rotate the stopcock before adding any titrant liquid. When opened:
+1. `BuretteSVG` and `BuretteStand` evaluated `isTitrating` purely on `stopcockOpen > 0`, triggering dynamic liquid droplet / jet animations from the tip of a completely empty burette.
+2. `GenericBench.tsx` and `experimentRunner.ts` ran `TICK_FLOW` intervals whenever `stopcockOpen > 0` without checking `flags.buretteFilled`, automatically incrementing `volumeAdded` and titration variables (`buretteReading`, `kohVolume`, `stdEdtaVolume`, etc.).
+3. The floating live volume readout badge displayed reading values (e.g., `11.4 mL`) next to an empty burette.
+**Fix:** Multi-layered defense implemented across apparatus, reducer, and bench components:
+1. **`src/apparatus/index.tsx` (`BuretteSVG` & `BuretteStand`):**
+   - Strictly gate `stopcockOpen = isBuretteFilled ? (...) : 0` and `isTitrating = Boolean(isBuretteFilled && effectiveLevel > 0 && stopcockOpen > 0)`.
+   - Replaced "Click to Open" badge with an amber warning badge (`⚠️ Burette is Empty / Fill before opening`) when `!isBuretteFilled`. Clicking or dragging the cork when empty flashes `⚠️ Fill Titrant First!` and blocks opening.
+   - Gated the floating live volume readout badge with `isBuretteFilled && hasVolumeVar`, hiding it until the burette is filled.
+   - Liquid flow droplets and jet stream only render when `isTitrating` (`isBuretteFilled && effectiveLevel > 0`).
+2. **`src/engine/experimentRunner.ts`:**
+   - `SET_STOPCOCK` clamps `openAmount` to 0 if `state.flags.buretteFilled === false` or `state.flags['burette-filled'] === false`.
+   - `TICK_FLOW` refuses to advance volume and resets `stopcockOpen: 0, isDropAnimating: false` if `state.flags.buretteFilled === false`. Automatically stops flow when burette reaches capacity (50 mL).
+3. **`src/components/GenericLab/GenericBench.tsx`:**
+   - Blocks `burette_stopcock_change` events if `flags.buretteFilled === false`.
+   - Flow effect checks `isBuretteFilled !== false` before scheduling `TICK_FLOW` intervals or drop interaction completions.
 
+### 24. Apparatus titles, drop zone labels, and banners merging and colliding with instruments (FIXED)
+**Was:** Multiple text and title elements collided directly with the visual apparatus on the lab bench:
+1. Drop zone text labels (`zone.label` in `DropZone`) were centered inside drop boxes directly overlapping background hardware (e.g. "Clamp Burette on Retort Stand" directly stamped across the retort stand pole and clamp; "Fill Burette" centered over the burette opening; "Into Conical Flask" centered over the burette tip and flask neck).
+2. Internal SVG labels in glassware and reaction vessels (`ConicalFlask`, `Beaker`, `TestTube`, `MeasuringCylinder`, `VolumetricFlask`, `BODBottle`) were printed at the very base or body of the SVG, causing the text to collide with the liquid, meniscus, magnetic stirrer plates, water baths, or the bench tabletop apron.
+3. The burette label plaque ("50 mL Burette") sat at `y=6..19` directly over the top mouth opening of the burette tube, obstructing the funnel/opening.
+4. The burette stopcock guidance badges ("⚠️ Burette is Empty", "↻ Click to Open", "Active Flow Rate") were positioned at `tubeBottom + 10` (y=220), which collided directly with the conical flask rim, neck, and liquid below the burette tip.
+5. Observation and POP sound banners were placed at `top: 14, left: 50%, transform: translateX(-50%)`, directly overlapping the top of center instruments (burettes and stands).
+6. `StopcockUI` was hardcoded at `left: 48%, top: 55%`, colliding with center glassware.
+7. Legacy `LabBench.tsx` drop zone badges were positioned dead center over the retort stand pole and base.
+**Fix:**
+1. **Drop Zones (`GenericBench.tsx`):** Unplaced drop zone labels now render as high-contrast floating pill badges (`📍 {zone.label}`) positioned in clean empty space outside the instrument bounding box with an opaque white card background, subtle blue border, and shadow.
+2. **Placed Apparatus Titles (`GenericBench.tsx`):** Placed bench apparatus receive `label={undefined}` to suppress internal SVG text collisions with liquid and glassware. A clean, dedicated title pill badge is rendered in empty space below the instrument (`top: 100%, translateY: 4px`), guaranteeing 100% legibility and zero interference with glassware.
+3. **Burette Stand & SVG (`src/apparatus/index.tsx`):**
+   - Top label plaque moved to empty space to the right of the tube (`translate(buretteX + 28, 14)`), leaving the burette mouth 100% unobstructed.
+   - Stopcock guide badges moved to clean empty space to the right of the burette tube (`translate(buretteX + 26, tubeBottom - 12)` at y=198), completely clearing the conical flask mouth (at y=225+) and liquid stream path.
+   - Added opaque white badge pill styling to "↻ Click to Open" so text never blends with bench background.
+4. **Bench Banners (`GenericBench.tsx`):** Observation, Effervescence, and Pop Sound banners repositioned to top-left empty space (`top: 14, left: 14`), completely clearing center apparatus.
+5. **Stopcock UI (`GenericBench.tsx`):** Docked cleanly in bottom-right empty space (`bottom: 16, right: 16`).
+6. **Legacy Lab Bench (`src/components/LabBench.tsx`):** Repositioned clamp drop zone badge to wide-open empty space to the right of the stand (`x + width + 8`), and base drop zone badge above the stand base plate.
 
+### 25. Universal Multi-Chemical Reaction & Stoichiometry Engine (IMPLEMENTED)
+**Was:** Previously, the virtual lab engine was primarily state-machine driven—it knew how to follow scripted steps, but did not know what would happen at a fundamental chemical/thermodynamic level if students added arbitrary chemical species $X_1, X_2 \dots X_n$ in variable quantities, unscripted combinations, or in large excess.
+**Fix:** Built a complete, 100% client-side deterministic reaction and stoichiometry solver:
+1. **`src/engine/chemicalDatabase.ts`:** Database of 50+ chemical species with formulas, molar masses ($M_r$), densities, physical states, $pK_a$, base colors, and safety hazard warnings.
+2. **`src/engine/reactionMatrix.ts`:** Rule-based reaction matrix encompassing acid-base neutralization, carbonate effervescence, single displacement, double displacement & precipitation (BaSO₄, AgCl, PbI₂ "Golden Rain", Cu(OH)₂, Fe(OH)₃), redox, limewater carbon dioxide confirmation, and thiosulfate turbidity kinetics.
+3. **`src/engine/stoichiometrySolver.ts`:** Deterministic solver calculating:
+   - Limiting reagent extent $\xi = \min_i(n_i / \nu_i)$ and exact unreacted excess.
+   - Thermodynamic reaction heat $q = -\sum \xi \Delta H$ and vessel temperature surge $\Delta T = q / (m \cdot c_p)$.
+   - Exact pH based on net $[H^+]$ / $[OH^-]$, weak acid equilibria, and buffer equations.
+   - Insoluble precipitate mass ($g$) and optical opacity.
+   - Dynamic gas evolution rate ($mL$) and effervescence bubbling.
+4. **`src/components/GenericLab/ChemicalInspectorModal.tsx` & `GenericBench.tsx`:**
+   - Added "🧪 Inspect Reaction" button in workbench action bar and on placed vessel badges.
+   - Interactive chemical inspection modal showing live molar composition ($n$, $C$), limiting/excess reagents, precipitate mass, pH gauge, temperature, reaction logs with scientific explanations, and an interactive "Reagent Playground" to pour arbitrary reagents $X_1 \dots X_n$ with variable quantities.
+5. **`scripts/test_stoichiometry.mjs`:** 29 automated test assertions validating limiting reagents, equivalence points, precipitates, gas volumes, and temperatures (100% pass rate).

@@ -95,6 +95,20 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       icon: '💧',
       initialProps: { liquidColor: 'rgba(30, 58, 138, 0.9)', label: 'Starch' },
     },
+    {
+      id: 'stopwatch',
+      component: 'Stopwatch',
+      label: 'Digital Stopwatch (5 min Floc Settling)',
+      icon: '⏱️',
+      initialProps: { width: 110, height: 120 },
+    },
+    {
+      id: 'measuring-cylinder',
+      component: 'MeasuringCylinder',
+      label: '100 mL Measuring Cylinder',
+      icon: '📏',
+      initialProps: { width: 68, height: 185, maxVolume: 100 },
+    },
   ],
 
   // ── Drop Zones ──
@@ -118,11 +132,11 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
     },
     {
       id: 'bod-bench-zone',
-      label: 'Place BOD Bottle on Bench',
+      label: 'Place BOD Bottle',
       accepts: ['bod-bottle'],
       position: { x: 32, y: 58 },
-      size: { width: 22, height: 38 },
-      rejectMessage: 'Place the BOD bottle on the lab bench.',
+      size: { width: 22, height: 36 },
+      rejectMessage: 'Place the BOD bottle on the bench for reagent fixation.',
     },
     {
       id: 'bod-mouth-zone',
@@ -160,6 +174,12 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
         position: { x: 65, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'Stopwatch',
+        position: { x: 22, y: 72 },
+        scale: 0.95,
+        props: { label: 'Settling Timer' },
       },
     ],
   },

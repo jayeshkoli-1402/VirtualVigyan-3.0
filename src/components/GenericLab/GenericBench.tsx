@@ -11,6 +11,8 @@ import { getApparatusComponent } from '../../apparatus';
 import { getSolutionColor } from '../../engine/chemistryLib';
 import { evaluateCondition } from '../../engine/experimentRunner';
 import { FluidDynamicsLayer } from './FluidDynamicsLayer';
+import { ChemicalInspectorModal } from './ChemicalInspectorModal';
+import { createEmptyMixture } from '../../engine/stoichiometrySolver';
 
 type GenericBenchProps = {
   config: ExperimentConfig;
@@ -41,6 +43,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     const handler = (e: Event) => {
       const custom = e as CustomEvent<{ open: number; id: string }>;
       if (typeof custom.detail?.open === 'number') {
+        const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
+        if (isBuretteFilled === false && custom.detail.open > 0) {
+          setStopcockOpen(0);
+          return;
+        }
         const newOpen = custom.detail.open;
         setStopcockOpen(newOpen);
         dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: newOpen } });
@@ -48,11 +55,12 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     };
     window.addEventListener('burette_stopcock_change', handler);
     return () => window.removeEventListener('burette_stopcock_change', handler);
-  }, [dispatch]);
+  }, [dispatch, state.flags.buretteFilled, state.flags['burette-filled']]);
 
   // Continuous flow animation and titration variable advancement when stopcock is open
   React.useEffect(() => {
-    if (stopcockOpen <= 0) return;
+    const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
+    if (stopcockOpen <= 0 || isBuretteFilled === false) return;
 
     const interval = setInterval(() => {
       dispatch({ type: 'TICK_FLOW', payload: { deltaMs: 100 } });
@@ -92,6 +100,15 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     state.flags,
     config.chemistry.colorModelArgs,
   );
+
+  // Determine primary reaction vessel (flask, beaker, etc.)
+  const primaryVesselConfig = config.apparatus.find(a =>
+    ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(a.component)
+  );
+  const primaryVesselId = primaryVesselConfig?.id ?? Object.keys(state.placedApparatus).find(id => {
+    const app = config.apparatus.find(a => a.id === id);
+    return app && ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(app.component);
+  }) ?? 'flask';
 
 
 
@@ -177,31 +194,30 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         benchScale={benchScale}
       />
 
-      {/* ── Active Reaction Observation Banner ── */}
+      {/* ── Active Reaction Observation Banner (Positioned in top-left empty space) ── */}
       {config.steps[state.currentStepIndex]?.id === 'observe' && (
         <div
           style={{
             position: 'absolute',
             top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 14,
             zIndex: 30,
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
             border: '1.5px solid #0284c7',
             borderRadius: 'var(--radius-lg)',
-            padding: '10px 18px',
-            boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 12,
             animation: 'fadeIn 0.3s ease-out',
-            maxWidth: '90%',
+            maxWidth: '360px',
           }}
         >
           <div
             style={{
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
               borderRadius: '50%',
               background: 'rgba(2, 132, 199, 0.12)',
               display: 'flex',
@@ -217,7 +233,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Reaction Active • Vigorous Effervescence
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
               H₂ gas bubbles are rapidly evolving. Zinc dissolves forming ZnSO₄ solution.
             </div>
           </div>
@@ -242,33 +258,32 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
-      {/* ── Pop Sound Verified Banner ── */}
+      {/* ── Pop Sound Verified Banner (Positioned in top-left empty space) ── */}
       {state.flags['popSoundHeard'] && config.steps[state.currentStepIndex]?.id === 'test-gas' && (
         <div
           style={{
             position: 'absolute',
             top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: 14,
             zIndex: 30,
             background: 'linear-gradient(135deg, rgba(254, 242, 242, 0.98), rgba(255, 255, 255, 0.98))',
             border: '1.5px solid #ef4444',
             borderRadius: 'var(--radius-lg)',
-            padding: '10px 18px',
-            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
+            gap: 12,
             animation: 'fadeIn 0.3s ease-out',
-            maxWidth: '90%',
+            maxWidth: '360px',
           }}
         >
-          <div style={{ fontSize: 22 }}>💥</div>
+          <div style={{ fontSize: 20 }}>💥</div>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               POP Sound Observed • H₂ Gas Confirmed!
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
               Hydrogen burns rapidly with a characteristic pop sound.
             </div>
           </div>
@@ -495,8 +510,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               top: `${elem.position.y}%`,
               transform: `translate(-50%, -50%) scale(${(elem.scale ?? 1) * benchScale})`,
               zIndex: elem.component === 'BuretteStand' ? 12 : 2,
-              opacity: isStand ? 0.95 : (elem.component === 'BuretteStand' ? 1 : 0.95),
-              filter: isStand ? 'drop-shadow(0 6px 10px rgba(0,0,0,0.35))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
+              opacity: isStand ? 0.42 : (elem.component === 'BuretteStand' ? 1 : 0.95),
+              filter: isStand ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.18))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
               pointerEvents: elem.component === 'Stopwatch' ? 'auto' : 'none',
               transition: 'opacity 0.3s ease',
             }}
@@ -575,6 +590,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         // Glassware and reaction vessels (Beakers, Flasks) have priority foreground z-index over the burette stand
         const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(apparatusConfig.component);
         const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod'].includes(apparatusConfig.component);
+        const isHardware = ['RetortStand', 'Tripod', 'WireGauze'].includes(apparatusConfig.component);
         const apparatusZIndex = isTool ? 25 : isVessel ? 18 : 10;
 
         return (
@@ -613,8 +629,74 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   },
                 }}
                 {...dynamicProps}
+                label={undefined}
               />
             </div>
+
+            {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
+            {apparatusConfig.label && !isHardware && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%) translateY(4px)',
+                  whiteSpace: 'nowrap',
+                  zIndex: 30,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  pointerEvents: 'auto',
+                }}
+              >
+                <span
+                  style={{
+                    display: 'inline-block',
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    color: 'var(--text-secondary, #334155)',
+                    background: 'var(--bg-card, rgba(255, 255, 255, 0.96))',
+                    padding: '2px 8px',
+                    borderRadius: 12,
+                    border: '1px solid var(--border, rgba(203, 213, 225, 0.8))',
+                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+                    letterSpacing: '0.02em',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {apparatusConfig.label}
+                </span>
+
+                {isVessel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: apparatusId } });
+                    }}
+                    title={`Inspect chemical reactions & stoichiometry inside ${apparatusConfig.label}`}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      color: '#4f46e5',
+                      background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
+                      padding: '2px 7px',
+                      borderRadius: 10,
+                      border: '1px solid rgba(129, 140, 248, 0.8)',
+                      boxShadow: '0 2px 5px rgba(79, 70, 229, 0.15)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span>🧪</span>
+                    <span>Inspect</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         );
       })}
@@ -662,12 +744,17 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
         </button>
 
-        {/* Stir Solution button */}
+        {/* Magnetic Stirrer Toggle */}
         <button
           type="button"
-          id="btn-generic-stir-solution"
-          onClick={() => setIsStirring(prev => !prev)}
-          title="Toggle rapid magnetic stirring and liquid vortex mixing"
+          id="btn-generic-toggle-stirrer"
+          onClick={() => {
+            const next = !isStirring;
+            setIsStirring(next);
+            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'magnetic-stirrer' } });
+            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stir-solution' } });
+          }}
+          title="Turn magnetic stirrer motor ON or OFF"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -677,20 +764,89 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             fontSize: '0.72rem',
             fontWeight: 600,
             cursor: 'pointer',
-            border: isStirring ? '1px solid var(--success)' : '1px solid var(--border)',
-            background: isStirring ? 'var(--success)' : 'var(--bg-secondary)',
+            border: isStirring ? '1px solid #0284c7' : '1px solid var(--border)',
+            background: isStirring ? '#0284c7' : 'var(--bg-secondary)',
             color: isStirring ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: isStirring ? '0 2px 8px rgba(16, 185, 129, 0.35)' : 'none',
+            boxShadow: isStirring ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
             transition: 'all 0.15s ease',
           }}
         >
-          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
-          <span>{isStirring ? 'Stirring (ON)' : 'Stir Solution'}</span>
+          <span style={{ fontSize: '0.85rem' }}>🧲</span>
+          <span>{isStirring ? 'Stirrer (RUN)' : 'Stirrer Plate'}</span>
+        </button>
+
+        {/* Burette Cork / Stopcock Quick Step Tap Button */}
+        <button
+          type="button"
+          id="btn-generic-tap-cork"
+          onClick={() => {
+            const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
+            if (isBuretteFilled === false) {
+              window.dispatchEvent(new CustomEvent('burette_empty_click'));
+              return;
+            }
+            let nextOpen = 0;
+            if (stopcockOpen < 0.35) nextOpen = 0.50;
+            else if (stopcockOpen < 0.70) nextOpen = 0.80;
+            else if (stopcockOpen < 0.95) nextOpen = 1.00;
+            else nextOpen = 0;
+            setStopcockOpen(nextOpen);
+            dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: nextOpen } });
+            window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: nextOpen, id: 'burette' } }));
+          }}
+          title="Click to toggle or cycle titration flow rate"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 10px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.72rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            border: stopcockOpen > 0 ? '1px solid #2563eb' : '1px solid var(--border)',
+            background: stopcockOpen > 0 ? '#2563eb' : 'var(--bg-secondary)',
+            color: stopcockOpen > 0 ? '#ffffff' : 'var(--text-secondary)',
+            boxShadow: stopcockOpen > 0 ? '0 2px 8px rgba(37, 99, 235, 0.35)' : 'none',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>💧</span>
+          <span>{stopcockOpen > 0 ? `Cork: ${Math.round(stopcockOpen * 100)}%` : 'Open Cork'}</span>
+        </button>
+
+        {/* Reaction & Stoichiometry Inspector Button */}
+        <button
+          type="button"
+          id="btn-generic-inspect-chemistry"
+          onClick={() => {
+            const vesselId = primaryVesselId || 'flask';
+            dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId } });
+          }}
+          title="Inspect molecular concentrations, limiting reagents, reactions, and thermodynamics"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: '1px solid #6366f1',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.22))',
+            color: '#4f46e5',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>🧪</span>
+          <span>Inspect Reaction</span>
         </button>
       </div>
 
-      {/* Volume / measurement display */}
-      {state.variables['volumeAdded'] !== undefined && state.flags['hasIndicator'] && (
+      {/* Live volume reading indicator (Positioned in top-right empty space) */}
+      {state.variables['volumeAdded'] !== undefined && (
         <div style={{
           position: 'absolute',
           top: 12,
@@ -709,7 +865,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         </div>
       )}
 
-      {/* Stopcock control (rendered when a stopcock interaction exists) */}
+      {/* Stopcock control (docked cleanly in bottom-right empty space to avoid colliding with glassware) */}
       {config.interactions.some(i => i.trigger.type === 'stopcock') && state.flags['stopcockEnabled'] && (
         <StopcockUI
           state={state}
@@ -736,6 +892,25 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           ✓ Mark Endpoint
         </button>
       )}
+
+      {/* ── Real-Time Reaction & Stoichiometry Inspector Modal ── */}
+      {state.activeVesselInspectionId && (() => {
+        const vesselId = state.activeVesselInspectionId;
+        const mixture = state.vesselMixtures?.[vesselId] ?? createEmptyMixture(vesselId, 25);
+        const appConfig = config.apparatus.find(a => a.id === vesselId);
+        const vesselLabel = appConfig?.label ?? 'Reaction Vessel';
+
+        return (
+          <ChemicalInspectorModal
+            mixture={mixture}
+            vesselLabel={vesselLabel}
+            onClose={() => dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: null } })}
+            onAddChemical={(addition) => {
+              dispatch({ type: 'MIX_CHEMICAL', payload: { vesselId, addition } });
+            }}
+          />
+        );
+      })()}
     </div>
   );
 };
@@ -790,27 +965,43 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
         pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
+      {/* Drop Zone Label: Positioned in clean empty space with dedicated opaque pill to avoid colliding with instruments */}
       {!hasItem && !isOver && isZoneVisible && (
-        <span style={{
-          fontSize: '0.62rem',
-          fontWeight: isActive ? 700 : 500,
-          color: isActive ? '#1d4ed8' : 'rgba(148, 163, 184, 0.65)',
-          background: isActive ? 'rgba(255, 255, 255, 0.94)' : 'transparent',
-          borderRadius: 4,
-          boxShadow: isActive ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
-          textAlign: 'center',
-          padding: '2px 6px',
-          pointerEvents: 'none',
-        }}>
-          {zone.label}
-        </span>
+        <div
+          style={{
+            position: 'absolute',
+            top: zone.position.y < 25 ? '105%' : '-14px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            pointerEvents: 'none',
+            zIndex: 10,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              fontSize: '0.60rem',
+              fontWeight: 700,
+              color: '#1e40af',
+              background: 'rgba(255, 255, 255, 0.96)',
+              padding: '2px 8px',
+              borderRadius: 10,
+              border: '1.2px solid rgba(59, 130, 246, 0.45)',
+              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.12)',
+              letterSpacing: '0.02em',
+            }}
+          >
+            📍 {zone.label}
+          </span>
+        </div>
       )}
     </div>
   );
 };
 
 
-// ── Stopcock UI ──────────────────────────────────────────────────
+// ── Stopcock UI (Docked in empty space) ──────────────────────────
 
 type StopcockUIProps = {
   state: ExperimentState;
@@ -843,18 +1034,29 @@ const StopcockUI: React.FC<StopcockUIProps> = ({ state, dispatch }) => {
     <div
       style={{
         position: 'absolute',
-        left: '48%',
-        top: '55%',
-        zIndex: 15,
+        bottom: 16,
+        right: 16,
+        zIndex: 25,
         cursor: 'pointer',
         userSelect: 'none',
         touchAction: 'none',
+        background: 'var(--bg-card, rgba(255,255,255,0.95))',
+        padding: '6px 12px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
       }}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
     >
-      <svg width="30" height="30" viewBox="0 0 30 30">
+      <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+        Stopcock:
+      </span>
+      <svg width="24" height="24" viewBox="0 0 30 30">
         <g transform={`rotate(${rotation}, 15, 15)`}>
           <rect x="6" y="13" width="18" height="4" rx="2"
             fill={stopcockOpen > 0 ? '#2563eb' : '#94a3b8'}

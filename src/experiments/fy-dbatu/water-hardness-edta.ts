@@ -79,6 +79,27 @@ export const waterHardnessEdta: ExperimentConfig = {
       icon: '💧',
       initialProps: { liquidColor: 'rgba(56, 189, 248, 0.5)', label: 'Sample' },
     },
+    {
+      id: 'measuring-cylinder',
+      component: 'MeasuringCylinder',
+      label: '50 mL Measuring Cylinder',
+      icon: '📏',
+      initialProps: { width: 65, height: 175, maxVolume: 50 },
+    },
+    {
+      id: 'bunsen-burner',
+      component: 'BunsenBurner',
+      label: 'Bunsen Burner (Boil Sample)',
+      icon: '🔥',
+      initialProps: { width: 85, height: 125, isLit: false },
+    },
+    {
+      id: 'tripod-gauze',
+      component: 'Tripod',
+      label: 'Tripod Stand & Wire Gauze',
+      icon: '📐',
+      initialProps: { width: 115, height: 105 },
+    },
   ],
 
   // ── Drop Zones ──
@@ -127,6 +148,18 @@ export const waterHardnessEdta: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'Tripod',
+        position: { x: 20, y: 72 },
+        scale: 0.9,
+        props: { label: 'Tripod & Gauze' },
+      },
+      {
+        component: 'BunsenBurner',
+        position: { x: 20, y: 78 },
+        scale: 0.85,
+        props: { label: 'Burner', isLit: false },
       },
     ],
   },

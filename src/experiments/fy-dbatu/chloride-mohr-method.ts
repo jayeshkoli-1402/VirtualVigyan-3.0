@@ -77,6 +77,20 @@ export const chlorideMohrMethod: ExperimentConfig = {
       icon: '🧴',
       initialProps: { liquidColor: 'rgba(255, 255, 255, 0.6)', label: 'Na₂CO₃' },
     },
+    {
+      id: 'measuring-cylinder',
+      component: 'MeasuringCylinder',
+      label: '50 mL Measuring Cylinder',
+      icon: '📏',
+      initialProps: { width: 65, height: 175, maxVolume: 50 },
+    },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 0.117, label: '0.117 g' },
+    },
   ],
 
   // ── Drop Zones ──
@@ -125,6 +139,12 @@ export const chlorideMohrMethod: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'DigitalBalance',
+        position: { x: 80, y: 72 },
+        scale: 0.95,
+        props: { label: 'Analytical Balance' },
       },
     ],
   },

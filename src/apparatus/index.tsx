@@ -733,23 +733,68 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
   variables = {},
   extraProps = {},
 }) => {
+  const currentVolume =
+    (variables.volumeAdded ?? 0) +
+    (variables.buretteReading ?? 0) +
+    (variables.kohVolume ?? 0) +
+    (variables.naohVolume ?? 0) +
+    (variables.volumeA ?? 0) +
+    (variables.volumeB ?? 0) +
+    (variables.stdEdtaVolume ?? 0) +
+    (variables.sampleEdtaVolume ?? 0) +
+    (variables.thiosulphateVolume ?? 0);
+  const maxVolume = 50;
+  const hasVolumeVar =
+    variables.volumeAdded !== undefined ||
+    variables.buretteReading !== undefined ||
+    variables.kohVolume !== undefined ||
+    variables.naohVolume !== undefined ||
+    variables.volumeA !== undefined ||
+    variables.volumeB !== undefined ||
+    variables.stdEdtaVolume !== undefined ||
+    variables.sampleEdtaVolume !== undefined ||
+    variables.thiosulphateVolume !== undefined;
+
+  const isBuretteFilled = Boolean(
+    (flags?.buretteFilled === true ||
+      extraProps?.buretteFilled === true ||
+      extraProps?.isFilled === true ||
+      flags?.['burette-filled'] === true ||
+      (flags?.buretteFilled === undefined && typeof _liquidLevel === 'number' && _liquidLevel > 0)) &&
+    flags?.buretteFilled !== false &&
+    flags?.['burette-filled'] !== false &&
+    extraProps?.isFilled !== false
+  );
+
+  const effectiveLevel = isBuretteFilled
+    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
+    : 0;
+
   const [localOpen, setLocalOpen] = React.useState(0);
+  const [emptyWarning, setEmptyWarning] = React.useState(false);
   const isPointerDownRef = React.useRef(false);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const hasMovedRef = React.useRef(false);
   const startOpenRef = React.useRef(0);
 
   const parentOpen = (extraProps?.stopcockOpen as number | undefined) ?? (variables.stopcockOpen ?? undefined);
-  const stopcockOpen = parentOpen !== undefined ? parentOpen : localOpen;
+  const stopcockOpen = isBuretteFilled ? (parentOpen !== undefined ? parentOpen : localOpen) : 0;
   const isTitrating = Boolean(
-    stopcockOpen > 0 ||
-    flags?.isTitrating ||
-    extraProps?.isTitrating ||
-    flags?.titrating ||
-    extraProps?.titrating
+    isBuretteFilled &&
+    effectiveLevel > 0 &&
+    (stopcockOpen > 0 ||
+      flags?.isTitrating ||
+      extraProps?.isTitrating ||
+      flags?.titrating ||
+      extraProps?.titrating)
   );
 
   const handleSetOpen = React.useCallback((openVal: number) => {
+    if (!isBuretteFilled && openVal > 0) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
     setLocalOpen(clamped);
     if (typeof extraProps?.onSetStopcock === 'function') {
@@ -758,16 +803,21 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: clamped, id } }));
     }
-  }, [extraProps, id]);
+  }, [extraProps, id, isBuretteFilled]);
 
   const stepUpFlow = React.useCallback(() => {
+    if (!isBuretteFilled) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     let nextOpen = 0.20;
     if (stopcockOpen === 0) nextOpen = 0.20;
     else if (stopcockOpen < 0.35) nextOpen = 0.50;
     else if (stopcockOpen < 0.70) nextOpen = 0.80;
     else nextOpen = 1.00;
     handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+  }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
     let nextOpen = 0;
@@ -779,6 +829,11 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
+    if (!isBuretteFilled) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     isPointerDownRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
@@ -788,7 +843,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     } catch {
       // fallback
     }
-  }, [stopcockOpen]);
+  }, [stopcockOpen, isBuretteFilled]);
 
   const handlePointerMove = React.useCallback((e: React.PointerEvent) => {
     if (!isPointerDownRef.current) return;
@@ -824,39 +879,6 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       }
     }
   }, [stepUpFlow, stepDownFlow]);
-
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
-    variables.buretteReading !== undefined ||
-    variables.kohVolume !== undefined ||
-    variables.naohVolume !== undefined ||
-    variables.volumeA !== undefined ||
-    variables.volumeB !== undefined ||
-    variables.stdEdtaVolume !== undefined ||
-    variables.sampleEdtaVolume !== undefined ||
-    variables.thiosulphateVolume !== undefined;
-
-  const isBuretteFilled = Boolean(
-    flags?.buretteFilled === true ||
-    extraProps?.buretteFilled === true ||
-    extraProps?.isFilled === true ||
-    flags?.['burette-filled'] === true
-  );
-
-  const effectiveLevel = isBuretteFilled
-    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
-    : 0;
 
   // Visual parameters matching Class 11 Burette (scaled for 90x280 viewBox)
   const buretteX = 40;
@@ -1098,29 +1120,87 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
         />
       </g>
 
-      {/* Interactive Guide / Direction Label when closed (Clickable) */}
-      {stopcockOpen === 0 && (
+      {/* If Burette is empty, show Fill Guide badge in empty space */}
+      {!isBuretteFilled && (
         <g
-          transform={`translate(${buretteX + 14}, ${buretteBottom + 14})`}
+          transform={`translate(${buretteX + 22}, ${buretteBottom - 12})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEmptyWarning(true);
+            setTimeout(() => setEmptyWarning(false), 2500);
+          }}
+        >
+          <rect
+            x="-2"
+            y="-7"
+            width="64"
+            height="18"
+            rx="3.5"
+            fill={emptyWarning ? '#fee2e2' : '#fef3c7'}
+            stroke={emptyWarning ? '#ef4444' : '#f59e0b'}
+            strokeWidth="0.9"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="30"
+            y="0"
+            textAnchor="middle"
+            fill={emptyWarning ? '#b91c1c' : '#b45309'}
+            fontSize="5.2"
+            fontWeight={800}
+            fontFamily="var(--font-sans)"
+          >
+            {emptyWarning ? '⚠️ Fill Titrant First!' : '⚠️ Burette is Empty'}
+          </text>
+          <text
+            x="30"
+            y="7"
+            textAnchor="middle"
+            fill={emptyWarning ? '#dc2626' : '#92400e'}
+            fontSize="4.2"
+            fontFamily="var(--font-sans)"
+            fontWeight={600}
+          >
+            {emptyWarning ? 'Pour titrant into top' : 'Fill before opening'}
+          </text>
+        </g>
+      )}
+
+      {/* Interactive Guide / Direction Label when closed (Clickable in empty space) */}
+      {isBuretteFilled && stopcockOpen === 0 && (
+        <g
+          transform={`translate(${buretteX + 22}, ${buretteBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
             handleSetOpen(0.20);
           }}
         >
-          <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
-            ↻ Click Right to Open
+          <rect
+            x="-2"
+            y="-7"
+            width="62"
+            height="18"
+            rx="3.5"
+            fill="#ffffff"
+            stroke="#2563eb"
+            strokeWidth="0.8"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text x="29" y="-0.5" textAnchor="middle" fill="#2563eb" fontSize="5.2" fontWeight={800} fontFamily="var(--font-sans)">
+            ↻ Click to Open
           </text>
-          <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
+          <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
             Slow Drop (20%)
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable) */}
-      {stopcockOpen > 0 && (
+      {/* Active Flow Rate Badge when open (Clickable in empty space) */}
+      {isBuretteFilled && stopcockOpen > 0 && (
         <g
-          transform={`translate(${buretteX + 14}, ${buretteBottom + 8})`}
+          transform={`translate(${buretteX + 22}, ${buretteBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
@@ -1132,8 +1212,8 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
             handleSetOpen(nextOpen);
           }}
         >
-          <rect x="-2" y="-7" width="62" height="13" rx="3" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
-          <text x="29" y="2" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
+          <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
+          <text x="29" y="2.5" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
             {getFlowText()}
           </text>
         </g>
@@ -1227,7 +1307,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       )}
 
       {/* ── Live Floating Volume Readout Badge (Matching Class 11 Lab) ── */}
-      {hasVolumeVar && (
+      {isBuretteFilled && hasVolumeVar && (
         <g transform={`translate(${buretteX + buretteWidth / 2 + 6}, ${Math.min(Math.max(liquidTop, buretteTop + 8), buretteBottom - 8)})`}>
           <rect
             x={0}
@@ -1574,23 +1654,68 @@ const BuretteStand: React.FC<ApparatusProps> = ({
   variables = {},
   extraProps = {},
 }) => {
+  const currentVolume =
+    (variables.volumeAdded ?? 0) +
+    (variables.buretteReading ?? 0) +
+    (variables.kohVolume ?? 0) +
+    (variables.naohVolume ?? 0) +
+    (variables.volumeA ?? 0) +
+    (variables.volumeB ?? 0) +
+    (variables.stdEdtaVolume ?? 0) +
+    (variables.sampleEdtaVolume ?? 0) +
+    (variables.thiosulphateVolume ?? 0);
+  const maxVolume = 50;
+  const hasVolumeVar =
+    variables.volumeAdded !== undefined ||
+    variables.buretteReading !== undefined ||
+    variables.kohVolume !== undefined ||
+    variables.naohVolume !== undefined ||
+    variables.volumeA !== undefined ||
+    variables.volumeB !== undefined ||
+    variables.stdEdtaVolume !== undefined ||
+    variables.sampleEdtaVolume !== undefined ||
+    variables.thiosulphateVolume !== undefined;
+
+  const isBuretteFilled = Boolean(
+    (flags?.buretteFilled === true ||
+      extraProps?.buretteFilled === true ||
+      extraProps?.isFilled === true ||
+      flags?.['burette-filled'] === true ||
+      (flags?.buretteFilled === undefined && typeof _liquidLevel === 'number' && _liquidLevel > 0)) &&
+    flags?.buretteFilled !== false &&
+    flags?.['burette-filled'] !== false &&
+    extraProps?.isFilled !== false
+  );
+
+  const effectiveLevel = isBuretteFilled
+    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
+    : 0;
+
   const [localOpen, setLocalOpen] = React.useState(0);
+  const [emptyWarning, setEmptyWarning] = React.useState(false);
   const isPointerDownRef = React.useRef(false);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const hasMovedRef = React.useRef(false);
   const startOpenRef = React.useRef(0);
 
   const parentOpen = (extraProps?.stopcockOpen as number | undefined) ?? (variables.stopcockOpen ?? undefined);
-  const stopcockOpen = parentOpen !== undefined ? parentOpen : localOpen;
+  const stopcockOpen = isBuretteFilled ? (parentOpen !== undefined ? parentOpen : localOpen) : 0;
   const isTitrating = Boolean(
-    stopcockOpen > 0 ||
-    flags?.isTitrating ||
-    extraProps?.isTitrating ||
-    flags?.titrating ||
-    extraProps?.titrating
+    isBuretteFilled &&
+    effectiveLevel > 0 &&
+    (stopcockOpen > 0 ||
+      flags?.isTitrating ||
+      extraProps?.isTitrating ||
+      flags?.titrating ||
+      extraProps?.titrating)
   );
 
   const handleSetOpen = React.useCallback((openVal: number) => {
+    if (!isBuretteFilled && openVal > 0) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
     setLocalOpen(clamped);
     if (typeof extraProps?.onSetStopcock === 'function') {
@@ -1599,16 +1724,21 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('burette_stopcock_change', { detail: { open: clamped, id } }));
     }
-  }, [extraProps, id]);
+  }, [extraProps, id, isBuretteFilled]);
 
   const stepUpFlow = React.useCallback(() => {
+    if (!isBuretteFilled) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     let nextOpen = 0.20;
     if (stopcockOpen === 0) nextOpen = 0.20;
     else if (stopcockOpen < 0.35) nextOpen = 0.50;
     else if (stopcockOpen < 0.70) nextOpen = 0.80;
     else nextOpen = 1.00;
     handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+  }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
     let nextOpen = 0;
@@ -1620,6 +1750,11 @@ const BuretteStand: React.FC<ApparatusProps> = ({
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
+    if (!isBuretteFilled) {
+      setEmptyWarning(true);
+      setTimeout(() => setEmptyWarning(false), 2500);
+      return;
+    }
     isPointerDownRef.current = true;
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
@@ -1629,7 +1764,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     } catch {
       // fallback
     }
-  }, [stopcockOpen]);
+  }, [stopcockOpen, isBuretteFilled]);
 
   const handlePointerMove = React.useCallback((e: React.PointerEvent) => {
     if (!isPointerDownRef.current) return;
@@ -1665,39 +1800,6 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       }
     }
   }, [stepUpFlow, stepDownFlow]);
-
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
-    variables.buretteReading !== undefined ||
-    variables.kohVolume !== undefined ||
-    variables.naohVolume !== undefined ||
-    variables.volumeA !== undefined ||
-    variables.volumeB !== undefined ||
-    variables.stdEdtaVolume !== undefined ||
-    variables.sampleEdtaVolume !== undefined ||
-    variables.thiosulphateVolume !== undefined;
-
-  const isBuretteFilled = Boolean(
-    flags?.buretteFilled === true ||
-    extraProps?.buretteFilled === true ||
-    extraProps?.isFilled === true ||
-    flags?.['burette-filled'] === true
-  );
-
-  const effectiveLevel = isBuretteFilled
-    ? Math.max(0, Math.min(1, (maxVolume - currentVolume) / maxVolume))
-    : 0;
 
   // Burette tube coordinates (in 140x300 viewBox, matching Class 11 Burette.tsx proportions)
   const buretteX = 72;
@@ -1790,7 +1892,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       </defs>
 
       {/* ── 1. Retort Stand Base & Rod (Subtle Translucent Background) ── */}
-      <g id="bstand-hardware" opacity="0.38" style={{ transition: 'opacity 0.3s ease' }}>
+      <g id="bstand-hardware" opacity="0.30" style={{ transition: 'opacity 0.3s ease' }}>
         <rect x="25" y="278" width="90" height="12" rx="4" fill="url(#bstandBaseMetal)" stroke="#1e293b" strokeWidth="1.2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.35))" />
         <rect x="27" y="279" width="86" height="2" rx="1" fill="rgba(255,255,255,0.25)" />
         <rect x="42" y="10" width="7" height="270" rx="3.5" fill="url(#bstandMetal)" stroke="#334155" strokeWidth="0.8" />
@@ -1957,29 +2059,134 @@ const BuretteStand: React.FC<ApparatusProps> = ({
         />
       </g>
 
-      {/* Interactive Guide / Direction Label when closed (Clickable) */}
-      {stopcockOpen === 0 && (
+      {/* If Burette is empty, show Fill Guide badge instead of Open */}
+      {!isBuretteFilled && (
         <g
-          transform={`translate(${buretteX + 16}, ${tubeBottom + 14})`}
+          transform={`translate(${buretteX + 16}, ${tubeBottom + 10})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEmptyWarning(true);
+            setTimeout(() => setEmptyWarning(false), 2500);
+          }}
+        >
+          <rect
+            x="-2"
+            y="-7"
+            width="64"
+            height="18"
+            rx="3.5"
+            fill={emptyWarning ? '#fee2e2' : '#fef3c7'}
+            stroke={emptyWarning ? '#ef4444' : '#f59e0b'}
+            strokeWidth="0.9"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="30"
+            y="0"
+            textAnchor="middle"
+            fill={emptyWarning ? '#b91c1c' : '#b45309'}
+            fontSize="5.2"
+            fontWeight={800}
+            fontFamily="var(--font-sans)"
+          >
+            {emptyWarning ? '⚠️ Fill Titrant First!' : '⚠️ Burette is Empty'}
+          </text>
+          <text
+            x="30"
+            y="7"
+            textAnchor="middle"
+            fill={emptyWarning ? '#dc2626' : '#92400e'}
+            fontSize="4.2"
+            fontFamily="var(--font-sans)"
+            fontWeight={600}
+          >
+            {emptyWarning ? 'Pour titrant into top' : 'Fill before opening'}
+          </text>
+        </g>
+      )}
+
+      {/* If Burette is empty, show Fill Guide badge in empty space */}
+      {!isBuretteFilled && (
+        <g
+          transform={`translate(${buretteX + 26}, ${tubeBottom - 12})`}
+          style={{ cursor: 'pointer', pointerEvents: 'all' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setEmptyWarning(true);
+            setTimeout(() => setEmptyWarning(false), 2500);
+          }}
+        >
+          <rect
+            x="-2"
+            y="-7"
+            width="64"
+            height="18"
+            rx="3.5"
+            fill={emptyWarning ? '#fee2e2' : '#fef3c7'}
+            stroke={emptyWarning ? '#ef4444' : '#f59e0b'}
+            strokeWidth="0.9"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="30"
+            y="0"
+            textAnchor="middle"
+            fill={emptyWarning ? '#b91c1c' : '#b45309'}
+            fontSize="5.2"
+            fontWeight={800}
+            fontFamily="var(--font-sans)"
+          >
+            {emptyWarning ? '⚠️ Fill Titrant First!' : '⚠️ Burette is Empty'}
+          </text>
+          <text
+            x="30"
+            y="7"
+            textAnchor="middle"
+            fill={emptyWarning ? '#dc2626' : '#92400e'}
+            fontSize="4.2"
+            fontFamily="var(--font-sans)"
+            fontWeight={600}
+          >
+            {emptyWarning ? 'Pour titrant into top' : 'Fill before opening'}
+          </text>
+        </g>
+      )}
+
+      {/* Interactive Guide / Direction Label when closed (Clickable in empty space) */}
+      {isBuretteFilled && stopcockOpen === 0 && (
+        <g
+          transform={`translate(${buretteX + 26}, ${tubeBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
             handleSetOpen(0.20);
           }}
         >
-          <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
-            ↻ Click Right to Open
+          <rect
+            x="-2"
+            y="-7"
+            width="62"
+            height="18"
+            rx="3.5"
+            fill="#ffffff"
+            stroke="#2563eb"
+            strokeWidth="0.8"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text x="29" y="-0.5" textAnchor="middle" fill="#2563eb" fontSize="5.2" fontWeight={800} fontFamily="var(--font-sans)">
+            ↻ Click to Open
           </text>
-          <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
+          <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
             Slow Drop (20%)
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable to cycle/step) */}
-      {stopcockOpen > 0 && (
+      {/* Active Flow Rate Badge when open (Clickable in empty space) */}
+      {isBuretteFilled && stopcockOpen > 0 && (
         <g
-          transform={`translate(${buretteX + 16}, ${tubeBottom + 10})`}
+          transform={`translate(${buretteX + 26}, ${tubeBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
@@ -1991,8 +2198,8 @@ const BuretteStand: React.FC<ApparatusProps> = ({
             handleSetOpen(nextOpen);
           }}
         >
-          <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
-          <text x="29" y="2.5" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
+          <rect x="-2" y="-7" width="62" height="15" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
+          <text x="29" y="3" textAnchor="middle" fill="#1d4ed8" fontSize="5" fontWeight={800} fontFamily="var(--font-mono)">
             {getFlowText()}
           </text>
         </g>
@@ -2049,7 +2256,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       )}
 
       {/* ── Live Floating Volume Readout Badge (Matching Class 11 Lab) ── */}
-      {hasVolumeVar && (
+      {isBuretteFilled && hasVolumeVar && (
         <g transform={`translate(${buretteX + buretteWidth / 2 + 8}, ${Math.min(Math.max(liquidTopY, tubeTop + 8), tubeBottom - 8)})`}>
           <rect
             x={0}
@@ -2076,11 +2283,11 @@ const BuretteStand: React.FC<ApparatusProps> = ({
         </g>
       )}
 
-      {/* Burette Label Plaque */}
+      {/* Burette Label Plaque (Positioned in empty space to the right of tube mouth) */}
       {label && (
-        <g transform={`translate(${buretteX}, 6)`}>
-          <rect x="-35" y="0" width="70" height="13" rx="2.5" fill="rgba(255,255,255,0.92)" stroke="#cbd5e1" strokeWidth="0.8" />
-          <text x="0" y="9" textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#1e293b" fontFamily="var(--font-sans)">
+        <g transform={`translate(${buretteX + 28}, 14)`}>
+          <rect x="-2" y="0" width="56" height="13" rx="3" fill="rgba(255,255,255,0.95)" stroke="#cbd5e1" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))" />
+          <text x="26" y="9" textAnchor="middle" fontSize="5.8" fontWeight="700" fill="#1e293b" fontFamily="var(--font-sans)">
             {label}
           </text>
         </g>

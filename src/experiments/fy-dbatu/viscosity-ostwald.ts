@@ -73,6 +73,34 @@ export const viscosityOstwald: ExperimentConfig = {
       label: 'Suction Bulb & Tube',
       icon: '🎈',
     },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 18.24, label: '18.240 g' },
+    },
+    {
+      id: 'pycnometer',
+      component: 'SpecificGravityBottle',
+      label: '25 mL Specific Gravity Bottle',
+      icon: '🧴',
+      initialProps: { liquidLevel: 0.8, width: 75, height: 115, label: '25 mL Sp. Gr.' },
+    },
+    {
+      id: 'water-bath',
+      component: 'WaterBath',
+      label: 'Constant Temp Water Bath (30°C)',
+      icon: '♨️',
+      initialProps: { width: 130, height: 90, label: 'Water Bath 30°C' },
+    },
+    {
+      id: 'thermometer',
+      component: 'Thermometer',
+      label: 'Laboratory Thermometer',
+      icon: '🌡️',
+      initialProps: { temperature: 30, width: 35, height: 150 },
+    },
   ],
 
   // ── Drop Zones ──
@@ -103,6 +131,14 @@ export const viscosityOstwald: ExperimentConfig = {
       rejectMessage: 'Attach suction tube to the narrow capillary limb.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'viscometer' },
     },
+    {
+      id: 'balance-pan-zone',
+      label: 'Weigh on Digital Balance',
+      accepts: ['pycnometer'],
+      position: { x: 80, y: 72 },
+      size: { width: 18, height: 20 },
+      rejectMessage: 'Place the pycnometer onto the analytical balance pan.',
+    },
   ],
 
   // ── Bench ──
@@ -110,6 +146,8 @@ export const viscosityOstwald: ExperimentConfig = {
     backgroundElements: [
       { component: 'RetortStand', props: { hideLowerClamp: true }, position: { x: 44, y: 52 }, scale: 1.1 },
       { component: 'Stopwatch', position: { x: 78, y: 50 }, scale: 1.05 },
+      { component: 'WaterBath', position: { x: 18, y: 72 }, scale: 0.95 },
+      { component: 'DigitalBalance', position: { x: 80, y: 72 }, scale: 0.95 },
     ],
   },
 
@@ -242,6 +280,16 @@ export const viscosityOstwald: ExperimentConfig = {
 
   // ── Interactions ──
   interactions: [
+    {
+      id: 'inter-weigh-pycnometer',
+      trigger: { type: 'drop', source: 'pycnometer', target: 'balance-pan-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'pycnometer', zoneId: 'balance-pan-zone' },
+        { type: 'setFlag', key: 'pycnometerWeighed', value: true },
+        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'massGrams', value: 40.74 },
+        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'label', value: '40.740 g' },
+      ],
+    },
     {
       id: 'inter-mount',
       trigger: { type: 'drop', source: 'viscometer', target: 'stand-clamp-zone' },

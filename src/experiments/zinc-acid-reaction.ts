@@ -35,6 +35,27 @@ export const zincAcidReaction: ExperimentConfig = {
     { id: 'h2so4-bottle', component: 'ReagentBottle', label: 'Dilute H₂SO₄', icon: '🧴',
       initialProps: { liquidColor: 'rgba(56, 189, 248, 0.65)', label: 'Dil. H₂SO₄' } },
     { id: 'matchstick', component: 'Matchstick', label: 'Burning Matchstick', icon: '🔥' },
+    {
+      id: 'bunsen-burner',
+      component: 'BunsenBurner',
+      label: 'Bunsen Burner (Flame Source)',
+      icon: '🔥',
+      initialProps: { width: 85, height: 125, isLit: true },
+    },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 2.00, label: '2.000 g' },
+    },
+    {
+      id: 'thermometer',
+      component: 'Thermometer',
+      label: 'Laboratory Thermometer',
+      icon: '🌡️',
+      initialProps: { temperature: 25, width: 35, height: 150 },
+    },
   ],
 
   // ── Drop Zones ──
@@ -62,6 +83,8 @@ export const zincAcidReaction: ExperimentConfig = {
   bench: {
     backgroundElements: [
       { component: 'TestTubeStand', position: { x: 50, y: 66 }, scale: 1.0 },
+      { component: 'BunsenBurner', position: { x: 22, y: 72 }, scale: 0.95 },
+      { component: 'DigitalBalance', position: { x: 78, y: 72 }, scale: 0.95 },
     ],
   },
 

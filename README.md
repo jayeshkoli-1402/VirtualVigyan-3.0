@@ -1,6 +1,3 @@
-npm run dev
-
-
 # VirtualVigyan — Titration Demo
 
 An interactive 2D acid-base titration simulator built with React, TypeScript, and Vite.

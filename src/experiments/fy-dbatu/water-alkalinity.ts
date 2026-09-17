@@ -70,6 +70,20 @@ export const waterAlkalinity: ExperimentConfig = {
       icon: '🧪',
       initialProps: { liquidColor: 'rgba(249, 115, 22, 0.95)', label: 'MO' },
     },
+    {
+      id: 'measuring-cylinder',
+      component: 'MeasuringCylinder',
+      label: '100 mL Measuring Cylinder',
+      icon: '📏',
+      initialProps: { width: 68, height: 185, maxVolume: 100 },
+    },
+    {
+      id: 'digital-balance',
+      component: 'DigitalBalance',
+      label: 'Digital Analytical Balance',
+      icon: '⚖️',
+      initialProps: { width: 145, height: 105, massGrams: 0.106, label: '0.106 g' },
+    },
   ],
 
   // ── Drop Zones ──
@@ -118,6 +132,12 @@ export const waterAlkalinity: ExperimentConfig = {
         position: { x: 50, y: 38 },
         scale: 1.15,
         props: { label: 'Retort Stand' },
+      },
+      {
+        component: 'DigitalBalance',
+        position: { x: 80, y: 72 },
+        scale: 0.95,
+        props: { label: 'Analytical Balance' },
       },
     ],
   },

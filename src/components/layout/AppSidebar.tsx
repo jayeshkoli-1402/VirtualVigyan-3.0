@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../auth/AuthContext';
 
 export type NavItem =
   | 'home'
@@ -7,12 +8,14 @@ export type NavItem =
   | 'theory-notes'
   | 'progress'
   | 'teacher'
+  | 'auth'
   | 'settings'
   | 'about';
 
 interface AppSidebarProps {
   activeTab: NavItem;
   onSelectTab: (tab: NavItem) => void;
+  onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
   isMobile?: boolean;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -21,10 +24,12 @@ interface AppSidebarProps {
 export const AppSidebar: React.FC<AppSidebarProps> = ({
   activeTab,
   onSelectTab,
+  onNavigateToAuth,
   isMobile = false,
   isOpenMobile = false,
   onCloseMobile,
 }) => {
+  const { user, logout } = useAuth();
   const primaryNav = [
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'experiments', label: 'Experiments', icon: '🧪' },
@@ -232,8 +237,142 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
         </nav>
       </div>
 
-      {/* ── Bottom Section: Accessible Education Card & Brand Footer ── */}
-      <div style={{ marginTop: 24, paddingTop: 12 }}>
+      {/* ── Bottom Section: Account Card & Accessible Education ── */}
+      <div style={{ marginTop: 20, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+        {/* User Account / Auth Card */}
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: user
+              ? 'var(--bg-secondary)'
+              : 'linear-gradient(135deg, rgba(5, 150, 105, 0.08), rgba(2, 132, 199, 0.08))',
+            border: '1px solid var(--border)',
+            marginBottom: 12,
+          }}
+        >
+          {user ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                  <span style={{ fontSize: 16 }}>{user.avatar || '👤'}</span>
+                  <div
+                    style={{
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {user.name}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    background: user.role === 'teacher' ? '#0284c7' : user.role === 'admin' ? '#7c3aed' : '#059669',
+                    color: '#fff',
+                    flexShrink: 0,
+                  }}
+                >
+                  {user.role}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                <button
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth(user.role === 'teacher' ? 'teacher' : 'student');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: '#2563eb',
+                  }}
+                >
+                  Switch / Re-login
+                </button>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                <button
+                  onClick={logout}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: '#ef4444',
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
+                Student & Teacher Portal
+              </div>
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.25 }}>
+                Sign in to save scores and manage lab cohorts.
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  id="btn-sidebar-student-login"
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth('student');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    background: '#059669',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                  }}
+                >
+                  🎓 Student
+                </button>
+                <button
+                  id="btn-sidebar-teacher-login"
+                  onClick={() => {
+                    if (onNavigateToAuth) onNavigateToAuth('teacher');
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    flex: 1,
+                    padding: '6px 8px',
+                    borderRadius: 8,
+                    background: '#0284c7',
+                    color: '#ffffff',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)',
+                  }}
+                >
+                  👨‍🏫 Teacher
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Leaf / Mission Card */}
         <div
           style={{

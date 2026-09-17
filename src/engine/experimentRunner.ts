@@ -465,6 +465,12 @@ export function createExperimentReducer(
         ];
         for (const key of titrationKeys) {
           if (newVariables[key] !== undefined) {
+            // Guard against advancing subsequent titration variables before their step
+            if (key === 'stdEdtaVolume' && state.flags['flaskCleared']) continue;
+            if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
+            if (key === 'volumeA' && state.flags['pEndpointReached']) continue;
+            if (key === 'volumeB' && !state.flags['pEndpointReached']) continue;
+
             newVariables[key] = Math.round(((newVariables[key] as number) + flowAmount) * 1000) / 1000;
           }
         }

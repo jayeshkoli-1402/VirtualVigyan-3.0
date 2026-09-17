@@ -749,6 +749,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     extraProps?.titrating
   );
 
+
   const handleSetOpen = React.useCallback((openVal: number) => {
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
     setLocalOpen(clamped);
@@ -761,21 +762,13 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
   }, [extraProps, id]);
 
   const stepUpFlow = React.useCallback(() => {
-    let nextOpen = 0.20;
-    if (stopcockOpen === 0) nextOpen = 0.20;
-    else if (stopcockOpen < 0.35) nextOpen = 0.50;
-    else if (stopcockOpen < 0.70) nextOpen = 0.80;
-    else nextOpen = 1.00;
+    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen]);
 
   const stepDownFlow = React.useCallback(() => {
-    let nextOpen = 0;
-    if (stopcockOpen > 0.85) nextOpen = 0.50;
-    else if (stopcockOpen > 0.35) nextOpen = 0.20;
-    else nextOpen = 0;
-    handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+    handleSetOpen(0);
+  }, [handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -825,19 +818,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     }
   }, [stepUpFlow, stepDownFlow]);
 
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
+  const hasSpecificVar =
     variables.buretteReading !== undefined ||
     variables.kohVolume !== undefined ||
     variables.naohVolume !== undefined ||
@@ -846,6 +827,23 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     variables.stdEdtaVolume !== undefined ||
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
+  const hasVolumeVar = hasSpecificVar || variables.volumeAdded !== undefined;
+
+  const edtaVol = flags?.buretteRefilled
+    ? (variables.sampleEdtaVolume ?? 0)
+    : (variables.stdEdtaVolume ?? 0);
+
+  const currentVolume = hasSpecificVar
+    ? (variables.buretteReading ?? 0) +
+      (variables.kohVolume ?? 0) +
+      (variables.naohVolume ?? 0) +
+      (variables.volumeA ?? 0) +
+      (variables.volumeB ?? 0) +
+      edtaVol +
+      (variables.thiosulphateVolume ?? 0)
+    : (variables.volumeAdded ?? 0);
+
+  const maxVolume = 50;
 
   const isBuretteFilled = Boolean(
     flags?.buretteFilled === true ||
@@ -1105,31 +1103,26 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.20);
+            handleSetOpen(0.40);
           }}
         >
           <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
             ↻ Click Right to Open
           </text>
           <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
-            Slow Drop (20%)
+            Controlled Flow
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable) */}
+      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
       {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 14}, ${buretteBottom + 8})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            let nextOpen = 0;
-            if (stopcockOpen < 0.35) nextOpen = 0.50;
-            else if (stopcockOpen < 0.70) nextOpen = 0.80;
-            else if (stopcockOpen < 0.95) nextOpen = 1.00;
-            else nextOpen = 0;
-            handleSetOpen(nextOpen);
+            handleSetOpen(0);
           }}
         >
           <rect x="-2" y="-7" width="62" height="13" rx="3" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
@@ -1590,6 +1583,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     extraProps?.titrating
   );
 
+
   const handleSetOpen = React.useCallback((openVal: number) => {
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
     setLocalOpen(clamped);
@@ -1602,21 +1596,13 @@ const BuretteStand: React.FC<ApparatusProps> = ({
   }, [extraProps, id]);
 
   const stepUpFlow = React.useCallback(() => {
-    let nextOpen = 0.20;
-    if (stopcockOpen === 0) nextOpen = 0.20;
-    else if (stopcockOpen < 0.35) nextOpen = 0.50;
-    else if (stopcockOpen < 0.70) nextOpen = 0.80;
-    else nextOpen = 1.00;
+    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen]);
 
   const stepDownFlow = React.useCallback(() => {
-    let nextOpen = 0;
-    if (stopcockOpen > 0.85) nextOpen = 0.50;
-    else if (stopcockOpen > 0.35) nextOpen = 0.20;
-    else nextOpen = 0;
-    handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+    handleSetOpen(0);
+  }, [handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -1666,19 +1652,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     }
   }, [stepUpFlow, stepDownFlow]);
 
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
+  const hasSpecificVar =
     variables.buretteReading !== undefined ||
     variables.kohVolume !== undefined ||
     variables.naohVolume !== undefined ||
@@ -1687,6 +1661,23 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     variables.stdEdtaVolume !== undefined ||
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
+  const hasVolumeVar = hasSpecificVar || variables.volumeAdded !== undefined;
+
+  const edtaVol = flags?.buretteRefilled
+    ? (variables.sampleEdtaVolume ?? 0)
+    : (variables.stdEdtaVolume ?? 0);
+
+  const currentVolume = hasSpecificVar
+    ? (variables.buretteReading ?? 0) +
+      (variables.kohVolume ?? 0) +
+      (variables.naohVolume ?? 0) +
+      (variables.volumeA ?? 0) +
+      (variables.volumeB ?? 0) +
+      edtaVol +
+      (variables.thiosulphateVolume ?? 0)
+    : (variables.volumeAdded ?? 0);
+
+  const maxVolume = 50;
 
   const isBuretteFilled = Boolean(
     flags?.buretteFilled === true ||
@@ -1964,31 +1955,26 @@ const BuretteStand: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.20);
+            handleSetOpen(0.40);
           }}
         >
           <text x="0" y="0" fill="#2563eb" fontSize="5.5" fontWeight={700} fontFamily="var(--font-sans)">
             ↻ Click Right to Open
           </text>
           <text x="0" y="6" fill="#64748b" fontSize="4.5" fontFamily="var(--font-sans)">
-            Slow Drop (20%)
+            Controlled Flow
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable to cycle/step) */}
+      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
       {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 16}, ${tubeBottom + 10})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            let nextOpen = 0;
-            if (stopcockOpen < 0.35) nextOpen = 0.50;
-            else if (stopcockOpen < 0.70) nextOpen = 0.80;
-            else if (stopcockOpen < 0.95) nextOpen = 1.00;
-            else nextOpen = 0;
-            handleSetOpen(nextOpen);
+            handleSetOpen(0);
           }}
         >
           <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />

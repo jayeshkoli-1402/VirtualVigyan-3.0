@@ -49,10 +49,17 @@ const AppContent: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
-  const [showLanding, setShowLanding] = useState(true);
+  const [showLanding, setShowLanding] = useState(() => {
+    const stored = sessionStorage.getItem('vv_showLanding');
+    return stored !== null ? stored === 'true' : true;
+  });
 
-  const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
-  const [activeTab, setActiveTab] = useState<NavItem>('home');
+  const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>(() => {
+    return (sessionStorage.getItem('vv_activeExperiment') as ActiveExperiment) || 'select';
+  });
+  const [activeTab, setActiveTab] = useState<NavItem>(() => {
+    return (sessionStorage.getItem('vv_activeTab') as NavItem) || 'home';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -82,6 +89,19 @@ const AppContent: React.FC = () => {
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
   };
+
+  // Persist navigation state to sessionStorage for refresh resilience
+  useEffect(() => {
+    sessionStorage.setItem('vv_showLanding', String(showLanding));
+  }, [showLanding]);
+
+  useEffect(() => {
+    sessionStorage.setItem('vv_activeExperiment', activeExperiment);
+  }, [activeExperiment]);
+
+  useEffect(() => {
+    sessionStorage.setItem('vv_activeTab', activeTab);
+  }, [activeTab]);
 
   // dnd-kit sensors: pointer (mouse) + touch
   const pointerSensor = useSensor(PointerSensor, {

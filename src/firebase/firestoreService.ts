@@ -108,7 +108,7 @@ export async function getAllUserProfiles(): Promise<User[]> {
     const usersCol = collection(db, 'users');
     const snap = await getDocs(usersCol);
     const users: User[] = [];
-    snap.forEach((docSnap) => {
+    snap.forEach((docSnap: any) => {
       users.push(docSnap.data() as User);
     });
     notifyFirestoreStatus(false);

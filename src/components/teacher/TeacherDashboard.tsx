@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface TeacherDashboardProps {
   onLaunchExperiment: (id: string) => void;
@@ -73,22 +74,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <div
-            className="clay-badge"
-            style={{
-              width: 62,
-              height: 62,
-              borderRadius: 20,
-              background: 'linear-gradient(145deg, #38bdf8, #0284c7)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 30,
-              boxShadow: '6px 8px 20px rgba(2, 132, 199, 0.35), inset 2px 2px 4px rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            👨‍🏫
-          </div>
+          <VirtualVigyanLogo size={48} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <h2

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
 import type { UserRole } from '../../auth/types';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface AdminPanelProps {
   onLaunchExperiment: (id: string) => void;
@@ -56,22 +57,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
-          <div
-            className="clay-badge"
-            style={{
-              width: 62,
-              height: 62,
-              borderRadius: 20,
-              background: 'linear-gradient(145deg, #a855f7, #7c3aed)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 30,
-              boxShadow: '6px 8px 20px rgba(124, 58, 237, 0.35), inset 2px 2px 4px rgba(255, 255, 255, 0.5)',
-            }}
-          >
-            🛡️
-          </div>
+          <VirtualVigyanLogo size={48} />
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <h2

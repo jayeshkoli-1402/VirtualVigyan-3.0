@@ -203,8 +203,8 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
           {/* Volume */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
             <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Total Volume</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0284c7' }}>
-              {mixture.volumeMl.toFixed(1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>mL</span>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: mixture.volumeMl > 0 ? '#0284c7' : '#94a3b8' }}>
+              {mixture.volumeMl === 0 ? '0.0' : mixture.volumeMl.toFixed(mixture.volumeMl % 0.1 !== 0 ? 2 : 1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>mL</span>
             </div>
           </div>
 

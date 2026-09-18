@@ -34,6 +34,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
         style={{
           maxWidth: '520px',
           width: '100%',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: '16px',
           padding: '24px',

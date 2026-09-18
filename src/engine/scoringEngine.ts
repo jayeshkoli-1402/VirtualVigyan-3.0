@@ -199,23 +199,44 @@ function evaluateSingle(
       }
 
       const studentAnswer = state.studentAnswers[field.id] ?? 0;
-      const expectedValue =
-        field.expectedValue !== undefined
-          ? field.expectedValue
-          : computeFormula(field.expectedFormulaName ?? '', state.variables);
+      const targetAnswer =
+        evaluator.actualStandard !== undefined
+          ? evaluator.actualStandard
+          : (field.expectedValue !== undefined
+              ? field.expectedValue
+              : computeFormula(field.expectedFormulaName ?? '', state.variables));
 
+      const deviation = Math.abs(studentAnswer - targetAnswer);
       const tolerance = field.toleranceType === 'absolute'
         ? field.tolerance
-        : expectedValue * field.tolerance;
+        : targetAnswer * field.tolerance;
 
-      const correct = Math.abs(studentAnswer - expectedValue) <= Math.abs(tolerance);
+      if (evaluator.proportional) {
+        const errorFraction = targetAnswer !== 0 ? deviation / Math.abs(targetAnswer) : deviation;
+        let scoreRatio = 0.10;
+        if (errorFraction <= 0.03) scoreRatio = 1.0;
+        else if (errorFraction <= 0.08) scoreRatio = 0.90;
+        else if (errorFraction <= 0.15) scoreRatio = 0.75;
+        else if (errorFraction <= 0.25) scoreRatio = 0.60;
+        else if (errorFraction <= 0.40) scoreRatio = 0.40;
+        else if (errorFraction <= 0.60) scoreRatio = 0.20;
+
+        const pts = Math.round(scoreRatio * evaluator.correctPoints * 10) / 10;
+        const accuracyPct = Math.max(0, Math.min(100, Math.round((1 - errorFraction) * 1000) / 10));
+        return {
+          points: pts,
+          explanation: `Entered: ${studentAnswer} | Actual: ${targetAnswer} (Accuracy: ${accuracyPct}%, Error: ${(errorFraction * 100).toFixed(1)}%) → ${pts}/${evaluator.correctPoints} pts awarded`,
+        };
+      }
+
+      const correct = deviation <= Math.abs(tolerance);
       const pts = correct ? evaluator.correctPoints : (evaluator.incorrectPoints ?? 0);
 
       return {
         points: pts,
         explanation: correct
-          ? `Calculation correct (${studentAnswer.toFixed(4)} ≈ ${expectedValue.toFixed(4)}) → ${pts} points`
-          : `Calculation incorrect (${studentAnswer.toFixed(4)} vs expected ${expectedValue.toFixed(4)}) → ${pts} points`,
+          ? `Calculation correct (${studentAnswer.toFixed(4)} ≈ ${targetAnswer.toFixed(4)}) → ${pts} points`
+          : `Calculation incorrect (${studentAnswer.toFixed(4)} vs expected ${targetAnswer.toFixed(4)}) → ${pts} points`,
       };
     }
 

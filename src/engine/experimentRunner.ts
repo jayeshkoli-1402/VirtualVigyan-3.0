@@ -35,6 +35,31 @@ export function detectChemicalAddition(
 ): ChemicalAddition | null {
   const norm = itemId.toLowerCase();
 
+  // Glassware, hardware and measurement apparatus are NOT chemical additions
+  if (
+    norm === 'viscometer' ||
+    norm === 'pycnometer' ||
+    norm === 'burette' ||
+    norm === 'conical-flask' ||
+    norm === 'flask' ||
+    norm === 'beaker' ||
+    norm === 'test-tube' ||
+    norm === 'bod-bottle' ||
+    norm === 'measuring-cylinder' ||
+    norm.includes('stand') ||
+    norm.includes('clamp') ||
+    norm.includes('balance') ||
+    norm.includes('thermometer') ||
+    norm.includes('stopwatch') ||
+    norm.includes('bath') ||
+    norm.includes('burner') ||
+    norm.includes('suction') ||
+    norm.includes('bulb') ||
+    norm.includes('matchstick')
+  ) {
+    return null;
+  }
+
   // Mineral & Organic Acids
   if (norm.includes('hcl')) {
     return { substanceId: 'hcl', volumeMl: 10, molarity: state?.variables['molarityHCl'] ?? 0.1 };
@@ -121,7 +146,7 @@ export function detectChemicalAddition(
   }
 
   // Indicators & Complexation
-  if (norm.includes('phenolphthalein') || (norm.includes('indicator') && !norm.includes('methyl') && !norm.includes('ebt'))) {
+  if (norm.includes('phenolphthalein') || (norm.includes('indicator') && !norm.includes('methyl') && !norm.includes('ebt') && !norm.includes('starch'))) {
     return { substanceId: 'phenolphthalein', volumeMl: 0.1, molarity: 0.005 };
   }
   if (norm.includes('methyl') || norm.includes('methyl-orange')) {
@@ -130,6 +155,12 @@ export function detectChemicalAddition(
   if (norm.includes('ebt') || norm.includes('eriochrome')) {
     return { substanceId: 'eriochrome_black_t', volumeMl: 0.1, molarity: 0.002 };
   }
+  if (norm.includes('starch')) {
+    return { substanceId: 'starch', volumeMl: 1.0, molarity: 0.01 };
+  }
+  if (norm.includes('k2cro4') || norm.includes('chromate')) {
+    return { substanceId: 'k2cro4', volumeMl: 1.0, molarity: 0.05 };
+  }
   if (norm.includes('buffer') || norm.includes('nh4cl')) {
     return { substanceId: 'buffer_ph10', volumeMl: 2.0, molarity: 1.0 };
   }
@@ -137,12 +168,85 @@ export function detectChemicalAddition(
     return { substanceId: 'edta', volumeMl: 5.0, molarity: 0.01 };
   }
 
-  // Solvents
-  if (norm.includes('water') || norm.includes('distilled') || norm === 'h2o') {
-    return { substanceId: 'h2o', volumeMl: 20 };
+  // Solvents & Real Lab Samples
+  if (norm.includes('oil')) {
+    return { substanceId: 'oil_sample', volumeMl: 10 };
+  }
+  if (norm.includes('alcohol') || norm.includes('ethanol')) {
+    return { substanceId: 'neutral_alcohol', volumeMl: 25 };
+  }
+  if (norm.includes('acetone') || norm.includes('rinse')) {
+    return { substanceId: 'acetone', volumeMl: 15 };
+  }
+  if (norm.includes('chromic')) {
+    return { substanceId: 'chromic_acid', volumeMl: 15 };
+  }
+  if (norm.includes('mnso4') || norm.includes('manganous')) {
+    return { substanceId: 'mnso4', volumeMl: 2, molarity: 0.2 };
+  }
+  if (norm.includes('alkali-iodide') || norm.includes('azide')) {
+    return { substanceId: 'ki', volumeMl: 2, molarity: 0.2 };
+  }
+  if (norm.includes('liquid-sample') || (norm.includes('sample') && norm.includes('visco'))) {
+    return { substanceId: 'liquid_sample_a', volumeMl: 15 };
+  }
+  if (norm.includes('cacl2') || norm.includes('hard-water') || norm.includes('std-cacl2')) {
+    return { substanceId: 'cacl2', volumeMl: 25, molarity: 0.01 };
+  }
+  if (norm.includes('water') || norm.includes('distilled') || norm === 'h2o' || norm.includes('cond-water')) {
+    return { substanceId: 'h2o', volumeMl: 25 };
+  }
+  if (norm.includes('sample')) {
+    return { substanceId: 'h2o', volumeMl: 25 };
   }
 
   return null;
+}
+
+/** Canonical list of chemical reaction and measurement vessels */
+export const REACTION_VESSEL_COMPONENTS = [
+  'ConicalFlask',
+  'Beaker',
+  'BODBottle',
+  'TestTube',
+  'VolumetricFlask',
+  'MeasuringCylinder',
+  'OstwaldViscometer',
+  'Viscometer',
+  'SpecificGravityBottle',
+  'SeparatingFunnel',
+  'Calorimeter',
+];
+
+/** Helper to identify the active chemical titrant being dispensed from the burette */
+export function detectBuretteTitrant(
+  config: ExperimentConfig,
+  state?: ExperimentState,
+): { substanceId: string; molarity: number } {
+  const expId = config.id.toLowerCase();
+  if (expId.includes('edta') || expId.includes('hardness')) {
+    return { substanceId: 'edta', molarity: (state?.variables['edtaMolarity'] as number) ?? 0.01 };
+  }
+  if (expId.includes('alkalinity')) {
+    const norm = state?.variables['normalityAcid'] ? (state.variables['normalityAcid'] as number) / 2 : 0.01;
+    return { substanceId: 'h2so4', molarity: norm };
+  }
+  if (expId.includes('acidity')) {
+    return { substanceId: 'naoh', molarity: (state?.variables['normalityBase'] as number) ?? 0.02 };
+  }
+  if (expId.includes('chloride') || expId.includes('mohr')) {
+    return { substanceId: 'agno3', molarity: (state?.variables['normalityAgNO3'] as number) ?? 0.02 };
+  }
+  if (expId.includes('winkler') || expId.includes('oxygen') || expId.includes('dissolved')) {
+    return { substanceId: 'na2s2o3', molarity: (state?.variables['thiosulphateNormality'] as number) ?? 0.025 };
+  }
+  if (expId.includes('acid-value') || expId.includes('oil')) {
+    return { substanceId: 'koh', molarity: (state?.variables['normalityKOH'] as number) ?? 0.1 };
+  }
+  if (expId.includes('ph-metric') || expId.includes('conductometric')) {
+    return { substanceId: 'naoh', molarity: (state?.variables['molarityNaOH'] as number) ?? 0.1 };
+  }
+  return { substanceId: 'naoh', molarity: 0.1 };
 }
 
 /** Helper to locate which vessel an item is dropped into */
@@ -151,36 +255,74 @@ export function findTargetVesselId(
   config: ExperimentConfig,
   state: ExperimentState,
 ): string | null {
-  const vesselTypes = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'MeasuringCylinder'];
+  const zLower = zoneId.toLowerCase();
 
-  // 1. Check if zoneId directly matches a placed vessel
+  // If the zone is explicitly for mounting hardware, clamps, balance or heating, it is NOT a vessel addition zone
+  if (
+    zLower.includes('clamp') ||
+    zLower.includes('stand') ||
+    zLower.includes('balance') ||
+    zLower.includes('bath') ||
+    zLower.includes('burner')
+  ) {
+    return null;
+  }
+
+  // 1. Precise keyword matching in zoneId against apparatus IDs and components
+  for (const app of config.apparatus) {
+    if (!REACTION_VESSEL_COMPONENTS.includes(app.component)) continue;
+    const appId = app.id.toLowerCase();
+    const appComp = app.component.toLowerCase();
+
+    if (
+      (zLower.includes('beaker') && (appId.includes('beaker') || appComp.includes('beaker'))) ||
+      ((zLower.includes('flask') || zLower.includes('conical')) && (appId.includes('flask') || appComp.includes('flask'))) ||
+      (zLower.includes('visco') && (appId.includes('visco') || appComp.includes('visco'))) ||
+      (zLower.includes('tube') && (appId.includes('tube') || appComp.includes('tube'))) ||
+      (zLower.includes('bottle') && (appId.includes('bottle') || appComp.includes('bottle'))) ||
+      (zLower.includes('cylinder') && (appId.includes('cylinder') || appComp.includes('cylinder')))
+    ) {
+      return app.id;
+    }
+  }
+
+  // 2. Check if zoneId directly matches a placed vessel
   for (const [appId, placedZone] of Object.entries(state.placedApparatus)) {
     if (placedZone === zoneId) {
       const app = config.apparatus.find(a => a.id === appId);
-      if (app && vesselTypes.includes(app.component)) {
+      if (app && REACTION_VESSEL_COMPONENTS.includes(app.component)) {
         return appId;
       }
     }
   }
 
-  // 2. Check if any vessel matches the zone name (e.g. 'flask-zone' -> 'flask')
-  const cleanZone = zoneId.replace('-zone', '');
-  const directMatch = config.apparatus.find(a => a.id === cleanZone || a.id.includes(cleanZone));
-  if (directMatch && vesselTypes.includes(directMatch.component)) {
-    return directMatch.id;
-  }
-
-  // 3. Fallback to first placed vessel on the bench
-  for (const appId of Object.keys(state.placedApparatus)) {
-    const app = config.apparatus.find(a => a.id === appId);
-    if (app && vesselTypes.includes(app.component)) {
-      return appId;
+  // 3. If zone explicitly specifies a vessel mouth or opening, match with active placed vessel
+  if (zLower.includes('mouth') || zLower.includes('limb') || zLower.includes('opening')) {
+    for (const preferred of REACTION_VESSEL_COMPONENTS) {
+      for (const appId of Object.keys(state.placedApparatus)) {
+        const app = config.apparatus.find(a => a.id === appId);
+        if (app && app.component === preferred) {
+          return appId;
+        }
+      }
     }
   }
 
-  // 4. Default to first vessel defined in config
-  const anyVessel = config.apparatus.find(a => vesselTypes.includes(a.component));
-  return anyVessel ? anyVessel.id : null;
+  return null;
+}
+
+/** Calculate visual liquid level (0.0 to 0.95) based on physical volume and vessel type */
+export function calculateVesselLevel(volumeMl: number, component?: string): number {
+  if (volumeMl <= 0) return 0;
+  let maxCap = 100;
+  if (component === 'TestTube') maxCap = 25;
+  else if (component === 'Beaker') maxCap = 100;
+  else if (component === 'ConicalFlask') maxCap = 150;
+  else if (component === 'MeasuringCylinder') maxCap = 100;
+  else if (component === 'BODBottle') maxCap = 300;
+  else if (component === 'VolumetricFlask') maxCap = 100;
+  else if (component === 'Viscometer' || component === 'OstwaldViscometer') maxCap = 25;
+  return Math.min(0.95, Math.max(0.18, Math.round((volumeMl / maxCap) * 100) / 100));
 }
 
 
@@ -296,6 +438,19 @@ function applyEffects(
             },
           },
         };
+
+        // If liquidLevel is reset to 0 (vessel cleaned, drained, or emptied), reset its mixture volume to 0 mL
+        if (effect.prop === 'liquidLevel' && effect.value === 0) {
+          if (newState.vesselMixtures?.[effect.apparatusId]) {
+            newState = {
+              ...newState,
+              vesselMixtures: {
+                ...newState.vesselMixtures,
+                [effect.apparatusId]: createEmptyMixture(effect.apparatusId, 0),
+              },
+            };
+          }
+        }
         break;
 
       case 'addMistake':
@@ -409,17 +564,15 @@ export function createInitialState(config: ExperimentConfig): ExperimentState {
 
   const initialApparatusProps: Record<string, Record<string, unknown>> = {};
   const initialVesselMixtures: Record<string, VesselMixture> = {};
-  const vesselComponents = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'MeasuringCylinder'];
-
   for (const app of config.apparatus) {
     if (app.initialProps) {
       initialApparatusProps[app.id] = { ...app.initialProps };
     }
-    if (vesselComponents.includes(app.component)) {
-      const initVol =
-        (app.initialProps?.liquidVolume as number) ??
-        (app.initialProps?.volume as number) ??
-        (config.initialVariables?.['sampleVolume'] ?? 0);
+    if (REACTION_VESSEL_COMPONENTS.includes(app.component)) {
+      const initLevel = (app.initialProps?.liquidLevel as number) ?? 0;
+      const initVol = initLevel > 0
+        ? ((app.initialProps?.liquidVolume as number) ?? (app.initialProps?.volume as number) ?? Math.round(initLevel * 100))
+        : ((app.initialProps?.liquidVolume as number) ?? 0);
       initialVesselMixtures[app.id] = createEmptyMixture(app.id, initVol);
     }
   }
@@ -440,6 +593,8 @@ export function createInitialState(config: ExperimentConfig): ExperimentState {
     finished: false,
     vesselMixtures: initialVesselMixtures,
     activeVesselInspectionId: null,
+    activeAnimationInteractionId: null,
+    activeAnimation: null,
   };
 }
 
@@ -492,19 +647,33 @@ export function createExperimentReducer(
             const updatedMix = mixChemicals(currentMix, chemAddition);
             mixtures[targetVessel] = updatedMix;
 
+            const appSpec = config.apparatus.find(a => a.id === targetVessel);
+            const newLevel = calculateVesselLevel(updatedMix.volumeMl, appSpec?.component);
+
             const latestEvent = updatedMix.recentEvents[0];
             const reactionMsg = latestEvent
               ? `🧪 Reaction: ${latestEvent.equation} (ΔT: +${latestEvent.deltaT.toFixed(1)}°C)`
               : `Added ${chemAddition.substanceId.toUpperCase()} to ${targetVessel}.`;
 
+            const isDropper = itemId.includes('dropper') || itemId.includes('indicator');
+
             return {
               ...state,
               vesselMixtures: mixtures,
+              animations: { ...state.animations, isPouring: true },
+              activeAnimationInteractionId: null,
+              activeAnimation: {
+                type: isDropper ? 'drip' : 'pour',
+                sourceApparatusId: itemId,
+                targetZoneId: zoneId,
+                color: updatedMix.dominantColor,
+              },
               apparatusProps: {
                 ...state.apparatusProps,
                 [targetVessel]: {
                   ...(state.apparatusProps[targetVessel] ?? {}),
                   liquidColor: updatedMix.dominantColor,
+                  liquidLevel: newLevel,
                   temperature: updatedMix.temperatureC,
                   pH: updatedMix.pH,
                   effervescenceRate: updatedMix.effervescenceRate,
@@ -553,6 +722,14 @@ export function createExperimentReducer(
           }
         }
 
+        // Determine exact animation type and targets for FluidDynamicsLayer
+        const animType = interaction.animation?.type ?? (itemId.includes('dropper') || itemId.includes('indicator') ? 'drip' : 'pour');
+        const activeAnimObj = {
+          type: animType,
+          sourceApparatusId: interaction.trigger.type === 'drop' ? interaction.trigger.source : itemId,
+          targetZoneId: interaction.trigger.type === 'drop' ? interaction.trigger.target : zoneId,
+        };
+
         // Apply effects
         let newState: ExperimentState;
 
@@ -562,29 +739,54 @@ export function createExperimentReducer(
           newState = {
             ...state,
             animations: { ...state.animations, [animFlag]: true },
+            activeAnimationInteractionId: interaction.id,
+            activeAnimation: activeAnimObj,
           };
         } else {
           // Apply effects immediately
           newState = applyEffects(state, interaction.effects);
 
           // Start animation if defined (but effects already applied)
-          if (interaction.animation?.animatingFlag) {
+          const animFlag = interaction.animation?.animatingFlag ?? (interaction.animation ? `_anim_${interaction.id}` : null);
+          if (animFlag) {
             newState = {
               ...newState,
-              animations: { ...newState.animations, [interaction.animation.animatingFlag]: true },
+              animations: { ...newState.animations, [animFlag]: true },
+              activeAnimationInteractionId: interaction.id,
+              activeAnimation: activeAnimObj,
             };
           }
         }
 
-        // Apply stoichiometry reaction solver to vessel
+        // Apply stoichiometry reaction solver and ensure liquid level is visibly updated for all experiments
         const chemAddition = detectChemicalAddition(itemId, config, state);
         const targetVessel = findTargetVesselId(zoneId, config, state);
 
-        if (chemAddition && targetVessel) {
+        const emptiesVessel = interaction.effects?.some(
+          e => e.type === 'setApparatusProp' && e.apparatusId === targetVessel && e.prop === 'liquidLevel' && e.value === 0
+        );
+
+        if (!emptiesVessel && chemAddition && targetVessel && itemId !== targetVessel) {
           const mixtures = { ...(newState.vesselMixtures ?? {}) };
-          const currentMix = mixtures[targetVessel] ?? createEmptyMixture(targetVessel);
+          const currentMix = mixtures[targetVessel] ?? createEmptyMixture(targetVessel, 0);
           const updatedMix = mixChemicals(currentMix, chemAddition);
           mixtures[targetVessel] = updatedMix;
+
+          const appSpec = config.apparatus.find(a => a.id === targetVessel);
+          const newLevel = calculateVesselLevel(updatedMix.volumeMl, appSpec?.component);
+
+          // Check if interaction effects explicitly specify liquidLevel or liquidColor
+          const explicitLevel = interaction.effects?.find(
+            (e): e is Extract<InteractionEffect, { type: 'setApparatusProp' }> =>
+              e.type === 'setApparatusProp' && e.apparatusId === targetVessel && e.prop === 'liquidLevel'
+          );
+          const explicitColor = interaction.effects?.find(
+            (e): e is Extract<InteractionEffect, { type: 'setApparatusProp' }> =>
+              e.type === 'setApparatusProp' && e.apparatusId === targetVessel && e.prop === 'liquidColor'
+          );
+
+          const finalLevel = explicitLevel ? (explicitLevel.value as number) : newLevel;
+          const finalColor = explicitColor ? (explicitColor.value as string) : updatedMix.dominantColor;
 
           newState = {
             ...newState,
@@ -593,7 +795,8 @@ export function createExperimentReducer(
               ...newState.apparatusProps,
               [targetVessel]: {
                 ...(newState.apparatusProps[targetVessel] ?? {}),
-                liquidColor: updatedMix.dominantColor,
+                liquidColor: finalColor,
+                liquidLevel: finalLevel,
                 temperature: updatedMix.temperatureC,
                 pH: updatedMix.pH,
                 effervescenceRate: updatedMix.effervescenceRate,
@@ -669,8 +872,33 @@ export function createExperimentReducer(
 
       // ── Stopcock (Continuous Flow) ──
       case 'SET_STOPCOCK': {
-        const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
-        const openAmount = isBuretteFilled === false ? 0 : Math.max(0, Math.min(1, action.payload.openAmount));
+        const hasBurette = Boolean(
+          config.apparatus.some(a => a.component === 'Burette') ||
+          config.bench.backgroundElements?.some(b => b.component === 'Burette' || b.component === 'BuretteStand') ||
+          Object.keys(state.placedApparatus).some(id => id.includes('burette')) ||
+          config.steps.some(s => s.id === 'titrating' || s.id.includes('titrat'))
+        );
+        if (!hasBurette) return state;
+
+        const isBuretteFilled = Boolean(
+          hasBurette && (
+            state.flags.buretteFilled === true ||
+            state.flags['burette-filled'] === true ||
+            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
+          ) &&
+          state.flags.buretteFilled !== false &&
+          state.flags['burette-filled'] !== false
+        );
+
+        if (!isBuretteFilled && action.payload.openAmount > 0) {
+          return {
+            ...state,
+            variables: { ...state.variables, stopcockOpen: 0 },
+            mistakes: [...state.mistakes, 'Burette is empty! Fill the burette with solution before opening the stopcock.'],
+          };
+        }
+
+        const openAmount = isBuretteFilled ? Math.max(0, Math.min(1, action.payload.openAmount)) : 0;
         return {
           ...state,
           variables: { ...state.variables, stopcockOpen: openAmount },
@@ -678,12 +906,29 @@ export function createExperimentReducer(
       }
 
       case 'TICK_FLOW': {
+        const hasBurette = Boolean(
+          config.apparatus.some(a => a.component === 'Burette') ||
+          config.bench.backgroundElements?.some(b => b.component === 'Burette' || b.component === 'BuretteStand') ||
+          Object.keys(state.placedApparatus).some(id => id.includes('burette')) ||
+          config.steps.some(s => s.id === 'titrating' || s.id.includes('titrat'))
+        );
+        if (!hasBurette) return state;
+
         const stopcockOpen = state.variables['stopcockOpen'] ?? 0;
         if (stopcockOpen <= 0) return state;
 
-        // Check if burette is filled! If buretteFilled is explicitly false, do not flow liquid
-        const isBuretteFilled = state.flags.buretteFilled ?? state.flags['burette-filled'] ?? true;
-        if (isBuretteFilled === false) {
+        // Check if burette is filled! Strictly check filled status (default to FALSE)
+        const isBuretteFilled = Boolean(
+          hasBurette && (
+            state.flags.buretteFilled === true ||
+            state.flags['burette-filled'] === true ||
+            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
+          ) &&
+          state.flags.buretteFilled !== false &&
+          state.flags['burette-filled'] !== false
+        );
+
+        if (!isBuretteFilled) {
           return {
             ...state,
             variables: { ...state.variables, stopcockOpen: 0 },
@@ -691,7 +936,7 @@ export function createExperimentReducer(
           };
         }
 
-        const maxFlowRate = state.variables['maxFlowRate'] ?? 0.5; // mL/s default
+        const maxFlowRate = state.variables['maxFlowRate'] ?? 0.08; // mL/s default (calibrated for slow, focused, high-precision titration)
         const deltaSeconds = action.payload.deltaMs / 1000;
         const flowAmount = stopcockOpen * maxFlowRate * deltaSeconds;
         const newVariables = { ...state.variables };
@@ -706,7 +951,8 @@ export function createExperimentReducer(
           };
         }
 
-        newVariables['volumeAdded'] = Math.round((currentVolume + flowAmount) * 1000) / 1000;
+        const newVolume = Math.round((currentVolume + flowAmount) * 1000) / 1000;
+        newVariables['volumeAdded'] = newVolume;
 
         // Automatically increment specific experiment titration volume variables if they exist in variables
         const titrationKeys = [
@@ -721,14 +967,141 @@ export function createExperimentReducer(
         ];
         for (const key of titrationKeys) {
           if (newVariables[key] !== undefined) {
+            // Guard against advancing subsequent titration variables before their step
+            if (key === 'stdEdtaVolume' && state.flags['flaskCleared']) continue;
+            if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
+            if (key === 'volumeA' && state.flags['pEndpointReached']) continue;
+            if (key === 'volumeB' && !state.flags['pEndpointReached']) continue;
+
             newVariables[key] = Math.round(((newVariables[key] as number) + flowAmount) * 1000) / 1000;
           }
+        }
+
+        // Dynamically update receiving vessel's liquid level & burette's level!
+        const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
+        const apparatusProps = { ...state.apparatusProps };
+        apparatusProps['burette'] = {
+          ...(apparatusProps['burette'] ?? {}),
+          liquidLevel: buretteLevel,
+        };
+
+        const receivingVesselId =
+          findTargetVesselId('flask-mouth-zone', config, state) ??
+          findTargetVesselId('beaker-mouth-zone', config, state) ??
+          config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
+          'flask';
+
+        const mixtures = { ...(state.vesselMixtures ?? {}) };
+        if (receivingVesselId) {
+          const titrant = detectBuretteTitrant(config, state);
+          const currentMix = mixtures[receivingVesselId] ?? createEmptyMixture(receivingVesselId, 0);
+          const updatedMix = mixChemicals(currentMix, {
+            substanceId: titrant.substanceId,
+            volumeMl: flowAmount,
+            molarity: titrant.molarity,
+          });
+          mixtures[receivingVesselId] = updatedMix;
         }
 
         return {
           ...state,
           variables: newVariables,
+          apparatusProps,
+          vesselMixtures: mixtures,
           flags: { ...state.flags, isDropAnimating: stopcockOpen > 0 },
+        };
+      }
+
+      // ── Single Discrete Drop Addition (+0.05 mL) ──
+      case 'ADD_SINGLE_DROP': {
+        const hasBurette = Boolean(
+          config.apparatus.some(a => a.component === 'Burette') ||
+          config.bench.backgroundElements?.some(b => b.component === 'Burette' || b.component === 'BuretteStand') ||
+          Object.keys(state.placedApparatus).some(id => id.includes('burette')) ||
+          config.steps.some(s => s.id === 'titrating' || s.id.includes('titrat'))
+        );
+        if (!hasBurette) return state;
+
+        const isBuretteFilled = Boolean(
+          hasBurette && (
+            state.flags.buretteFilled === true ||
+            state.flags['burette-filled'] === true ||
+            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
+          ) &&
+          state.flags.buretteFilled !== false &&
+          state.flags['burette-filled'] !== false
+        );
+
+        if (!isBuretteFilled) {
+          return {
+            ...state,
+            mistakes: [...state.mistakes, 'Burette is empty! Fill the burette before dispensing drops.'],
+          };
+        }
+
+        const dropVol = action.payload?.dropVolumeMl ?? 0.05; // 0.05 mL standard analytical drop
+        const newVariables = { ...state.variables };
+        const currentVolume = newVariables['volumeAdded'] ?? 0;
+        if (currentVolume >= 50) return state;
+
+        const newVolume = Math.round((currentVolume + dropVol) * 1000) / 1000;
+        newVariables['volumeAdded'] = newVolume;
+
+        const titrationKeys = [
+          'kohVolume',
+          'stdEdtaVolume',
+          'sampleEdtaVolume',
+          'volumeA',
+          'volumeB',
+          'thiosulphateVolume',
+          'naohVolume',
+          'buretteReading',
+        ];
+        for (const key of titrationKeys) {
+          if (newVariables[key] !== undefined) {
+            newVariables[key] = Math.round(((newVariables[key] as number) + dropVol) * 1000) / 1000;
+          }
+        }
+
+        const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
+        const apparatusProps = { ...state.apparatusProps };
+        apparatusProps['burette'] = {
+          ...(apparatusProps['burette'] ?? {}),
+          liquidLevel: buretteLevel,
+        };
+
+        const receivingVesselId =
+          findTargetVesselId('flask-mouth-zone', config, state) ??
+          findTargetVesselId('beaker-mouth-zone', config, state) ??
+          config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
+          'flask';
+
+        if (receivingVesselId && apparatusProps[receivingVesselId]) {
+          const currentVesselLevel = (apparatusProps[receivingVesselId].liquidLevel as number) ?? 0.35;
+          apparatusProps[receivingVesselId] = {
+            ...apparatusProps[receivingVesselId],
+            liquidLevel: Math.min(0.95, Math.round((currentVesselLevel + (dropVol / 80)) * 1000) / 1000),
+          };
+        }
+
+        const mixtures = { ...(state.vesselMixtures ?? {}) };
+        if (receivingVesselId) {
+          const titrant = detectBuretteTitrant(config, state);
+          const currentMix = mixtures[receivingVesselId] ?? createEmptyMixture(receivingVesselId, 0);
+          const updatedMix = mixChemicals(currentMix, {
+            substanceId: titrant.substanceId,
+            volumeMl: dropVol,
+            molarity: titrant.molarity,
+          });
+          mixtures[receivingVesselId] = updatedMix;
+        }
+
+        return {
+          ...state,
+          variables: newVariables,
+          apparatusProps,
+          vesselMixtures: mixtures,
+          flags: { ...state.flags, isDropAnimating: true },
         };
       }
 
@@ -802,10 +1175,13 @@ export function createExperimentReducer(
       case 'ANIMATION_COMPLETE': {
         const { animationFlag, interactionId } = action.payload;
 
-        // Clear animation flag
+        // Clear animation flag and active animation metadata
         let newState: ExperimentState = {
           ...state,
           animations: { ...state.animations, [animationFlag]: false },
+          activeAnimationInteractionId:
+            state.activeAnimationInteractionId === interactionId ? null : state.activeAnimationInteractionId,
+          activeAnimation: null,
         };
 
         // Find the interaction and apply deferred effects only if they were deferred
@@ -813,6 +1189,48 @@ export function createExperimentReducer(
         if (interaction) {
           if (interaction.animation?.effectsAfterAnimation) {
             newState = applyEffects(newState, interaction.effects);
+
+            if (interaction.trigger.type === 'drop') {
+              const chemAddition = detectChemicalAddition(interaction.trigger.source, config, newState);
+              const targetVessel = findTargetVesselId(interaction.trigger.target, config, newState);
+              if (chemAddition && targetVessel) {
+                const mixtures = { ...(newState.vesselMixtures ?? {}) };
+                const currentMix = mixtures[targetVessel] ?? createEmptyMixture(targetVessel, 0);
+                const updatedMix = mixChemicals(currentMix, chemAddition);
+                mixtures[targetVessel] = updatedMix;
+
+                const appSpec = config.apparatus.find(a => a.id === targetVessel);
+                const newLevel = calculateVesselLevel(updatedMix.volumeMl, appSpec?.component);
+
+                const explicitLevel = interaction.effects?.find(
+                  (e): e is Extract<InteractionEffect, { type: 'setApparatusProp' }> =>
+                    e.type === 'setApparatusProp' && e.apparatusId === targetVessel && e.prop === 'liquidLevel'
+                );
+                const explicitColor = interaction.effects?.find(
+                  (e): e is Extract<InteractionEffect, { type: 'setApparatusProp' }> =>
+                    e.type === 'setApparatusProp' && e.apparatusId === targetVessel && e.prop === 'liquidColor'
+                );
+
+                const finalLevel = explicitLevel ? (explicitLevel.value as number) : newLevel;
+                const finalColor = explicitColor ? (explicitColor.value as string) : updatedMix.dominantColor;
+
+                newState = {
+                  ...newState,
+                  vesselMixtures: mixtures,
+                  apparatusProps: {
+                    ...newState.apparatusProps,
+                    [targetVessel]: {
+                      ...(newState.apparatusProps[targetVessel] ?? {}),
+                      liquidColor: finalColor,
+                      liquidLevel: finalLevel,
+                      temperature: updatedMix.temperatureC,
+                      pH: updatedMix.pH,
+                      effervescenceRate: updatedMix.effervescenceRate,
+                    },
+                  },
+                };
+              }
+            }
           }
 
           if (interaction.completesAction &&
@@ -880,6 +1298,9 @@ export function createExperimentReducer(
         const updatedMix = mixChemicals(currentMix, addition);
         mixtures[vesselId] = updatedMix;
 
+        const appSpec = config.apparatus.find(a => a.id === vesselId);
+        const newLevel = calculateVesselLevel(updatedMix.volumeMl, appSpec?.component);
+
         const latestEvent = updatedMix.recentEvents[0];
         const reactionMsg = latestEvent
           ? `🧪 Reaction: ${latestEvent.equation} (ΔT: +${latestEvent.deltaT.toFixed(1)}°C)`
@@ -893,6 +1314,7 @@ export function createExperimentReducer(
             [vesselId]: {
               ...(state.apparatusProps[vesselId] ?? {}),
               liquidColor: updatedMix.dominantColor,
+              liquidLevel: newLevel,
               temperature: updatedMix.temperatureC,
               pH: updatedMix.pH,
               effervescenceRate: updatedMix.effervescenceRate,

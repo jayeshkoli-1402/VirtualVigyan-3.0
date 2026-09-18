@@ -16,7 +16,7 @@ export interface ExperimentItem {
   order: number;
 }
 
-const ALL_EXPERIMENTS: ExperimentItem[] = [
+export const ALL_EXPERIMENTS: ExperimentItem[] = [
   {
     id: 'viscosity-ostwald',
     type: 'generic',

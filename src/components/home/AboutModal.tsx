@@ -1,4 +1,5 @@
 import React from 'react';
+import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         style={{
           width: '100%',
           maxWidth: 500,
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           background: 'var(--bg-card)',
           borderRadius: 18,
           border: '1px solid var(--border)',
@@ -37,20 +40,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                background: 'rgba(37, 99, 235, 0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.4rem',
-              }}
-            >
-              ⚗️
-            </div>
+            <VirtualVigyanLogo size={40} />
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                 VirtualVigyan

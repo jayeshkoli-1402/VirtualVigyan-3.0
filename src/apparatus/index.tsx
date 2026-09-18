@@ -733,19 +733,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
   variables = {},
   extraProps = {},
 }) => {
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
+  const hasSpecificVar =
     variables.buretteReading !== undefined ||
     variables.kohVolume !== undefined ||
     variables.naohVolume !== undefined ||
@@ -754,6 +742,22 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     variables.stdEdtaVolume !== undefined ||
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
+  const hasVolumeVar = hasSpecificVar || variables.volumeAdded !== undefined;
+
+  const edtaVol = flags?.buretteRefilled
+    ? (variables.sampleEdtaVolume ?? 0)
+    : (variables.stdEdtaVolume ?? 0);
+
+  const currentVolume = hasSpecificVar
+    ? (variables.buretteReading ?? 0) +
+      (variables.kohVolume ?? 0) +
+      (variables.naohVolume ?? 0) +
+      (variables.volumeA ?? 0) +
+      (variables.volumeB ?? 0) +
+      edtaVol +
+      (variables.thiosulphateVolume ?? 0)
+    : (variables.volumeAdded ?? 0);
+  const maxVolume = 50;
 
   const isBuretteFilled = Boolean(
     (flags?.buretteFilled === true ||
@@ -789,6 +793,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       extraProps?.titrating)
   );
 
+
   const handleSetOpen = React.useCallback((openVal: number) => {
     if (!isBuretteFilled && openVal > 0) {
       setEmptyWarning(true);
@@ -811,21 +816,13 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       setTimeout(() => setEmptyWarning(false), 2500);
       return;
     }
-    let nextOpen = 0.20;
-    if (stopcockOpen === 0) nextOpen = 0.20;
-    else if (stopcockOpen < 0.35) nextOpen = 0.50;
-    else if (stopcockOpen < 0.70) nextOpen = 0.80;
-    else nextOpen = 1.00;
+    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
-    let nextOpen = 0;
-    if (stopcockOpen > 0.85) nextOpen = 0.50;
-    else if (stopcockOpen > 0.35) nextOpen = 0.20;
-    else nextOpen = 0;
-    handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+    handleSetOpen(0);
+  }, [handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -1174,7 +1171,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.20);
+            handleSetOpen(0.40);
           }}
         >
           <rect
@@ -1192,24 +1189,19 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
             ↻ Click to Open
           </text>
           <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
-            Slow Drop (20%)
+            Controlled Flow
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable in empty space) */}
-      {isBuretteFilled && stopcockOpen > 0 && (
+      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
+      {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 22}, ${buretteBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            let nextOpen = 0;
-            if (stopcockOpen < 0.35) nextOpen = 0.50;
-            else if (stopcockOpen < 0.70) nextOpen = 0.80;
-            else if (stopcockOpen < 0.95) nextOpen = 1.00;
-            else nextOpen = 0;
-            handleSetOpen(nextOpen);
+            handleSetOpen(0);
           }}
         >
           <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
@@ -1654,19 +1646,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
   variables = {},
   extraProps = {},
 }) => {
-  const currentVolume =
-    (variables.volumeAdded ?? 0) +
-    (variables.buretteReading ?? 0) +
-    (variables.kohVolume ?? 0) +
-    (variables.naohVolume ?? 0) +
-    (variables.volumeA ?? 0) +
-    (variables.volumeB ?? 0) +
-    (variables.stdEdtaVolume ?? 0) +
-    (variables.sampleEdtaVolume ?? 0) +
-    (variables.thiosulphateVolume ?? 0);
-  const maxVolume = 50;
-  const hasVolumeVar =
-    variables.volumeAdded !== undefined ||
+  const hasSpecificVar =
     variables.buretteReading !== undefined ||
     variables.kohVolume !== undefined ||
     variables.naohVolume !== undefined ||
@@ -1675,6 +1655,22 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     variables.stdEdtaVolume !== undefined ||
     variables.sampleEdtaVolume !== undefined ||
     variables.thiosulphateVolume !== undefined;
+  const hasVolumeVar = hasSpecificVar || variables.volumeAdded !== undefined;
+
+  const edtaVol = flags?.buretteRefilled
+    ? (variables.sampleEdtaVolume ?? 0)
+    : (variables.stdEdtaVolume ?? 0);
+
+  const currentVolume = hasSpecificVar
+    ? (variables.buretteReading ?? 0) +
+      (variables.kohVolume ?? 0) +
+      (variables.naohVolume ?? 0) +
+      (variables.volumeA ?? 0) +
+      (variables.volumeB ?? 0) +
+      edtaVol +
+      (variables.thiosulphateVolume ?? 0)
+    : (variables.volumeAdded ?? 0);
+  const maxVolume = 50;
 
   const isBuretteFilled = Boolean(
     (flags?.buretteFilled === true ||
@@ -1710,6 +1706,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       extraProps?.titrating)
   );
 
+
   const handleSetOpen = React.useCallback((openVal: number) => {
     if (!isBuretteFilled && openVal > 0) {
       setEmptyWarning(true);
@@ -1732,21 +1729,13 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       setTimeout(() => setEmptyWarning(false), 2500);
       return;
     }
-    let nextOpen = 0.20;
-    if (stopcockOpen === 0) nextOpen = 0.20;
-    else if (stopcockOpen < 0.35) nextOpen = 0.50;
-    else if (stopcockOpen < 0.70) nextOpen = 0.80;
-    else nextOpen = 1.00;
+    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
-    let nextOpen = 0;
-    if (stopcockOpen > 0.85) nextOpen = 0.50;
-    else if (stopcockOpen > 0.35) nextOpen = 0.20;
-    else nextOpen = 0;
-    handleSetOpen(nextOpen);
-  }, [stopcockOpen, handleSetOpen]);
+    handleSetOpen(0);
+  }, [handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -2160,7 +2149,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.20);
+            handleSetOpen(0.40);
           }}
         >
           <rect
@@ -2178,24 +2167,19 @@ const BuretteStand: React.FC<ApparatusProps> = ({
             ↻ Click to Open
           </text>
           <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
-            Slow Drop (20%)
+            Controlled Flow
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable in empty space) */}
-      {isBuretteFilled && stopcockOpen > 0 && (
+      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
+      {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 26}, ${tubeBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            let nextOpen = 0;
-            if (stopcockOpen < 0.35) nextOpen = 0.50;
-            else if (stopcockOpen < 0.70) nextOpen = 0.80;
-            else if (stopcockOpen < 0.95) nextOpen = 1.00;
-            else nextOpen = 0;
-            handleSetOpen(nextOpen);
+            handleSetOpen(0);
           }}
         >
           <rect x="-2" y="-7" width="62" height="15" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
@@ -2704,7 +2688,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
 const OstwaldViscometer: React.FC<ApparatusProps> = ({
   liquidLevel = 0,
   liquidColor = 'rgba(56, 189, 248, 0.65)',
-  label = "Ostwald's Viscometer",
+  label = '',
   highlighted = false,
   width = 140,
   height = 280,
@@ -2713,25 +2697,46 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
 }) => {
   const strokeColor = highlighted ? '#2563eb' : '#334155';
   const rawProgress = (variables._flowProgress ?? variables.flowProgress ?? 0) as number;
-  const currentProgress = Math.max(0, Math.min(1, rawProgress));
   const hasSucked = !!flags.suckedAboveMark;
+  const isSucking = !!flags.isSucking;
 
   // Upper timing mark C is at y = 55, Lower timing mark D is at y = 114
   // Bulb B (upper bulb on right capillary limb) spans y = 55 to y = 114
   const upperMarkY = 55;
   const lowerMarkY = 114;
-  const meniscusY = upperMarkY + currentProgress * (lowerMarkY - upperMarkY);
+  const balanceLevelY = 166; // Hydrostatic equilibrium line where communicating limbs balance
+
+  // Flow through Bulb B (0.0 at C -> 1.0 at D)
+  const bulbBProgress = Math.max(0, Math.min(1, rawProgress));
+  const meniscusY = upperMarkY + bulbBProgress * (lowerMarkY - upperMarkY);
+
+  // Flow below Mark D:
+  // When rawProgress > 1.0, meniscus continues flowing below D down the narrow capillary tube
+  // until reaching hydrostatic balance at balanceLevelY (166) at rawProgress = 1.5.
+  const belowDProgress = Math.max(0, Math.min(1, (rawProgress - 1.0) / 0.5));
+  const isBelowD = hasSucked && rawProgress > 1.0;
+  const isBalanced = hasSucked && rawProgress >= 1.5;
+  const capillaryMeniscusY = isBelowD
+    ? lowerMarkY + belowDProgress * (balanceLevelY - lowerMarkY)
+    : lowerMarkY;
 
   // Coupled liquid level in lower Bulb A:
-  // When sucked, liquid in Bulb A is drawn down to its starting level (y = 188).
-  // As liquid drains from Bulb B (currentProgress 0 -> 1), Bulb A liquid rises up to y = 152.
-  // When liquid is introduced before suction, it rests at y = 162.
-  const bulbAInitialY = 162;
+  // Before suction: sits at bulbAInitialY (approx 166)
+  // When sucked: drawn down to bulbASuckedStartY (188)
+  // As liquid drains from Bulb B (rawProgress 0 -> 1): rises to 154
+  // As liquid drains below D towards balance (rawProgress 1.0 -> 1.5): equalizes to balanceLevelY (166)
+  const bulbAInitialY = Math.round(202 - Math.min(1, Math.max(0.12, liquidLevel)) * 60);
   const bulbASuckedStartY = 188;
-  const bulbAFinalY = 152;
-  const bulbAY = hasSucked
-    ? bulbASuckedStartY - currentProgress * (bulbASuckedStartY - bulbAFinalY)
-    : bulbAInitialY;
+  const bulbADrainedDY = 154;
+
+  let bulbAY = bulbAInitialY;
+  if (hasSucked) {
+    if (rawProgress <= 1.0) {
+      bulbAY = bulbASuckedStartY - bulbBProgress * (bulbASuckedStartY - bulbADrainedDY);
+    } else {
+      bulbAY = bulbADrainedDY + belowDProgress * (balanceLevelY - bulbADrainedDY);
+    }
+  }
 
   // Symmetrical Bulb A width at bulbAY (centered at X=40, y=168)
   const bulbARadiusX = Math.max(11, 17.5 - Math.abs(bulbAY - 168) * 0.22);
@@ -2746,6 +2751,14 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
           <stop offset="70%" stopColor="rgba(255,255,255,0.05)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.4)" />
         </linearGradient>
+
+        {/* Radial suction bulb rubber gradient */}
+        <radialGradient id="suctionBulbGrad" cx="35%" cy="30%" r="70%">
+          <stop offset="0%" stopColor="#f87171" />
+          <stop offset="40%" stopColor="#dc2626" />
+          <stop offset="85%" stopColor="#991b1b" />
+          <stop offset="100%" stopColor="#7f1d1d" />
+        </radialGradient>
 
         {/* Clip path for liquid draining down upper Bulb B */}
         <clipPath id="upperBulbClip">
@@ -2788,7 +2801,7 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
         stroke={strokeColor}
         strokeWidth="3.2"
         strokeLinecap="round"
-        fill="rgba(241, 245, 249, 0.22)"
+        fill="none"
       />
 
       {/* Inner Wall Contour */}
@@ -2805,46 +2818,130 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
         `}
         stroke={strokeColor}
         strokeWidth="2.2"
-        fill="url(#ostwaldGlassGrad)"
+        fill="none"
       />
 
       {/* ── Liquid Layer ── */}
       {liquidLevel > 0 && (
         <g
-          opacity="0.92"
+          opacity="0.95"
           style={{
-            animation: (flags.isPouringChromic || flags.isPouringSample || flags.isPouringWater)
-              ? 'viscoFillIn 2.2s cubic-bezier(0.2, 0.8, 0.3, 1) forwards'
-              : flags.isRinsingAcetone
-                ? 'streamFade 2.0s ease-in-out forwards'
-                : undefined,
-            transformOrigin: '70px 240px',
+            transition: 'opacity 0.3s ease',
           }}
         >
           {/* Continuous liquid volume: Bulb A + U-bend + right capillary connection */}
           <g clipPath="url(#lowerLimbClip)">
-            {/* Liquid filling from bulbAY down through U-tube */}
-            <rect
-              x="16"
-              y={bulbAY}
-              width="90"
-              height={260 - bulbAY}
-              fill={liquidColor}
-            />
-            {/* Meniscus on top of rising liquid in Bulb A */}
-            <ellipse
-              cx="40"
-              cy={bulbAY}
-              rx={bulbARadiusX}
-              ry="2.4"
-              fill="rgba(255,255,255,0.45)"
-              stroke={liquidColor}
-              strokeWidth="0.8"
-            />
+            {isSucking ? (
+              <>
+                {/* Liquid in Bulb A dropping smoothly down as vacuum draws fluid */}
+                <rect
+                  x="16"
+                  y={bulbAInitialY}
+                  width="90"
+                  height={260 - bulbAInitialY}
+                  fill={liquidColor}
+                >
+                  <animate
+                    attributeName="y"
+                    from={bulbAInitialY}
+                    to={bulbASuckedStartY}
+                    dur="2.4s"
+                    fill="freeze"
+                  />
+                  <animate
+                    attributeName="height"
+                    from={260 - bulbAInitialY}
+                    to={260 - bulbASuckedStartY}
+                    dur="2.4s"
+                    fill="freeze"
+                  />
+                </rect>
+                {/* Meniscus on top of lowering liquid in Bulb A */}
+                <ellipse
+                  cx="40"
+                  cy={bulbAInitialY}
+                  rx={bulbARadiusX}
+                  ry="2.6"
+                  fill="rgba(255,255,255,0.6)"
+                  stroke={liquidColor}
+                  strokeWidth="1"
+                >
+                  <animate
+                    attributeName="cy"
+                    from={bulbAInitialY}
+                    to={bulbASuckedStartY}
+                    dur="2.4s"
+                    fill="freeze"
+                  />
+                </ellipse>
+              </>
+            ) : (
+              <>
+                {/* Liquid filling from bulbAY down through U-tube */}
+                <rect
+                  x="16"
+                  y={bulbAY}
+                  width="90"
+                  height={260 - bulbAY}
+                  fill={liquidColor}
+                />
+                {/* Meniscus on top of liquid in Bulb A */}
+                <ellipse
+                  cx="40"
+                  cy={bulbAY}
+                  rx={bulbARadiusX}
+                  ry="2.6"
+                  fill="rgba(255,255,255,0.6)"
+                  stroke={liquidColor}
+                  strokeWidth="1"
+                />
+                {/* Matching level in right capillary arm when not sucked */}
+                {!hasSucked && (
+                  <ellipse
+                    cx="98"
+                    cy={bulbAY}
+                    rx="4.5"
+                    ry="1.4"
+                    fill="rgba(255,255,255,0.55)"
+                    stroke={liquidColor}
+                    strokeWidth="0.8"
+                  />
+                )}
+              </>
+            )}
           </g>
 
-          {/* Liquid in Upper Bulb B (on right capillary limb) during flow from Mark C to D */}
-          {hasSucked && (
+          {/* Liquid in Upper Bulb B (on right capillary limb) */}
+          {isSucking ? (
+            <g clipPath="url(#upperBulbClip)">
+              {/* Smooth liquid rise filling Bulb B upwards above Mark C (y=48) */}
+              <rect
+                x="76"
+                y="114"
+                width="44"
+                height="0"
+                fill={liquidColor}
+                opacity="0.95"
+              >
+                <animate attributeName="y" values="114; 114; 48" keyTimes="0; 0.35; 1" dur="2.4s" fill="freeze" />
+                <animate attributeName="height" values="0; 0; 70" keyTimes="0; 0.35; 1" dur="2.4s" fill="freeze" />
+              </rect>
+              {/* Rising meniscus surface */}
+              <ellipse
+                cx="98"
+                cy="114"
+                rx="14"
+                ry="2.6"
+                fill="rgba(255,255,255,0.6)"
+                stroke={liquidColor}
+                strokeWidth="1"
+                opacity="0"
+              >
+                <animate attributeName="cy" values="114; 114; 48" keyTimes="0; 0.35; 1" dur="2.4s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 0; 1" keyTimes="0; 0.34; 0.38" dur="2.4s" fill="freeze" />
+              </ellipse>
+            </g>
+          ) : hasSucked ? (
             <g clipPath="url(#upperBulbClip)">
               {/* Draining liquid column based on exact student progress */}
               <rect
@@ -2867,19 +2964,46 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
                 />
               )}
             </g>
-          )}
+          ) : null}
 
           {/* Narrow Capillary liquid column (connecting below lower Mark D down into U-tube) */}
-          {hasSucked && (
+          {isSucking ? (
             <rect
-              x="96"
-              y="114"
+              x="95"
+              y="215"
               width="6"
-              height="101"
+              height="0"
               fill={liquidColor}
-              opacity="0.85"
-            />
-          )}
+              opacity="0.9"
+            >
+              <animate attributeName="y" values="215; 114; 114" keyTimes="0; 0.35; 1" dur="2.4s" fill="freeze" />
+              <animate attributeName="height" values="0; 101; 101" keyTimes="0; 0.35; 1" dur="2.4s" fill="freeze" />
+            </rect>
+          ) : hasSucked ? (
+            <>
+              {/* Liquid column in narrow capillary from meniscus down to U-bend */}
+              <rect
+                x="95"
+                y={capillaryMeniscusY}
+                width="6"
+                height={Math.max(0, 215 - capillaryMeniscusY)}
+                fill={liquidColor}
+                opacity="0.9"
+              />
+              {/* Curved meniscus surface inside narrow capillary when below D */}
+              {isBelowD && capillaryMeniscusY < 215 && (
+                <ellipse
+                  cx="98"
+                  cy={capillaryMeniscusY}
+                  rx="3"
+                  ry="1.2"
+                  fill="rgba(255,255,255,0.7)"
+                  stroke={liquidColor}
+                  strokeWidth="0.6"
+                />
+              )}
+            </>
+          ) : null}
         </g>
       )}
 
@@ -2887,10 +3011,10 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
       <line x1="98" y1="114" x2="98" y2="185" stroke="#475569" strokeWidth="1.2" strokeDasharray="3 2" opacity="0.6" />
 
       {/* ── Continuous Dynamic Capillary Flow Streamlines During Timing ── */}
-      {flags.timerRunning && (
+      {flags.timerRunning && !isBalanced && (
         <g opacity="0.85">
           {/* Capillary bore downward fluid stream */}
-          <line x1="98" y1="116" x2="98" y2="212" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeDasharray="6 8" strokeLinecap="round">
+          <line x1="98" y1={capillaryMeniscusY} x2="98" y2="212" stroke="rgba(255,255,255,0.75)" strokeWidth="1.8" strokeDasharray="6 8" strokeLinecap="round">
             <animate attributeName="stroke-dashoffset" values="0;28" dur="0.55s" repeatCount="indefinite" />
           </line>
           {/* Fluid flow around lower U-bend into Bulb A */}
@@ -2907,12 +3031,123 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
         </g>
       )}
 
-      {/* ── Upward Suction Fluid Streamlines in Capillary Limb During Suction ── */}
-      {flags.isSucking && (
-        <g opacity="0.9">
-          <line x1="98" y1="212" x2="98" y2="55" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeDasharray="5 6" strokeLinecap="round">
-            <animate attributeName="stroke-dashoffset" values="22;0" dur="0.4s" repeatCount="indefinite" />
+      {/* ── Hydrostatic Balance Line (When both limbs level off and balance) ── */}
+      {isBalanced && (
+        <g opacity="0.9" style={{ animation: 'fadeIn 0.35s ease-out' }}>
+          <line x1="24" y1={balanceLevelY} x2="108" y2={balanceLevelY} stroke="#10b981" strokeWidth="1.2" strokeDasharray="3 2" />
+          <g transform={`translate(66, ${balanceLevelY})`}>
+            <rect x="-26" y="-6.5" width="52" height="13" rx="2.5" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" strokeWidth="0.8" />
+            <text x="0" y="2.5" textAnchor="middle" fontSize="6.5" fontWeight="800" fill="#047857" letterSpacing="0.04em">
+              BALANCED
+            </text>
+          </g>
+        </g>
+      )}
+
+      {/* ── Suction Assembly & Tube when Suction Bulb is applied ── */}
+      {isSucking && (
+        <g id="suction-assembly" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+          {/* Rubber adapter sleeve fitted over capillary limb top */}
+          <rect x="91" y="10" width="14" height="13" rx="2.5" fill="#475569" stroke="#1e293b" strokeWidth="1.2" />
+          <rect x="93" y="8" width="10" height="4" rx="1" fill="#64748b" />
+
+          {/* Flexible rubber tubing extending up to suction bulb */}
+          <path
+            d="M 98 10 C 98 -2 108 -6 108 -18"
+            stroke="#dc2626"
+            strokeWidth="5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M 98 10 C 98 -2 108 -6 108 -18"
+            stroke="rgba(255,255,255,0.3)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+
+          {/* Classic laboratory rubber suction bulb / pipetting aid */}
+          <g transform="translate(108, -32)">
+            {/* Rubber bulb body with pulsing vacuum suction */}
+            <ellipse
+              cx="0"
+              cy="0"
+              rx="13"
+              ry="16"
+              fill="url(#suctionBulbGrad)"
+              stroke="#7f1d1d"
+              strokeWidth="1.6"
+              filter="drop-shadow(0 3px 6px rgba(0,0,0,0.35))"
+            >
+              <animateTransform
+                attributeName="transform"
+                type="scale"
+                values="1 1; 0.86 0.94; 0.92 0.97; 0.88 0.95; 1 1"
+                dur="1.2s"
+                repeatCount="indefinite"
+              />
+            </ellipse>
+
+            {/* Bulb ribbed grip rings */}
+            <path d="M -10 -4 Q 0 -2 10 -4" stroke="#991b1b" strokeWidth="1.2" fill="none" opacity="0.7" />
+            <path d="M -11 2 Q 0 4 11 2" stroke="#991b1b" strokeWidth="1.2" fill="none" opacity="0.7" />
+
+            {/* Top valve / release stem */}
+            <rect x="-3" y="-22" width="6" height="7" rx="1.5" fill="#7f1d1d" stroke="#450a0a" strokeWidth="1" />
+            <circle cx="0" cy="-24" r="3.5" fill="#b91c1c" stroke="#450a0a" strokeWidth="1" />
+
+            {/* Negative vacuum suction indicator waves */}
+            <circle cx="0" cy="0" r="16" fill="none" stroke="rgba(239, 68, 68, 0.6)" strokeWidth="1.5" opacity="0">
+              <animate attributeName="r" values="14;24" dur="0.8s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.8;0" dur="0.8s" repeatCount="indefinite" />
+            </circle>
+          </g>
+
+          {/* Floating Active Vacuum Status Badge */}
+          <g transform="translate(108, -60)">
+            <rect
+              x="-62"
+              y="-9"
+              width="124"
+              height="18"
+              rx="4"
+              fill="rgba(15, 23, 42, 0.92)"
+              stroke="#ef4444"
+              strokeWidth="1.2"
+              filter="drop-shadow(0 2px 8px rgba(239,68,68,0.4))"
+            />
+            <text
+              x="0"
+              y="3.5"
+              textAnchor="middle"
+              fontSize="8"
+              fontWeight="800"
+              fill="#fecaca"
+              letterSpacing="0.03em"
+            >
+              SUCTION ACTIVE • RAISING LIQUID
+            </text>
+          </g>
+        </g>
+      )}
+
+      {/* ── Upward Suction Fluid Streamlines & Microbubbles During Suction ── */}
+      {isSucking && (
+        <g opacity="0.92">
+          {/* Upward stream of fluid particles */}
+          <line x1="98" y1="212" x2="98" y2="50" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeDasharray="5 7" strokeLinecap="round">
+            <animate attributeName="stroke-dashoffset" values="36;0" dur="0.38s" repeatCount="indefinite" />
           </line>
+          {/* Vacuum microbubbles rising */}
+          <circle cx="98" cy="190" r="1.6" fill="rgba(255,255,255,0.85)">
+            <animate attributeName="cy" values="210;50" dur="0.75s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;1;0" dur="0.75s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="97.5" cy="160" r="1.4" fill="rgba(255,255,255,0.85)">
+            <animate attributeName="cy" values="210;50" dur="0.65s" begin="0.25s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0;1;0" dur="0.65s" begin="0.25s" repeatCount="indefinite" />
+          </circle>
         </g>
       )}
 
@@ -2971,30 +3206,32 @@ const OstwaldViscometer: React.FC<ApparatusProps> = ({
       <circle cx="40" cy="75.5" r="2.5" fill="#94a3b8" />
 
       {/* ── Apparatus Title Badge (Clean, high-contrast placard associated with apparatus) ── */}
-      <g transform="translate(68, 268)">
-        <rect
-          x="-58"
-          y="-9"
-          width="116"
-          height="18"
-          rx="5"
-          fill="rgba(255, 255, 255, 0.95)"
-          stroke="rgba(37, 99, 235, 0.35)"
-          strokeWidth="1.2"
-          filter="drop-shadow(0 2px 5px rgba(0,0,0,0.15))"
-        />
-        <text
-          x="0"
-          y="3.5"
-          textAnchor="middle"
-          fontSize="9.5"
-          fontWeight="800"
-          fill="#1e3a8a"
-          letterSpacing="0.02em"
-        >
-          {label || "Ostwald's Viscometer"}
-        </text>
-      </g>
+      {label ? (
+        <g transform="translate(68, 268)">
+          <rect
+            x="-58"
+            y="-9"
+            width="116"
+            height="18"
+            rx="5"
+            fill="rgba(255, 255, 255, 0.95)"
+            stroke="rgba(37, 99, 235, 0.35)"
+            strokeWidth="1.2"
+            filter="drop-shadow(0 2px 5px rgba(0,0,0,0.15))"
+          />
+          <text
+            x="0"
+            y="3.5"
+            textAnchor="middle"
+            fontSize="9.5"
+            fontWeight="800"
+            fill="#1e3a8a"
+            letterSpacing="0.02em"
+          >
+            {label}
+          </text>
+        </g>
+      ) : null}
     </svg>
   );
 };
@@ -3065,7 +3302,7 @@ const Stopwatch: React.FC<ApparatusProps> = ({
         {timeStr}
       </text>
       <text x="55" y="42" textAnchor="middle" fontSize="6.5" fill="#94a3b8" letterSpacing="0.08em">
-        CHRONOMETER
+        1/100 SEC
       </text>
 
       {/* Status indicator LED */}

@@ -79,7 +79,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       if (res.success && res.role) {
         if (res.role === 'admin') {
-          setSuccessMessage('Administrator verified. Redirecting to Command Center...');
+          setSuccessMessage('Administrator verified! Full Lab & Command Center Access Granted. Redirecting...');
         } else {
           setSuccessMessage(`Welcome back! Logged in as ${res.role === 'student' ? 'Student' : res.role}. Redirecting...`);
         }
@@ -107,7 +107,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
       if (res.success && res.role) {
         if (res.role === 'admin') {
-          setSuccessMessage('Administrator verified. Redirecting to Command Center...');
+          setSuccessMessage('Administrator verified! Full Lab & Command Center Access Granted. Redirecting...');
         } else {
           setSuccessMessage('Faculty access verified. Redirecting to Teacher Dashboard...');
         }

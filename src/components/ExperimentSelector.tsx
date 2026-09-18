@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { HeroBanner } from './home/HeroBanner';
 import { NotesPromoBanner } from './home/NotesPromoBanner';
 import { ExperimentThumbnail } from './home/ExperimentCardThumbnails';
+import { useAuth } from '../auth/AuthContext';
 
 export interface ExperimentItem {
   id: string;
@@ -166,6 +167,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   onOpenHowItWorks = () => {},
   externalSearchQuery = '',
 }) => {
+  const { user } = useAuth();
   const [selectedClass, setSelectedClass] = useState<string>('All');
   const [sortOption, setSortOption] = useState<'latest' | 'difficulty-asc' | 'difficulty-desc' | 'alpha'>('latest');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
@@ -247,6 +249,65 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
         }}
         onViewHowItWorks={onOpenHowItWorks}
       />
+
+      {/* ── Admin Superuser Active Banner ── */}
+      {user?.role === 'admin' && (
+        <div
+          style={{
+            margin: '20px 0 24px',
+            padding: '14px 20px',
+            borderRadius: 16,
+            background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(168, 85, 247, 0.08))',
+            border: '1.5px solid rgba(124, 58, 237, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #7c3aed, #9333ea)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                color: '#fff',
+                boxShadow: '0 4px 10px rgba(124, 58, 237, 0.3)',
+              }}
+            >
+              🛡️
+            </div>
+            <div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                Administrator Superuser Active ({user.name})
+              </div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                Full lab access granted across all {ALL_EXPERIMENTS.length} curriculum simulations with moderator telemetry & editor privileges.
+              </div>
+            </div>
+          </div>
+          <span
+            style={{
+              padding: '4px 12px',
+              borderRadius: 20,
+              background: '#7c3aed',
+              color: '#ffffff',
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            }}
+          >
+            All Labs Unlocked
+          </span>
+        </div>
+      )}
 
       {/* ── 2. Browse Experiments Header Bar ── */}
       <div

@@ -8,6 +8,7 @@ interface TopHeaderProps {
   onToggleTheme: () => void;
   onOpenAuthModal: () => void;
   onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
+  onOpenAdminPanel?: () => void;
   onToggleMobileSidebar?: () => void;
   isMobile?: boolean;
 }
@@ -19,6 +20,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onToggleTheme,
   onOpenAuthModal,
   onNavigateToAuth,
+  onOpenAdminPanel,
   onToggleMobileSidebar,
   isMobile = false,
 }) => {
@@ -256,6 +258,33 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
 
+        {/* Admin Command Center Quick Launch Button (Visible to Admins) */}
+        {user?.role === 'admin' && onOpenAdminPanel && (
+          <button
+            id="btn-header-admin-command"
+            onClick={onOpenAdminPanel}
+            title="Open Admin & Moderator Command Center"
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 13px',
+              borderRadius: 9999,
+              background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 800,
+              boxShadow: '0 2px 8px rgba(124, 58, 237, 0.35)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>🛡️</span>
+            <span>Admin Center</span>
+          </button>
+        )}
+
         {/* User Profile / Auth Trigger Area */}
         <div style={{ position: 'relative' }}>
           {user ? (
@@ -396,7 +425,32 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               </div>
 
               {/* Quick links */}
-              <div style={{ padding: '6px 0' }}>
+              <div style={{ padding: '6px 0', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {user.role === 'admin' && onOpenAdminPanel && (
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      onOpenAdminPanel();
+                    }}
+                    style={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      fontSize: '0.78rem',
+                      color: '#7c3aed',
+                      fontWeight: 700,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <span>🛡️</span>
+                    <span>Admin Command Center</span>
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     setProfileMenuOpen(false);

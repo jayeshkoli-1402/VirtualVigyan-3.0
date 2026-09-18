@@ -109,22 +109,24 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                   fontSize: '0.7rem',
                   fontWeight: 800,
                   textTransform: 'uppercase',
-                  background: 'rgba(2, 132, 199, 0.15)',
-                  color: '#0284c7',
+                  background: user?.role === 'admin' ? 'rgba(124, 58, 237, 0.15)' : 'rgba(2, 132, 199, 0.15)',
+                  color: user?.role === 'admin' ? '#7c3aed' : '#0284c7',
                   padding: '3px 10px',
                 }}
               >
-                Educator Portal
+                {user?.role === 'admin' ? '🛡️ Admin Superuser' : 'Educator Portal'}
               </span>
             </div>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '5px 0 0', fontWeight: 500 }}>
-              Welcome back, <strong>{user?.name || 'Professor'}</strong>. {user?.department ? `${user.department} • ` : ''}
-              {user?.institution || 'Academic Department'}
+              Welcome back, <strong>{user?.name || (user?.role === 'admin' ? 'Administrator' : 'Professor')}</strong>.{' '}
+              {user?.role === 'admin'
+                ? 'Superuser privileges active across all cohorts and lab experiments.'
+                : `${user?.department ? `${user.department} • ` : ''}${user?.institution || 'Academic Department'}`}
             </p>
           </div>
         </div>
 
-        {user?.role !== 'teacher' && onNavigateToAuth && (
+        {user?.role !== 'teacher' && user?.role !== 'admin' && onNavigateToAuth && (
           <button
             id="btn-teacher-dashboard-signin"
             onClick={() => onNavigateToAuth('teacher')}

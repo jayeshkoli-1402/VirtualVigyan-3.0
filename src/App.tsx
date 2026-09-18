@@ -324,6 +324,9 @@ const AppContent: React.FC = () => {
             } else if (tab === 'teacher') {
               setActiveTab('teacher');
               setActiveExperiment('teacher');
+            } else if (tab === 'admin') {
+              setActiveTab('admin');
+              setActiveExperiment('admin');
             } else if (tab === 'auth') {
               handleNavigateToAuth('student');
             } else {
@@ -349,6 +352,7 @@ const AppContent: React.FC = () => {
               handleNavigateToAuth('student');
             }}
             onNavigateToAuth={handleNavigateToAuth}
+            onOpenAdminPanel={() => setActiveExperiment('admin')}
             isMobile={isMobile}
             onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           />

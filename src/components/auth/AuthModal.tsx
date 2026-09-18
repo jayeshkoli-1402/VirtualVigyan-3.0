@@ -505,6 +505,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <span style={{ fontSize: '0.62rem', color: '#7c3aed', fontWeight: 700 }}>Moderator</span>
                   </button>
                 </div>
+
                 <p
                   style={{
                     fontSize: '0.68rem',
@@ -514,7 +515,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     fontWeight: 500,
                   }}
                 >
-                  💡 Logging in as Admin automatically detects your role and launches the <strong>Admin & Moderator Command Center</strong>.
+                  💡 Logging in as Admin automatically detects your role, unlocks all experiments, and launches the <strong>Admin & Moderator Command Center</strong>.
                 </p>
               </div>
             </form>

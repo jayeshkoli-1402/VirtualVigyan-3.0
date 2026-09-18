@@ -8,6 +8,7 @@ export type NavItem =
   | 'theory-notes'
   | 'progress'
   | 'teacher'
+  | 'admin'
   | 'auth'
   | 'settings'
   | 'about';
@@ -30,7 +31,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onCloseMobile,
 }) => {
   const { user, logout } = useAuth();
-  const primaryNav = [
+  const basePrimaryNav = [
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'experiments', label: 'Experiments', icon: '🧪' },
     { id: 'classes', label: 'Classes', icon: '📖' },
@@ -38,6 +39,13 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
     { id: 'progress', label: 'My Progress', icon: '📈' },
     { id: 'teacher', label: 'Teacher Portal', icon: '👥' },
   ] as const;
+
+  const primaryNav = user?.role === 'admin'
+    ? [
+        ...basePrimaryNav,
+        { id: 'admin' as const, label: 'Admin Panel', icon: '🛡️' },
+      ]
+    : basePrimaryNav;
 
   const secondaryNav = [
     { id: 'settings', label: 'Settings', icon: '⚙️' },
@@ -284,7 +292,24 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   {user.role}
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {user.role === 'admin' && (
+                  <>
+                    <button
+                      onClick={() => handleNavClick('admin')}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#7c3aed',
+                      }}
+                    >
+                      🛡️ Admin Panel
+                    </button>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                  </>
+                )}
                 <button
                   onClick={() => {
                     if (onNavigateToAuth) onNavigateToAuth(user.role === 'teacher' ? 'teacher' : 'student');

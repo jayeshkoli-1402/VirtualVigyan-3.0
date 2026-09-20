@@ -38,6 +38,41 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     }
   }, [state.variables.stopcockOpen]);
 
+  // Connect titration flow to shaking/swirling:
+  // - When stopcock opens (>0), automatically start shaking/swirling.
+  // - When stopcock is closed (===0), automatically stop shaking/swirling.
+  // - User can still manually toggle Shake/Swirl when stopcock is 0.
+  const prevStopcockOpenRef = React.useRef(stopcockOpen);
+  React.useEffect(() => {
+    const prev = prevStopcockOpenRef.current;
+    if (stopcockOpen > 0 && prev === 0) {
+      setIsSwirling(true);
+    } else if (stopcockOpen === 0 && prev > 0) {
+      setIsSwirling(false);
+    }
+    prevStopcockOpenRef.current = stopcockOpen;
+  }, [stopcockOpen]);
+
+  // Reset swirling on step transitions if stopcock is closed
+  React.useEffect(() => {
+    if (stopcockOpen === 0) {
+      setIsSwirling(false);
+    }
+  }, [state.currentStepIndex]);
+
+  // Pre-titration swirl guidance prompt condition
+  const currentStep = config.steps[state.currentStepIndex];
+  const isWaterAlkalinityTitration =
+    config.id === 'water-alkalinity' &&
+    ((currentStep?.id === 'phenolphthalein-titration' &&
+      Boolean(state.flags['phenolphthaleinAdded']) &&
+      !state.flags['pEndpointReached']) ||
+     (currentStep?.id === 'methyl-orange-titration' &&
+      Boolean(state.flags['methylOrangeAdded']) &&
+      !state.flags['mEndpointReached']));
+
+  const showSwirlPrompt = isWaterAlkalinityTitration && !isSwirling && stopcockOpen === 0;
+
   // Burette presence and liquid fill detection (Universal across all practicals)
   const hasBurette = Boolean(
     config.apparatus.some(a => a.component === 'Burette') ||
@@ -778,7 +813,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             </div>
 
             {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
-            {apparatusConfig.label && !isHardware && (
+            {apparatusConfig.label && !isHardware && !isBurette && (
               <div
                 style={{
                   position: 'absolute',
@@ -862,6 +897,35 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           boxShadow: 'var(--shadow-lg)',
         }}
       >
+        {/* Pre-titration swirl prompt when user has not started swirling before titration */}
+        {showSwirlPrompt && (
+          <div
+            id="swirl-pre-titration-prompt"
+            style={{
+              position: 'absolute',
+              bottom: 'calc(100% + 8px)',
+              left: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              background: '#fffbeb',
+              border: '1px solid #f59e0b',
+              color: '#92400e',
+              boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
+              pointerEvents: 'none',
+              zIndex: 40,
+            }}
+          >
+            <span style={{ fontSize: '0.85rem' }}>💡</span>
+            <span>Start shaking / swirling the flask before titration.</span>
+          </div>
+        )}
+
         {/* Shake / Swirl Flask button */}
         <button
           type="button"

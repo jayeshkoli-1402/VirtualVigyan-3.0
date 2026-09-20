@@ -738,6 +738,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('SignOut error:', err);
     }
     setCurrentUser(null);
+    // Clear persisted navigation state so refresh after logout shows the landing page
+    sessionStorage.removeItem('vv_showLanding');
+    sessionStorage.removeItem('vv_activeExperiment');
+    sessionStorage.removeItem('vv_activeTab');
   };
 
   // ── Delete user (Admin capability) ──

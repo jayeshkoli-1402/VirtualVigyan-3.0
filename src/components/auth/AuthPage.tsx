@@ -75,8 +75,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     try {
       const res = await login(studentIdentifier, studentPassword);
-      setIsSubmitting(false);
-
       if (res.success && res.role) {
         if (res.role === 'admin') {
           setSuccessMessage('Administrator verified! Full Lab & Command Center Access Granted. Redirecting...');
@@ -85,13 +83,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         }
         setTimeout(() => {
           onRoleRedirect(res.role!);
-        }, 600);
+        }, 500);
       } else {
         setErrorMessage(res.message || 'Invalid student credentials.');
       }
     } catch {
-      setIsSubmitting(false);
       setErrorMessage('Sign-in failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,8 +102,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     try {
       const res = await login(teacherIdentifier, teacherPassword);
-      setIsSubmitting(false);
-
       if (res.success && res.role) {
         if (res.role === 'admin') {
           setSuccessMessage('Administrator verified! Full Lab & Command Center Access Granted. Redirecting...');
@@ -113,13 +110,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         }
         setTimeout(() => {
           onRoleRedirect(res.role!);
-        }, 600);
+        }, 500);
       } else {
         setErrorMessage(res.message || 'Invalid faculty credentials. Check your email or Teacher ID.');
       }
     } catch {
-      setIsSubmitting(false);
       setErrorMessage('Sign-in failed. Please check your credentials.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -140,19 +138,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         institution: regRole === 'teacher' ? regInstitution : undefined,
         department: regRole === 'teacher' ? regDepartment : undefined,
       });
-      setIsSubmitting(false);
 
       if (res.success && res.role) {
         setSuccessMessage('Account created successfully! Redirecting to your workspace...');
         setTimeout(() => {
           onRoleRedirect(res.role!);
-        }, 700);
+        }, 500);
       } else {
         setErrorMessage(res.message || 'Registration encountered an issue.');
       }
     } catch {
-      setIsSubmitting(false);
       setErrorMessage('Registration failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

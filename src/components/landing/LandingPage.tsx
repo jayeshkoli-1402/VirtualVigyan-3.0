@@ -15,7 +15,7 @@ import LandingFooter from './LandingFooter';
 
 interface LandingPageProps {
   onEnterApp: () => void;
-  onOpenLogin: () => void;
+  onOpenLogin?: () => void;
   onOpenTeacherPortal?: () => void;
   onStartExperiment: (experimentId?: string) => void;
   theme: 'light' | 'dark';
@@ -24,29 +24,27 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({
   onEnterApp,
-  onOpenLogin,
   onOpenTeacherPortal,
   onStartExperiment,
   theme,
   onToggleTheme,
 }) => {
-  // Intersection Observer for scroll-reveal animations
+  // Reveal animations via IntersectionObserver
   useEffect(() => {
+    const reveals = document.querySelectorAll('.ln-reveal');
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
+            entry.target.classList.add('active');
+            observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.08, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
     );
 
-    // Observe all reveal elements
-    const els = document.querySelectorAll('.ln-reveal');
-    els.forEach((el) => observer.observe(el));
-
+    reveals.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
@@ -64,7 +62,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
       <LandingNavbar
         theme={theme}
         onToggleTheme={onToggleTheme}
-        onLogin={onOpenLogin}
         onStartExperiment={handleStart}
       />
 
@@ -99,7 +96,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
         onStartExperiment={handleStart}
         onOpenTeacherPortal={() => {
           if (onOpenTeacherPortal) onOpenTeacherPortal();
-          else onOpenLogin();
+          else handleStart();
         }}
       />
 
@@ -112,7 +109,6 @@ const LandingPage: React.FC<LandingPageProps> = ({
       {/* 10. Footer */}
       <LandingFooter
         onStartExperiment={handleStart}
-        onLogin={onOpenLogin}
       />
     </div>
   );

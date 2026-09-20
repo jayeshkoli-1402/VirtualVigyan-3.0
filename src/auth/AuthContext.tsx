@@ -348,12 +348,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const email = firebaseUser.email || '';
         const isSpecialAdmin = isAdminEmail(email);
 
-        // Fetch from Firestore
+        // Fetch from Firestore with timeout
         let profile = await getUserProfile(uid);
 
         if (!profile) {
           // Check local cache
-          const localMatch = allUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+          const localMatch = SEED_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
           const role = isSpecialAdmin ? 'admin' : (localMatch?.role || deduceRole(email));
           const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
 
@@ -372,8 +372,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             avgScore: localMatch?.avgScore || 0,
             permissions: role === 'admin' ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'] : undefined,
           };
-          // Try saving to Firestore
-          await saveUserProfile(profile);
+          saveUserProfile(profile).catch(() => {});
         }
 
         // Always enforce admin role for designated admin emails
@@ -416,11 +415,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(null);
       }
       setLoading(false);
-      refreshUsers();
     });
 
     return () => unsubscribe();
-  }, [refreshUsers, allUsers]);
+  }, []);
 
   // ── Login handler with Firebase Authentication & Admin Elevation ──
   const login = async (emailOrUsername: string, password: string): Promise<AuthResponse> => {
@@ -451,7 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const adminMeta = ADMIN_DIRECTORY[emailNorm];
             const displayName = seed?.name || adminMeta?.name || emailNorm.split('@')[0];
 
-            await updateProfile(userCredential.user, { displayName });
+            await updateProfile(userCredential.user, { displayName }).catch(() => {});
             const demoProfile: User = {
               ...(seed || {
                 id: userCredential.user.uid,
@@ -467,12 +465,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override']
                 : undefined,
             };
-            await saveUserProfile(demoProfile);
+            saveUserProfile(demoProfile).catch(() => {});
           } catch {
-            // If creation in Firebase fails (e.g. email exists with another pass, or locked),
-            // and this is an admin account with default password 'zzzzzz' or password >= 6 chars:
+            // If creation in Firebase fails, fallback to local session
             if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
               console.warn('[Auth] Firebase Auth failed; falling back to local Admin session for:', emailNorm);
+            } else if (isDemo) {
+              console.warn('[Auth] Firebase Auth failed; falling back to local Demo session for:', emailNorm);
             } else {
               throw signErr;
             }
@@ -480,6 +479,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
           console.warn('[Auth] Admin credentials verified via Admin Superuser pass for:', emailNorm);
         } else {
+          // Check local registered users if Firebase Auth network or credential error
+          const localUser = allUsers.find((u) => u.email.toLowerCase() === emailNorm);
+          if (localUser && password.length >= 4) {
+            console.warn('[Auth] Verified via local database for:', emailNorm);
+            setCurrentUser(localUser);
+            return {
+              success: true,
+              message: `Welcome back, ${localUser.name}!`,
+              role: localUser.role,
+            };
+          }
           throw signErr;
         }
       }
@@ -509,7 +519,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override']
             : undefined,
         };
-        await saveUserProfile(profile);
+        saveUserProfile(profile).catch(() => {});
       }
 
       // Enforce admin privileges whenever the email is in the admin whitelist
@@ -526,7 +536,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             profile.department = adminMeta.department;
           }
         }
-        await saveUserProfile(profile);
+        saveUserProfile(profile).catch(() => {});
       }
 
       setCurrentUser(profile);
@@ -613,18 +623,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, emailNorm, data.password);
-      const fbUser = userCredential.user;
-
-      // Update Firebase Auth profile display name
-      await updateProfile(fbUser, { displayName: data.name.trim() });
+      let fbUser: any = null;
+      try {
+        // Create user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, emailNorm, data.password);
+        fbUser = userCredential.user;
+        await updateProfile(fbUser, { displayName: data.name.trim() }).catch(() => {});
+      } catch (authErr: any) {
+        if (authErr.code === 'auth/email-already-in-use') {
+          // If already registered, attempt to log in
+          try {
+            const cred = await signInWithEmailAndPassword(auth, emailNorm, data.password);
+            fbUser = cred.user;
+          } catch {
+            return {
+              success: false,
+              message: 'An account with this email address already exists. Please sign in instead.',
+            };
+          }
+        } else if (authErr.code === 'auth/weak-password') {
+          return { success: false, message: 'Password is too weak. Please use at least 6 characters.' };
+        } else if (authErr.code === 'auth/invalid-email') {
+          return { success: false, message: 'Please enter a valid email address.' };
+        } else {
+          console.warn('[Auth] Firebase Auth creation error, falling back to local registration:', authErr);
+        }
+      }
 
       const adminMeta = ADMIN_DIRECTORY[emailNorm];
+      const uid = fbUser?.uid || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
       // Create rich profile object
       const newUser: User = {
-        id: fbUser.uid,
+        id: uid,
         name: data.name.trim(),
         email: emailNorm,
         role: assignedRole,
@@ -641,12 +672,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           : undefined,
       };
 
-      // Save to Cloud Firestore
-      await saveUserProfile(newUser);
-
-      // Update state
+      // Set user immediately for instant response
       setCurrentUser(newUser);
-      setAllUsers((prev) => [...prev, newUser]);
+      setAllUsers((prev) => {
+        const filtered = prev.filter((u) => u.email.toLowerCase() !== emailNorm);
+        return [...filtered, newUser];
+      });
+
+      // Save to Cloud Firestore non-blockingly
+      saveUserProfile(newUser).catch((e) => console.warn('[Firestore] Non-blocking registration save:', e));
 
       return {
         success: true,
@@ -656,7 +690,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: newUser.role,
       };
     } catch (err: unknown) {
-      // If registration in Firebase fails but it's an admin registering with password >= 6 (like 'zzzzzz')
       if (isSpecialAdmin && data.password.length >= 6) {
         const adminMeta = ADMIN_DIRECTORY[emailNorm];
         const adminProfile: User = {

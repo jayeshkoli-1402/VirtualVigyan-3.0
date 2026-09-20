@@ -37,14 +37,30 @@ const notifyFirestoreStatus = (isLocked: boolean, message?: string) => {
 
 export const isFirestoreLocked = () => firestoreLockedMode;
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallbackValue: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      resolve(fallbackValue);
+    }, ms);
+  });
+  return Promise.race([
+    promise.then((res) => {
+      clearTimeout(timer);
+      return res;
+    }),
+    timeoutPromise,
+  ]);
+}
+
 /**
  * Fetch a single user profile from Firestore by User ID
  */
 export async function getUserProfile(userId: string): Promise<User | null> {
   try {
     const userDocRef = doc(db, 'users', userId);
-    const snap = await getDoc(userDocRef);
-    if (snap.exists()) {
+    const snap = await withTimeout(getDoc(userDocRef), 2000, null as any);
+    if (snap && snap.exists && snap.exists()) {
       notifyFirestoreStatus(false);
       return snap.data() as User;
     }
@@ -82,7 +98,7 @@ export async function saveUserProfile(user: User): Promise<{ success: boolean; e
   try {
     const userDocRef = doc(db, 'users', user.id);
     const sanitized = sanitizeForFirestore(user as unknown as Record<string, any>);
-    await setDoc(userDocRef, sanitized, { merge: true });
+    await withTimeout(setDoc(userDocRef, sanitized, { merge: true }), 2500, undefined);
     notifyFirestoreStatus(false);
     return { success: true };
   } catch (err: unknown) {
@@ -106,11 +122,13 @@ export async function saveUserProfile(user: User): Promise<{ success: boolean; e
 export async function getAllUserProfiles(): Promise<User[]> {
   try {
     const usersCol = collection(db, 'users');
-    const snap = await getDocs(usersCol);
+    const snap = await withTimeout(getDocs(usersCol), 2500, null as any);
     const users: User[] = [];
-    snap.forEach((docSnap: any) => {
-      users.push(docSnap.data() as User);
-    });
+    if (snap && snap.forEach) {
+      snap.forEach((docSnap: any) => {
+        users.push(docSnap.data() as User);
+      });
+    }
     notifyFirestoreStatus(false);
     return users;
   } catch (err: unknown) {

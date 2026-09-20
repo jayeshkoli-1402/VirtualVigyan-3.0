@@ -47,20 +47,20 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
     try {
       const res = await login(loginIdentifier, loginPassword);
-      setIsSubmitting(false);
       if (res.success && res.role) {
         setSuccessMessage(res.message || 'Logged in successfully!');
         setTimeout(() => {
           setSuccessMessage(null);
           onClose();
           if (onRoleRedirect) onRoleRedirect(res.role!);
-        }, 500);
+        }, 350);
       } else {
         setErrorMessage(res.message || 'Login failed.');
       }
     } catch {
-      setIsSubmitting(false);
       setErrorMessage('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -80,7 +80,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
         institution: regRole === 'teacher' ? regInstitution : undefined,
         department: regRole === 'teacher' ? regDepartment : undefined,
       });
-      setIsSubmitting(false);
 
       if (res.success && res.role) {
         setSuccessMessage(res.message || 'Account created!');
@@ -88,21 +87,15 @@ const AuthModal: React.FC<AuthModalProps> = ({
           setSuccessMessage(null);
           onClose();
           if (onRoleRedirect) onRoleRedirect(res.role!);
-        }, 600);
+        }, 400);
       } else {
         setErrorMessage(res.message || 'Registration failed.');
       }
     } catch {
-      setIsSubmitting(false);
       setErrorMessage('An unexpected error occurred during registration.');
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  // Quick-fill demo account helper
-  const fillDemo = (id: string, pass: string) => {
-    setLoginIdentifier(id);
-    setLoginPassword(pass);
-    setErrorMessage(null);
   };
 
   return (
@@ -409,101 +402,6 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 <span>{isSubmitting ? 'Authenticating with Firebase...' : 'Sign In to VirtualVigyan'}</span>
                 <span>→</span>
               </button>
-
-              {/* Claymorphic Quick-Fill Demo Cards */}
-              <div
-                style={{
-                  marginTop: 8,
-                  paddingTop: 16,
-                  borderTop: '1px solid var(--border)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    color: 'var(--text-muted)',
-                    marginBottom: 10,
-                  }}
-                >
-                  ⚡ One-Tap Demo Accounts
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  <button
-                    type="button"
-                    onClick={() => fillDemo('student@virtualvigyan.in', 'student123')}
-                    className="clay-btn"
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 16,
-                      background: 'rgba(5, 150, 105, 0.1)',
-                      border: '1.5px solid rgba(5, 150, 105, 0.35)',
-                      boxShadow: '4px 6px 12px rgba(5, 150, 105, 0.15), inset 2px 2px 3px rgba(255, 255, 255, 0.7)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>🎓</span>
-                    <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>Student</span>
-                    <span style={{ fontSize: '0.62rem', color: '#059669', fontWeight: 700 }}>Class 11</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => fillDemo('teacher@virtualvigyan.in', 'teacher123')}
-                    className="clay-btn"
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 16,
-                      background: 'rgba(2, 132, 199, 0.1)',
-                      border: '1.5px solid rgba(2, 132, 199, 0.35)',
-                      boxShadow: '4px 6px 12px rgba(2, 132, 199, 0.15), inset 2px 2px 3px rgba(255, 255, 255, 0.7)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>👨‍🏫</span>
-                    <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>Teacher</span>
-                    <span style={{ fontSize: '0.62rem', color: '#0284c7', fontWeight: 700 }}>Faculty</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => fillDemo('admin@virtualvigyan.in', 'admin123')}
-                    className="clay-btn"
-                    style={{
-                      padding: '10px 8px',
-                      borderRadius: 16,
-                      background: 'rgba(124, 58, 237, 0.1)',
-                      border: '1.5px solid rgba(124, 58, 237, 0.35)',
-                      boxShadow: '4px 6px 12px rgba(124, 58, 237, 0.15), inset 2px 2px 3px rgba(255, 255, 255, 0.7)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 2,
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>🛡️</span>
-                    <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text-primary)' }}>Admin</span>
-                    <span style={{ fontSize: '0.62rem', color: '#7c3aed', fontWeight: 700 }}>Moderator</span>
-                  </button>
-                </div>
-
-                <p
-                  style={{
-                    fontSize: '0.68rem',
-                    color: 'var(--text-muted)',
-                    marginTop: 10,
-                    lineHeight: 1.45,
-                    fontWeight: 500,
-                  }}
-                >
-                  💡 Logging in as Admin automatically detects your role, unlocks all experiments, and launches the <strong>Admin & Moderator Command Center</strong>.
-                </p>
-              </div>
             </form>
           )}
 

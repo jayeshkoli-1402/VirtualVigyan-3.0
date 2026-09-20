@@ -3,10 +3,9 @@ import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface LandingFooterProps {
   onStartExperiment: () => void;
-  onLogin?: () => void;
 }
 
-export const LandingFooter: React.FC<LandingFooterProps> = ({ onStartExperiment, onLogin }) => {
+export const LandingFooter: React.FC<LandingFooterProps> = ({ onStartExperiment }) => {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -39,7 +38,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ onStartExperiment,
             <h4>Quick Access</h4>
             <ul>
               <li><button onClick={onStartExperiment}>Enter Laboratory</button></li>
-              <li><button onClick={onLogin}>Student / Teacher Login</button></li>
+              <li><button onClick={onStartExperiment}>All Experiments</button></li>
             </ul>
           </div>
 

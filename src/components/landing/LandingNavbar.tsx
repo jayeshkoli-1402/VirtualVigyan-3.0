@@ -4,14 +4,13 @@ import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 interface LandingNavbarProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
-  onLogin: () => void;
+  onLogin?: () => void;
   onStartExperiment: () => void;
 }
 
 const LandingNavbar: React.FC<LandingNavbarProps> = ({
   theme,
   onToggleTheme,
-  onLogin,
   onStartExperiment,
 }) => {
   const [scrolled, setScrolled] = useState(false);
@@ -90,9 +89,6 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
 
-          <button onClick={onLogin} className="ln-btn ln-btn-secondary ln-btn-sm">
-            Login
-          </button>
           <button onClick={onStartExperiment} className="ln-btn ln-btn-primary ln-btn-sm">
             Start Experiment
           </button>
@@ -121,9 +117,6 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           </a>
         ))}
         <div className="ln-mobile-actions">
-          <button onClick={() => { setMobileOpen(false); onLogin(); }} className="ln-btn ln-btn-secondary" style={{ flex: 1 }}>
-            Login
-          </button>
           <button onClick={() => { setMobileOpen(false); onStartExperiment(); }} className="ln-btn ln-btn-primary" style={{ flex: 1 }}>
             Start Experiment
           </button>

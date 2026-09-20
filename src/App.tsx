@@ -27,7 +27,7 @@ import ExperimentSelector from './components/ExperimentSelector';
 import ConservationExperiment from './components/conservation/ConservationExperiment';
 import GenericLab from './components/GenericLab/GenericLab';
 import { getExperimentById } from './experiments';
-import { AuthProvider } from './auth/AuthContext';
+import { AuthProvider, useAuth } from './auth/AuthContext';
 import AuthModal from './components/auth/AuthModal';
 import { AuthPage } from './components/auth/AuthPage';
 import AdminPanel from './components/admin/AdminPanel';
@@ -46,6 +46,7 @@ import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
 type ActiveExperiment = 'select' | 'auth' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
 const AppContent: React.FC = () => {
+  const { user } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
@@ -53,6 +54,21 @@ const AppContent: React.FC = () => {
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>('select');
   const [activeTab, setActiveTab] = useState<NavItem>('home');
+
+  // When user logs in, ensure landing page is dismissed and redirect to their appropriate view
+  useEffect(() => {
+    if (user && activeExperiment === 'auth') {
+      setShowLanding(false);
+      if (user.role === 'admin') {
+        setActiveExperiment('admin');
+      } else if (user.role === 'teacher') {
+        setActiveExperiment('teacher');
+      } else {
+        setActiveExperiment('select');
+        setActiveTab('home');
+      }
+    }
+  }, [user, activeExperiment]);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -295,10 +311,12 @@ const AppContent: React.FC = () => {
         theme={theme}
         onToggleTheme={toggleTheme}
         onBackToLab={() => {
+          setShowLanding(false);
           setActiveExperiment('select');
           setActiveTab('home');
         }}
         onRoleRedirect={(role) => {
+          setShowLanding(false);
           if (role === 'admin') {
             setActiveExperiment('admin');
           } else if (role === 'teacher') {
@@ -346,9 +364,14 @@ const AppContent: React.FC = () => {
           initialTab={authModalTab}
           onRoleRedirect={(role) => {
             setShowLanding(false);
-            if (role === 'admin') setActiveExperiment('admin');
-            else if (role === 'teacher') setActiveExperiment('teacher');
-            else setActiveExperiment('select');
+            if (role === 'admin') {
+              setActiveExperiment('admin');
+            } else if (role === 'teacher') {
+              setActiveExperiment('teacher');
+            } else {
+              setActiveExperiment('select');
+              setActiveTab('home');
+            }
           }}
         />
       </>
@@ -791,12 +814,14 @@ const AppContent: React.FC = () => {
         onClose={() => setAuthModalOpen(false)}
         initialTab={authModalTab}
         onRoleRedirect={(role) => {
+          setShowLanding(false);
           if (role === 'admin') {
             setActiveExperiment('admin');
           } else if (role === 'teacher') {
             setActiveExperiment('teacher');
           } else {
             setActiveExperiment('select');
+            setActiveTab('home');
           }
         }}
       />

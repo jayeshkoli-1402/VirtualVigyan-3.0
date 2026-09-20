@@ -62,6 +62,98 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
           {calcConfig.instruction}
         </p>
+
+        {/* Real Mathematical Fraction Typography for Formulas */}
+        {calcConfig.formulas && calcConfig.formulas.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
+            {calcConfig.formulas.map((form, idx) => (
+              <div
+                key={idx}
+                style={{
+                  background: 'var(--bg-inset, #f8fafc)',
+                  padding: '16px 18px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border, #cbd5e1)',
+                  boxShadow: 'var(--shadow-xs)',
+                }}
+              >
+                {form.label && (
+                  <div style={{
+                    fontSize: '0.86rem',
+                    fontWeight: 700,
+                    color: 'var(--accent-blue, #2563eb)',
+                    marginBottom: 10,
+                  }}>
+                    {form.label}
+                  </div>
+                )}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  fontFamily: 'var(--font-mono, ui-monospace, monospace)',
+                  fontSize: '0.98rem',
+                  color: 'var(--text-primary)',
+                  overflowX: 'auto',
+                  padding: '4px 0',
+                }}>
+                  <span style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                    {form.symbol} =
+                  </span>
+                  <div style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    verticalAlign: 'middle',
+                  }}>
+                    <div style={{
+                      padding: '0 12px 4px 12px',
+                      borderBottom: '2px solid currentColor',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                    }}>
+                      {form.numerator}
+                    </div>
+                    <div style={{
+                      padding: '4px 12px 0 12px',
+                      textAlign: 'center',
+                      whiteSpace: 'nowrap',
+                      fontWeight: 700,
+                      color: 'var(--text-primary)',
+                    }}>
+                      {form.denominator}
+                    </div>
+                  </div>
+                  {form.unit && (
+                    <span style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {renderChemicalSubscripts(form.unit)}
+                    </span>
+                  )}
+                </div>
+                {form.notes && (
+                  <div style={{
+                    fontSize: '0.80rem',
+                    fontWeight: 500,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.5,
+                    marginTop: 10,
+                    borderTop: '1px solid var(--border, rgba(148, 163, 184, 0.3))',
+                    paddingTop: 8,
+                  }}>
+                    {renderChemicalSubscripts(form.notes)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Recorded values */}
@@ -74,21 +166,24 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {Object.entries(state.variables)
-            .filter(([key]) => !key.startsWith('_') && !['stopcockOpen', 'maxFlowRate'].includes(key))
-            .map(([key, value]) => (
-              <div key={key} style={{
-                display: 'flex', justifyContent: 'space-between',
-                fontSize: '0.8rem', padding: '4px 0',
-                borderBottom: '1px solid var(--border)',
-              }}>
-                <span style={{ color: 'var(--text-secondary)' }}>
-                  {formatVariableName(key)}
-                </span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                  {typeof value === 'number' ? value.toFixed(2) : value}
-                </span>
-              </div>
-            ))}
+            .filter(([key]) => !key.startsWith('_') && !['stopcockOpen', 'maxFlowRate', 'pAlkalinity', 'mAlkalinity'].includes(key))
+            .map(([key, value]) => {
+              const isMasked = calcConfig.hideRecordedValueKeys?.includes(key) || ['volumeA', 'volumeB'].includes(key);
+              return (
+                <div key={key} style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  fontSize: '0.8rem', padding: '4px 0',
+                  borderBottom: '1px solid var(--border)',
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    {formatVariableName(key)}
+                  </span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: isMasked ? 'var(--text-muted)' : 'inherit' }}>
+                    {isMasked ? '— (Recorded by student)' : typeof value === 'number' ? value.toFixed(2) : value}
+                  </span>
+                </div>
+              );
+            })}
         </div>
       </div>
 
@@ -138,6 +233,29 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                   </span>
                 </div>
 
+                {/* Optional helper text & example explaining how to find this value */}
+                {field.helperText && (
+                  <div style={{
+                    fontSize: '0.74rem',
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.45,
+                    marginTop: 6,
+                    padding: '6px 10px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-inset, rgba(148, 163, 184, 0.08))',
+                    border: '1px solid var(--border, rgba(148, 163, 184, 0.25))',
+                  }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {field.helperText}
+                    </div>
+                    {field.helperExample && (
+                      <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>
+                        {field.helperExample}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Result feedback */}
                 {result && (
                   <div style={{
@@ -151,16 +269,36 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                     lineHeight: 1.5,
                   }}>
                     {result.correct ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                        <span>✓</span>
-                        <span>Correct! ({result.expectedValue.toFixed(4)} {field.unit})</span>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
+                          <span>✓</span>
+                          <span>
+                            {field.expectedRangeLabel
+                              ? 'Correct — within acceptable experimental range'
+                              : `Correct! (${result.expectedValue.toFixed(4)} ${field.unit})`}
+                          </span>
+                        </div>
+                        {field.expectedRangeLabel && (
+                          <div style={{ fontSize: '0.74rem', marginTop: 3, color: '#047857' }}>
+                            Expected range: <strong>{field.expectedRangeLabel}</strong>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#dc2626', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>
                           <span>✗</span>
-                          <span>Incorrect (You entered: {answers[field.id] || '0'} {field.unit} — Expected: {result.expectedValue.toFixed(4)} {field.unit})</span>
+                          <span>
+                            {field.expectedRangeLabel
+                              ? 'Outside acceptable experimental range'
+                              : `Incorrect (You entered: ${answers[field.id] || '0'} ${field.unit} — Expected: ${result.expectedValue.toFixed(4)} ${field.unit})`}
+                          </span>
                         </div>
+                        {field.expectedRangeLabel && (
+                          <div style={{ fontSize: '0.74rem', color: '#b91c1c', marginBottom: 6 }}>
+                            You entered: <strong>{answers[field.id] || '0'} {field.unit}</strong> — Expected range: <strong>{field.expectedRangeLabel}</strong>
+                          </div>
+                        )}
                         <div style={{
                           padding: '8px 10px',
                           background: 'var(--bg-card)',
@@ -260,6 +398,19 @@ function formatVariableName(key: string): string {
     .replace(/([A-Z])/g, ' $1')
     .replace(/^./, s => s.toUpperCase())
     .replace(/([a-z])(\d)/g, '$1 $2');
+}
+
+function renderChemicalSubscripts(text: string): React.ReactNode {
+  const parts = text.split(/(CaCO[3₃]|H[2₂]SO[4₄])/g);
+  return parts.map((part, i) => {
+    if (part === 'CaCO3' || part === 'CaCO₃') {
+      return <span key={i}>CaCO<sub>3</sub></span>;
+    }
+    if (part === 'H2SO4' || part === 'H₂SO₄') {
+      return <span key={i}>H<sub>2</sub>SO<sub>4</sub></span>;
+    }
+    return part;
+  });
 }
 
 

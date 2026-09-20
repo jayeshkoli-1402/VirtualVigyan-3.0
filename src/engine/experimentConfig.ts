@@ -387,6 +387,26 @@ export type FormulaConfig = {
 
 // ── Calculation ──────────────────────────────────────────────────
 
+export type CalculationFormulaItem = {
+  /** Optional title or section header for this formula */
+  label?: string;
+
+  /** Result symbol, e.g. 'P' or 'M' */
+  symbol: string;
+
+  /** Numerator of the fraction expression */
+  numerator: string;
+
+  /** Denominator of the fraction expression */
+  denominator: string;
+
+  /** Unit label, e.g. 'ppm CaCO₃ eq.' */
+  unit?: string;
+
+  /** Helpful notes explaining variables in the formula */
+  notes?: string;
+};
+
 export type CalculationConfig = {
   /** Title shown above the calculation form */
   title: string;
@@ -394,8 +414,14 @@ export type CalculationConfig = {
   /** Instructional text */
   instruction: string;
 
+  /** Optional structured mathematical formulas with fraction typography */
+  formulas?: CalculationFormulaItem[];
+
   /** Input fields for the student to fill */
   fields: CalculationField[];
+
+  /** Optional list of variable keys to display in Recorded Values without revealing their numeric values */
+  hideRecordedValueKeys?: string[];
 };
 
 export type CalculationField = {
@@ -407,6 +433,12 @@ export type CalculationField = {
 
   /** Placeholder text */
   placeholder?: string;
+
+  /** Optional short instruction or formula explaining how to find this value */
+  helperText?: string;
+
+  /** Optional example showing how to compute or determine this value */
+  helperExample?: string;
 
   /** Unit label shown after the input */
   unit: string;
@@ -425,6 +457,15 @@ export type CalculationField = {
 
   /** Type of tolerance: 'relative' (percentage of expected) or 'absolute' */
   toleranceType?: 'relative' | 'absolute';
+
+  /** Minimum accepted value for range validation */
+  minAccepted?: number;
+
+  /** Maximum accepted value for range validation */
+  maxAccepted?: number;
+
+  /** Display label for expected range, e.g. "4.2–4.5 mL" */
+  expectedRangeLabel?: string;
 };
 
 

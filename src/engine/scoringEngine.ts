@@ -199,6 +199,34 @@ function evaluateSingle(
       }
 
       const studentAnswer = state.studentAnswers[field.id] ?? 0;
+      let correct = false;
+      const effectiveVariables = {
+        ...state.variables,
+        ...state.studentAnswers,
+      };
+
+      if (field.minAccepted !== undefined && field.maxAccepted !== undefined) {
+        const inRange = studentAnswer >= field.minAccepted - 1e-4 && studentAnswer <= field.maxAccepted + 1e-4;
+        if (field.expectedFormulaName) {
+          const formulaVal = computeFormula(field.expectedFormulaName, effectiveVariables);
+          const tol = field.toleranceType === 'absolute'
+            ? field.tolerance
+            : formulaVal * field.tolerance;
+          correct = inRange && Math.abs(studentAnswer - formulaVal) <= Math.abs(tol) + 1e-4;
+        } else {
+          correct = inRange;
+        }
+
+        const pts = correct ? evaluator.correctPoints : (evaluator.incorrectPoints ?? 0);
+        const rangeLabel = field.expectedRangeLabel ?? `${field.minAccepted}–${field.maxAccepted} ${field.unit}`;
+        return {
+          points: pts,
+          explanation: correct
+            ? `Calculation correct (within acceptable range: ${rangeLabel}) → ${pts} points`
+            : `Calculation incorrect (${studentAnswer} outside acceptable range: ${rangeLabel}) → ${pts} points`,
+        };
+      }
+
       const targetAnswer =
         evaluator.actualStandard !== undefined
           ? evaluator.actualStandard
@@ -229,7 +257,7 @@ function evaluateSingle(
         };
       }
 
-      const correct = deviation <= Math.abs(tolerance);
+      correct = deviation <= Math.abs(tolerance);
       const pts = correct ? evaluator.correctPoints : (evaluator.incorrectPoints ?? 0);
 
       return {
@@ -299,25 +327,56 @@ export function validateCalculation(
 }> {
   if (!config.calculation) return [];
 
+  const effectiveVariables = {
+    ...state.variables,
+    ...studentAnswers,
+  };
+
   return config.calculation.fields.map((field: CalculationField) => {
     const studentAnswer = studentAnswers[field.id] ?? 0;
-    const expectedValue =
-      field.expectedValue !== undefined
-        ? field.expectedValue
-        : computeFormula(field.expectedFormulaName ?? '', state.variables);
     const formula = field.expectedFormulaName
       ? config.chemistry.formulas?.[field.expectedFormulaName]
       : undefined;
 
-    const tolerance = field.toleranceType === 'absolute'
-      ? field.tolerance
-      : expectedValue * field.tolerance;
+    let expectedValue = field.expectedValue ?? 0;
+    if (field.expectedFormulaName) {
+      expectedValue = computeFormula(field.expectedFormulaName, effectiveVariables);
+    } else if (field.expectedValue !== undefined) {
+      expectedValue = field.expectedValue;
+    }
 
-    const correct = Math.abs(studentAnswer - expectedValue) <= Math.abs(tolerance);
+    let correct = false;
 
-    const workedFormula = formula
-      ? `${formula.label}\n${formula.displayFormula}\n= ${expectedValue.toFixed(4)} ${formula.unit}`
-      : `Expected: ${expectedValue.toFixed(4)} ${field.unit}`;
+    if (field.minAccepted !== undefined && field.maxAccepted !== undefined) {
+      const inRange = studentAnswer >= field.minAccepted - 1e-4 && studentAnswer <= field.maxAccepted + 1e-4;
+      if (field.expectedFormulaName) {
+        const tol = field.toleranceType === 'absolute'
+          ? field.tolerance
+          : expectedValue * field.tolerance;
+        const matchesCalculation = Math.abs(studentAnswer - expectedValue) <= Math.abs(tol) + 1e-4;
+        correct = inRange && matchesCalculation;
+      } else {
+        correct = inRange;
+      }
+    } else {
+      const tolerance = field.toleranceType === 'absolute'
+        ? field.tolerance
+        : expectedValue * field.tolerance;
+      correct = Math.abs(studentAnswer - expectedValue) <= Math.abs(tolerance);
+    }
+
+    let workedFormula = '';
+    if (field.expectedRangeLabel) {
+      if (formula) {
+        workedFormula = `${formula.label}\n${formula.displayFormula}\nExpected acceptable range: ${field.expectedRangeLabel}`;
+      } else {
+        workedFormula = `Expected acceptable range: ${field.expectedRangeLabel}`;
+      }
+    } else if (formula) {
+      workedFormula = `${formula.label}\n${formula.displayFormula}\n= ${expectedValue.toFixed(4)} ${formula.unit}`;
+    } else {
+      workedFormula = `Expected: ${expectedValue.toFixed(4)} ${field.unit}`;
+    }
 
     return {
       fieldId: field.id,

@@ -341,7 +341,14 @@ export function evaluateCondition(
       return (state.flags[condition.key] ?? false) === condition.equals;
 
     case 'variable': {
-      const val = state.variables[condition.key] ?? 0;
+      let val: number;
+      if (condition.key.includes('+')) {
+        const parts = condition.key.split('+').map(p => p.trim());
+        const sum = parts.reduce((acc, p) => acc + (Number(state.variables[p]) || 0), 0);
+        val = Math.round(sum * 1000) / 1000;
+      } else {
+        val = state.variables[condition.key] ?? 0;
+      }
       switch (condition.op) {
         case '==': return val === condition.value;
         case '!=': return val !== condition.value;
@@ -549,6 +556,7 @@ function advanceToNextStep(
     ...state,
     currentStepIndex: nextIndex,
     currentStepId: nextStep.id,
+    variables: { ...state.variables, stopcockOpen: 0 },
     completedActions: [...state.completedActions, `_step_${config.steps[state.currentStepIndex].id}`],
   };
 }
@@ -970,8 +978,8 @@ export function createExperimentReducer(
             // Guard against advancing subsequent titration variables before their step
             if (key === 'stdEdtaVolume' && state.flags['flaskCleared']) continue;
             if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
-            if (key === 'volumeA' && state.flags['pEndpointReached']) continue;
-            if (key === 'volumeB' && !state.flags['pEndpointReached']) continue;
+            if (key === 'volumeA' && state.flags['methylOrangeAdded']) continue;
+            if (key === 'volumeB' && (!state.flags['pEndpointReached'] || !state.flags['methylOrangeAdded'])) continue;
 
             newVariables[key] = Math.round(((newVariables[key] as number) + flowAmount) * 1000) / 1000;
           }
@@ -1059,6 +1067,11 @@ export function createExperimentReducer(
         ];
         for (const key of titrationKeys) {
           if (newVariables[key] !== undefined) {
+            if (key === 'stdEdtaVolume' && state.flags['flaskCleared']) continue;
+            if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
+            if (key === 'volumeA' && state.flags['methylOrangeAdded']) continue;
+            if (key === 'volumeB' && (!state.flags['pEndpointReached'] || !state.flags['methylOrangeAdded'])) continue;
+
             newVariables[key] = Math.round(((newVariables[key] as number) + dropVol) * 1000) / 1000;
           }
         }

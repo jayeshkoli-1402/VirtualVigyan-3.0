@@ -367,8 +367,8 @@
 }
 
 .ln-hamburger {
-  display: none;
-  all: unset;
+  display: none !important;
+  box-sizing: border-box;
   cursor: pointer;
   width: 38px;
   height: 38px;
@@ -379,7 +379,8 @@
   justify-content: center;
   font-size: 1.15rem;
   color: var(--text-primary);
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  padding: 0;
 }
 
 .ln-hamburger:hover {
@@ -1501,7 +1502,7 @@
 @media (max-width: 768px) {
   .ln-navbar-links { display: none; }
   .ln-navbar-actions .ln-btn { display: none; }
-  .ln-hamburger { display: flex; }
+  .ln-hamburger { display: flex !important; }
   .ln-container { padding: 0 20px; }
   .ln-hero-panel { padding: 36px 24px; min-height: auto; border-radius: 14px; }
   .ln-hero-title { font-size: 2.1rem; }

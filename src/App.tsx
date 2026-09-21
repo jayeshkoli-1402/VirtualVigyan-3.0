@@ -34,7 +34,9 @@ import AdminPanel from './components/admin/AdminPanel';
 import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
-import { ClassesView } from './components/home/ClassesView';
+import { MyClassesView } from './components/student/MyClassesView';
+import { JoinLabModal } from './components/student/JoinLabModal';
+import type { PrivateLab, PrivateLabContext } from './types/privateLab';
 import { TheoryNotesView } from './components/home/TheoryNotesView';
 import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
@@ -57,27 +59,42 @@ const AppContent: React.FC = () => {
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
   const [showLanding, setShowLanding] = useState(() => {
     const stored = sessionStorage.getItem('vv_showLanding');
-    return stored !== null ? stored === 'true' : true;
+    if (stored !== null) return stored === 'true';
+    const cachedUser = localStorage.getItem('vv_active_user');
+    return cachedUser ? false : true;
   });
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>(() => {
-    return (sessionStorage.getItem('vv_activeExperiment') as ActiveExperiment) || 'select';
+    const stored = sessionStorage.getItem('vv_activeExperiment');
+    if (stored) return stored as ActiveExperiment;
+    const cachedUser = localStorage.getItem('vv_active_user');
+    if (cachedUser) {
+      try {
+        const parsed = JSON.parse(cachedUser);
+        if (parsed.role === 'teacher') return 'teacher';
+        if (parsed.role === 'admin') return 'admin';
+      } catch {}
+    }
+    return 'select';
   });
   const [activeTab, setActiveTab] = useState<NavItem>(() => {
-    return (sessionStorage.getItem('vv_activeTab') as NavItem) || 'home';
+    return (sessionStorage.getItem('vv_activeTab') as NavItem) || 'experiments';
   });
 
-  // When user logs in, ensure landing page is dismissed and redirect to their appropriate view
+  // When user is authenticated, keep landing hidden and route properly
   useEffect(() => {
-    if (user && activeExperiment === 'auth') {
+    if (user) {
       setShowLanding(false);
-      if (user.role === 'admin') {
-        setActiveExperiment('admin');
-      } else if (user.role === 'teacher') {
-        setActiveExperiment('teacher');
-      } else {
-        setActiveExperiment('select');
-        setActiveTab('home');
+      sessionStorage.setItem('vv_showLanding', 'false');
+      if (activeExperiment === 'auth') {
+        if (user.role === 'admin') {
+          setActiveExperiment('admin');
+        } else if (user.role === 'teacher') {
+          setActiveExperiment('teacher');
+        } else {
+          setActiveExperiment('select');
+          setActiveTab('experiments');
+        }
       }
     }
   }, [user, activeExperiment]);
@@ -87,6 +104,8 @@ const AppContent: React.FC = () => {
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [howItWorksModalOpen, setHowItWorksModalOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
+  const [joinLabModalOpen, setJoinLabModalOpen] = useState(false);
+  const [activePrivateLabContext, setActivePrivateLabContext] = useState<PrivateLabContext | null>(null);
 
   const [state, dispatch] = useReducer(titrationReducer, initialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
@@ -267,7 +286,21 @@ const AppContent: React.FC = () => {
     return () => document.removeEventListener('click', handler, true);
   }, [state.volumeAdded, dispatch]);
 
+  const handleLaunchPrivateExperiment = (experimentId: string, lab: PrivateLab, attemptNumber: number) => {
+    setActivePrivateLabContext({ lab, attemptNumber });
+    if (experimentId === 'titration') {
+      setActiveExperiment('titration');
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START_EXPERIMENT' });
+    } else if (experimentId === 'conservation') {
+      setActiveExperiment('conservation');
+    } else {
+      setActiveExperiment(experimentId);
+    }
+  };
+
   const handleSelectExperiment = (id: 'titration' | 'conservation') => {
+    setActivePrivateLabContext(null);
     setActiveExperiment(id);
     if (id === 'titration') {
       dispatch({ type: 'RESET' });
@@ -277,6 +310,7 @@ const AppContent: React.FC = () => {
 
   const handleBackToSelector = () => {
     setActiveExperiment('select');
+    setActivePrivateLabContext(null);
     dispatch({ type: 'RESET' });
   };
 
@@ -298,6 +332,13 @@ const AppContent: React.FC = () => {
 
   // Get experiment-specific header info
   const getHeaderInfo = () => {
+    if (activePrivateLabContext) {
+      const expTitle = getExperimentById(activeExperiment)?.title || (activeExperiment === 'titration' ? 'Acid-Base Titration' : activeExperiment === 'conservation' ? 'Conservation of Mass' : activeExperiment);
+      return {
+        subtitle: `🏫 ${activePrivateLabContext.lab.title} — ${expTitle}`,
+        color: '#0284c7',
+      };
+    }
     if (activeExperiment === 'admin') {
       return { subtitle: t('nav.adminPanel', '🛡️ Admin & Moderator Command Center'), color: '#7c3aed' };
     }
@@ -483,6 +524,7 @@ const AppContent: React.FC = () => {
             }}
             onNavigateToAuth={handleNavigateToAuth}
             onOpenAdminPanel={() => setActiveExperiment('admin')}
+            onOpenJoinLab={() => setJoinLabModalOpen(true)}
             isMobile={isMobile}
             onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           />
@@ -493,20 +535,18 @@ const AppContent: React.FC = () => {
               <ExperimentSelector
                 showHeroBanner={false}
                 onSelectExperiment={handleSelectExperiment}
-                onSelectEngineExperiment={(id) => setActiveExperiment(id)}
+                onSelectEngineExperiment={(id) => {
+                  setActivePrivateLabContext(null);
+                  setActiveExperiment(id);
+                }}
                 onSelectVR={() => setActiveExperiment('conservation-vr')}
                 onGoToNotes={() => setActiveTab('theory-notes')}
                 onOpenHowItWorks={() => setHowItWorksModalOpen(true)}
                 externalSearchQuery={searchQuery}
               />
             ) : activeTab === 'classes' ? (
-              <ClassesView
-                onBackToHome={() => setActiveTab('experiments')}
-                onLaunchExperiment={(id) => {
-                  if (id === 'titration') handleSelectExperiment('titration');
-                  else if (id === 'conservation') handleSelectExperiment('conservation');
-                  else setActiveExperiment(id);
-                }}
+              <MyClassesView
+                onLaunchPrivateExperiment={handleLaunchPrivateExperiment}
               />
             ) : activeTab === 'theory-notes' ? (
               <TheoryNotesView
@@ -568,6 +608,13 @@ const AppContent: React.FC = () => {
         <StudentProfileSetupModal
           isOpen={profileSetupOpen}
           onClose={() => setProfileSetupOpen(false)}
+        />
+        <JoinLabModal
+          isOpen={joinLabModalOpen}
+          onClose={() => setJoinLabModalOpen(false)}
+          onJoinedSuccess={() => {
+            setActiveTab('classes');
+          }}
         />
       </div>
     );
@@ -739,7 +786,11 @@ const AppContent: React.FC = () => {
         {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-vr' && (() => {
           const engineConfig = getExperimentById(activeExperiment);
           return engineConfig ? (
-            <GenericLab config={engineConfig} onBackToSelector={handleBackToSelector} />
+            <GenericLab
+              config={engineConfig}
+              onBackToSelector={handleBackToSelector}
+              privateLabContext={activePrivateLabContext || undefined}
+            />
           ) : null;
         })()}
 

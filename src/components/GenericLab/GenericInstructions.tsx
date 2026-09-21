@@ -17,6 +17,7 @@ type GenericInstructionsProps = {
   mistakeMessage: string | null;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  hideProcedure?: boolean;
 };
 
 const GenericInstructions: React.FC<GenericInstructionsProps> = ({
@@ -26,6 +27,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   mistakeMessage,
   isCollapsed,
   onToggleCollapse,
+  hideProcedure = false,
 }) => {
   const { t, language, tDynamic } = useLanguage();
   const currentStep = config.steps[state.currentStepIndex];
@@ -109,27 +111,47 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           <div style={{
             padding: '12px 14px',
             borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 148, 136, 0.06))',
-            border: '1.5px solid rgba(37, 99, 235, 0.22)',
-            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
+            background: hideProcedure
+              ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.05))'
+              : 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 148, 136, 0.06))',
+            border: hideProcedure
+              ? '1.5px solid rgba(239, 68, 68, 0.3)'
+              : '1.5px solid rgba(37, 99, 235, 0.22)',
+            boxShadow: hideProcedure
+              ? '0 2px 8px rgba(239, 68, 68, 0.08)'
+              : '0 2px 8px rgba(37, 99, 235, 0.06)',
           }}>
             <div style={{
               fontSize: '0.78rem',
               fontWeight: 700,
-              color: '#1d4ed8',
+              color: hideProcedure ? '#dc2626' : '#1d4ed8',
               letterSpacing: '0.02em',
               marginBottom: 6,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
             }}>
-              {stepTitle}
+              {hideProcedure && <span>🔒</span>}
+              <span>{hideProcedure ? t('lab.assessmentMode', 'Assessment Mode') : stepTitle}</span>
             </div>
-            <div style={{
-              fontSize: '0.8125rem',
-              lineHeight: 1.5,
-              color: 'var(--text-primary)',
-              fontWeight: 450,
-            }}>
-              {stepInstruction}
-            </div>
+            {hideProcedure ? (
+              <div style={{
+                fontSize: '0.8rem',
+                lineHeight: 1.5,
+                color: 'var(--text-secondary)',
+              }}>
+                {t('lab.procedureHidden', 'Detailed step instructions are concealed by your instructor for this evaluation. Proceed with the reaction using standard laboratory protocols.')}
+              </div>
+            ) : (
+              <div style={{
+                fontSize: '0.8125rem',
+                lineHeight: 1.5,
+                color: 'var(--text-primary)',
+                fontWeight: 450,
+              }}>
+                {stepInstruction}
+              </div>
+            )}
           </div>
         );
       })()}

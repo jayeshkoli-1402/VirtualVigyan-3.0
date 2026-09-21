@@ -11,6 +11,7 @@ interface TopHeaderProps {
   onOpenAuthModal: () => void;
   onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
   onOpenAdminPanel?: () => void;
+  onOpenJoinLab?: () => void;
   onToggleMobileSidebar?: () => void;
   isMobile?: boolean;
 }
@@ -23,6 +24,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenAuthModal,
   onNavigateToAuth,
   onOpenAdminPanel,
+  onOpenJoinLab,
   onToggleMobileSidebar,
   isMobile = false,
 }) => {
@@ -265,6 +267,33 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Join Lab Shortcut Button */}
+        {onOpenJoinLab && (
+          <button
+            id="btn-header-join-lab"
+            onClick={onOpenJoinLab}
+            title="Join a Classroom or Assessment with Lab Code"
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 13px',
+              borderRadius: 9999,
+              background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>🔑</span>
+            <span>Join Lab</span>
+          </button>
+        )}
 
         {/* Admin Command Center Quick Launch Button (Visible to Admins) */}
         {user?.role === 'admin' && onOpenAdminPanel && (

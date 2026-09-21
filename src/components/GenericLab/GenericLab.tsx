@@ -28,13 +28,15 @@ import GenericInstructions from './GenericInstructions';
 import GenericCalculation from './GenericCalculation';
 import GenericResults from './GenericResults';
 import { useLanguage } from '../../i18n/LanguageContext';
+import type { PrivateLabContext } from '../../types/privateLab';
 
 type GenericLabProps = {
   config: ExperimentConfig;
   onBackToSelector: () => void;
+  privateLabContext?: PrivateLabContext;
 };
 
-const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => {
+const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, privateLabContext }) => {
   const { tDynamic } = useLanguage();
   const [reducer, initialState] = createExperiment(config);
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -62,6 +64,35 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
   }, []);
+
+  // Assessment Timer support
+  const timeLimitMinutes = privateLabContext?.lab.restrictions.timeLimitMinutes || 0;
+  const [remainingSeconds, setRemainingSeconds] = useState(timeLimitMinutes * 60);
+
+  useEffect(() => {
+    (window as any)._vv_lab_start_time = Date.now();
+  }, []);
+
+  useEffect(() => {
+    if (timeLimitMinutes <= 0) return;
+    const interval = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setMistakeMessage('Time limit reached for this assessment evaluation!');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timeLimitMinutes]);
+
+  const formatTimer = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Start experiment on mount
   useEffect(() => {
@@ -175,10 +206,82 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
+        {/* Private Lab Assessment Mode Banner */}
+        {privateLabContext && (
+          <div style={{
+            padding: '10px 18px',
+            background: 'linear-gradient(90deg, #0f172a, #1e293b)',
+            borderBottom: '1.5px solid rgba(2, 132, 199, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.82rem',
+            color: '#ffffff',
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                background: '#dc2626',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: '0.68rem',
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                borderRadius: 6,
+                letterSpacing: '0.04em',
+              }}>
+                🔒 Assessment Mode
+              </span>
+              <span style={{ fontWeight: 800, color: '#f8fafc' }}>{privateLabContext.lab.title}</span>
+              <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.74rem' }}>
+                ({privateLabContext.lab.code} • Attempt #{privateLabContext.attemptNumber})
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {timeLimitMinutes > 0 && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 800,
+                  fontSize: '0.86rem',
+                  color: remainingSeconds < 180 ? '#ef4444' : '#38bdf8',
+                  background: 'rgba(0,0,0,0.4)',
+                  padding: '3px 10px',
+                  borderRadius: 6,
+                  border: remainingSeconds < 180 ? '1px solid #ef4444' : '1px solid rgba(56, 189, 248, 0.35)',
+                }}>
+                  <span>⏱️</span>
+                  <span>{formatTimer(remainingSeconds)}</span>
+                </div>
+              )}
+              {privateLabContext.lab.restrictions.hideProcedure && (
+                <span title="Step instructions concealed by instructor" style={{ fontSize: '0.72rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                  🔒 No Procedure
+                </span>
+              )}
+              {privateLabContext.lab.restrictions.hideFormulas && (
+                <span title="Formula guide concealed by instructor" style={{ fontSize: '0.72rem', color: '#a855f7', background: 'rgba(168, 85, 247, 0.15)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>
+                  📐 No Formulas
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Calculation screen */}
         {isCalcStep && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <GenericCalculation config={config} state={state} dispatch={dispatch} />
+            <GenericCalculation
+              config={config}
+              state={state}
+              dispatch={dispatch}
+              hideFormulas={privateLabContext?.lab.restrictions.hideFormulas}
+            />
           </div>
         )}
 
@@ -190,6 +293,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
               state={state}
               dispatch={dispatch}
               onBackToSelector={onBackToSelector}
+              privateLabContext={privateLabContext}
             />
           </div>
         )}
@@ -252,6 +356,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
                 mistakeMessage={mistakeMessage}
                 isCollapsed={rightCollapsed}
                 onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
+                hideProcedure={privateLabContext?.lab.restrictions.hideProcedure}
               />
             </div>
           </div>

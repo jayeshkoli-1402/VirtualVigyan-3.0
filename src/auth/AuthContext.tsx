@@ -488,23 +488,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setCurrentUser(profile);
       } else {
-        // If not logged in via Firebase, check if there's a cached admin session
+        // If not logged in via Firebase, check if there's a cached local session (Student, Teacher, or Admin)
         const cached = localStorage.getItem('vv_active_user');
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
-            if (parsed && parsed.email && isAdminEmail(parsed.email)) {
-              setCurrentUser({
-                ...parsed,
-                role: 'admin',
-                avatar: '🛡️',
-                permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-              });
+            if (parsed && parsed.email && !isAccountDeleted(parsed.email)) {
+              if (isAdminEmail(parsed.email)) {
+                setCurrentUser({
+                  ...parsed,
+                  role: 'admin',
+                  avatar: '🛡️',
+                  permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
+                });
+              } else {
+                setCurrentUser(parsed);
+              }
               setLoading(false);
               return;
             }
           } catch {
-            // ignore
+            // ignore JSON parse error
           }
         }
         setCurrentUser(null);

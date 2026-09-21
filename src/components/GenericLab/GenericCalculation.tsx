@@ -12,12 +12,14 @@ type GenericCalculationProps = {
   config: ExperimentConfig;
   state: ExperimentState;
   dispatch: React.Dispatch<ExperimentAction>;
+  hideFormulas?: boolean;
 };
 
 const GenericCalculation: React.FC<GenericCalculationProps> = ({
   config,
   state,
   dispatch,
+  hideFormulas = false,
 }) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [results, setResults] = useState<ReturnType<typeof validateCalculation> | null>(null);
@@ -63,8 +65,32 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           {calcConfig.instruction}
         </p>
 
-        {/* Real Mathematical Fraction Typography for Formulas */}
-        {calcConfig.formulas && calcConfig.formulas.length > 0 && (
+        {/* Real Mathematical Fraction Typography for Formulas (or Concealed Notice) */}
+        {hideFormulas ? (
+          <div style={{
+            marginTop: 14,
+            padding: '12px 16px',
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(220, 38, 38, 0.04))',
+            border: '1.5px solid rgba(239, 68, 68, 0.25)',
+          }}>
+            <div style={{
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 4,
+            }}>
+              <span>🔒</span>
+              <span>Formula Guide Concealed (Assessment Mode)</span>
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Your instructor has withheld worked formula aids for this assessment. Calculate the results using standard stoichiometry principles.
+            </div>
+          </div>
+        ) : calcConfig.formulas && calcConfig.formulas.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 14 }}>
             {calcConfig.formulas.map((form, idx) => (
               <div
@@ -169,7 +195,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
               </div>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Recorded values */}

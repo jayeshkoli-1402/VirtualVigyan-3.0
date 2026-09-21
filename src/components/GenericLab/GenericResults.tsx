@@ -4,15 +4,20 @@
  * ═══════════════════════════════════════════════════════════════════
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { ExperimentConfig, ExperimentState, ExperimentAction } from '../../engine/experimentConfig';
 import { computeScore } from '../../engine/scoringEngine';
+import { useAuth } from '../../auth/AuthContext';
+import { recordPrivateLabSubmission } from '../../services/privateLabService';
+import { recordStudentPerformance } from '../../services/studentHistoryService';
+import type { PrivateLabContext } from '../../types/privateLab';
 
 type GenericResultsProps = {
   config: ExperimentConfig;
   state: ExperimentState;
   dispatch: React.Dispatch<ExperimentAction>;
   onBackToSelector: () => void;
+  privateLabContext?: PrivateLabContext;
 };
 
 const GenericResults: React.FC<GenericResultsProps> = ({
@@ -20,9 +25,54 @@ const GenericResults: React.FC<GenericResultsProps> = ({
   state,
   dispatch,
   onBackToSelector,
+  privateLabContext,
 }) => {
+  const { user } = useAuth();
+  const recordedRef = useRef(false);
   const scoreResult = useMemo(() => computeScore(config, state), [config, state]);
   const [animatedScore, setAnimatedScore] = useState(0);
+
+  useEffect(() => {
+    if (user && !recordedRef.current) {
+      recordedRef.current = true;
+      const startTime = (window as any)._vv_lab_start_time || Date.now() - 120000;
+      const elapsedSeconds = Math.max(15, Math.round((Date.now() - startTime) / 1000));
+
+      if (privateLabContext) {
+        recordPrivateLabSubmission({
+          labId: privateLabContext.lab.id,
+          studentId: user.id,
+          studentName: user.name || 'Student',
+          studentEmail: user.email,
+          avatar: user.avatar || '🎓',
+          experimentId: config.id,
+          experimentTitle: config.title,
+          score: scoreResult.totalScore,
+          maxScore: 100,
+          attemptNumber: privateLabContext.attemptNumber || 1,
+          timeSpentSeconds: elapsedSeconds,
+          mistakes: state.mistakes,
+          calculationAnswers: state.studentAnswers,
+        });
+      } else {
+        recordStudentPerformance({
+          studentId: user.id,
+          studentName: user.name || 'Student',
+          studentEmail: user.email,
+          avatar: user.avatar || '🎓',
+          experimentId: config.id,
+          experimentTitle: config.title,
+          type: 'practice',
+          score: scoreResult.totalScore,
+          maxScore: 100,
+          attemptNumber: 1,
+          timeSpentSeconds: elapsedSeconds,
+          mistakes: state.mistakes,
+          calculationAnswers: state.studentAnswers,
+        });
+      }
+    }
+  }, [privateLabContext, user, config, scoreResult, state.mistakes, state.studentAnswers]);
 
   useEffect(() => {
     // Animate score count-up
@@ -61,6 +111,46 @@ const GenericResults: React.FC<GenericResultsProps> = ({
       padding: 24,
       animation: 'fadeIn 0.4s ease-out',
     }}>
+      {/* Classroom Lab Evaluation Banner */}
+      {privateLabContext && (
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: 14,
+          background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(5, 150, 105, 0.12))',
+          border: '1.5px solid rgba(2, 132, 199, 0.35)',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 10,
+        }}>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', color: '#0284c7', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>🏫</span>
+              <span>Classroom Lab Evaluation</span>
+            </div>
+            <div style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>
+              {privateLabContext.lab.title}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Instructor: {privateLabContext.lab.teacherName} • Attempt #{privateLabContext.attemptNumber}
+            </div>
+          </div>
+          <span style={{
+            fontSize: '0.74rem',
+            fontWeight: 800,
+            color: '#059669',
+            background: 'rgba(5, 150, 105, 0.15)',
+            border: '1px solid rgba(5, 150, 105, 0.3)',
+            padding: '5px 12px',
+            borderRadius: 8,
+          }}>
+            ✓ Recorded to Gradebook
+          </span>
+        </div>
+      )}
+
       {/* Score circle */}
       <div className="glass-card" style={{
         padding: '32px 24px',

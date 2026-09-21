@@ -3,6 +3,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { DeleteAccountModal } from '../auth/DeleteAccountModal';
+import { PrivateLabManager } from './PrivateLabManager';
 
 interface TeacherDashboardProps {
   onLaunchExperiment: (id: string) => void;
@@ -11,6 +12,7 @@ interface TeacherDashboardProps {
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment, onNavigateToAuth }) => {
   const { user, allUsers } = useAuth();
+  const [activeTeacherTab, setActiveTeacherTab] = useState<'private-labs' | 'cohort'>('private-labs');
   const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation', 'titration', 'exp-ostwald-viscometer']);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -175,8 +177,71 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
         )}
       </div>
 
-      {/* Claymorphic KPI Stats */}
+      {/* Primary Educator Navigation Tabs */}
       <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          marginBottom: 24,
+          borderBottom: '1px solid var(--border)',
+          paddingBottom: 12,
+        }}
+      >
+        <button
+          id="tab-teacher-private-labs"
+          onClick={() => setActiveTeacherTab('private-labs')}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            padding: '10px 20px',
+            borderRadius: 12,
+            background: activeTeacherTab === 'private-labs' ? '#0284c7' : 'var(--bg-card)',
+            color: activeTeacherTab === 'private-labs' ? '#ffffff' : 'var(--text-secondary)',
+            fontWeight: 800,
+            fontSize: '0.86rem',
+            border: activeTeacherTab === 'private-labs' ? '1px solid #0284c7' : '1px solid var(--border)',
+            boxShadow: activeTeacherTab === 'private-labs' ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span>🏫</span>
+          <span>Private Labs & Assessments</span>
+        </button>
+
+        <button
+          id="tab-teacher-cohort-overview"
+          onClick={() => setActiveTeacherTab('cohort')}
+          style={{
+            all: 'unset',
+            cursor: 'pointer',
+            padding: '10px 20px',
+            borderRadius: 12,
+            background: activeTeacherTab === 'cohort' ? '#0284c7' : 'var(--bg-card)',
+            color: activeTeacherTab === 'cohort' ? '#ffffff' : 'var(--text-secondary)',
+            fontWeight: 800,
+            fontSize: '0.86rem',
+            border: activeTeacherTab === 'cohort' ? '1px solid #0284c7' : '1px solid var(--border)',
+            boxShadow: activeTeacherTab === 'cohort' ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span>📊</span>
+          <span>General Syllabus & Cohort</span>
+        </button>
+      </div>
+
+      {activeTeacherTab === 'private-labs' ? (
+        <PrivateLabManager onLaunchExperiment={onLaunchExperiment} />
+      ) : (
+        <>
+          {/* Claymorphic KPI Stats */}
+          <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -403,6 +468,8 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
           </div>
         </div>
       </div>
+      </>
+      )}
 
       {/* Delete Account Confirmation Modal */}
       <DeleteAccountModal

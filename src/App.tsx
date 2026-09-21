@@ -35,7 +35,6 @@ import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { ClassesView } from './components/home/ClassesView';
-import { HomeDashboardView } from './components/home/HomeDashboardView';
 import { TheoryNotesView } from './components/home/TheoryNotesView';
 import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
@@ -356,24 +355,31 @@ const AppContent: React.FC = () => {
     return (
       <>
         <LandingPage
-          onEnterApp={() => setShowLanding(false)}
+          onEnterApp={() => {
+            setShowLanding(false);
+            sessionStorage.setItem('vv_showLanding', 'false');
+            setActiveTab('experiments');
+          }}
           onOpenLogin={() => {
             setAuthModalTab('login');
             setAuthModalOpen(true);
           }}
           onOpenTeacherPortal={() => {
             setShowLanding(false);
+            sessionStorage.setItem('vv_showLanding', 'false');
             setActiveTab('teacher');
             setActiveExperiment('teacher');
           }}
           onStartExperiment={(expId?: string) => {
             setShowLanding(false);
+            sessionStorage.setItem('vv_showLanding', 'false');
             if (expId) {
               if (expId === 'titration') handleSelectExperiment('titration');
               else if (expId === 'conservation') handleSelectExperiment('conservation');
               else setActiveExperiment(expId);
             } else {
               setActiveExperiment('select');
+              setActiveTab('experiments');
             }
           }}
           theme={theme}
@@ -385,13 +391,14 @@ const AppContent: React.FC = () => {
           initialTab={authModalTab}
           onRoleRedirect={(role) => {
             setShowLanding(false);
+            sessionStorage.setItem('vv_showLanding', 'false');
             if (role === 'admin') {
               setActiveExperiment('admin');
             } else if (role === 'teacher') {
               setActiveExperiment('teacher');
             } else {
               setActiveExperiment('select');
-              setActiveTab('home');
+              setActiveTab('experiments');
             }
           }}
         />
@@ -407,7 +414,11 @@ const AppContent: React.FC = () => {
         <AppSidebar
           activeTab={activeTab}
           onSelectTab={(tab) => {
-            if (tab === 'settings') {
+            if (tab === 'home') {
+              setShowLanding(true);
+              sessionStorage.setItem('vv_showLanding', 'true');
+              setActiveExperiment('select');
+            } else if (tab === 'settings') {
               setSettingsModalOpen(true);
             } else if (tab === 'about') {
               setAboutModalOpen(true);
@@ -426,6 +437,7 @@ const AppContent: React.FC = () => {
           }}
           onReturnToLanding={() => {
             setShowLanding(true);
+            sessionStorage.setItem('vv_showLanding', 'true');
             setActiveExperiment('select');
           }}
           onNavigateToAuth={handleNavigateToAuth}
@@ -453,17 +465,7 @@ const AppContent: React.FC = () => {
 
           {/* Views */}
           <main style={{ flex: 1, padding: isMobile ? '20px 16px' : '32px 36px', boxSizing: 'border-box' }}>
-            {activeTab === 'home' ? (
-              <HomeDashboardView
-                onSelectExperiment={handleSelectExperiment}
-                onSelectEngineExperiment={(id) => setActiveExperiment(id)}
-                onBrowseAll={() => setActiveTab('experiments')}
-                onGoToNotes={() => setActiveTab('theory-notes')}
-                onGoToClasses={() => setActiveTab('classes')}
-                onGoToProgress={() => setActiveTab('progress')}
-                onOpenHowItWorks={() => setHowItWorksModalOpen(true)}
-              />
-            ) : activeTab === 'experiments' ? (
+            {activeTab === 'experiments' || activeTab === 'home' ? (
               <ExperimentSelector
                 showHeroBanner={false}
                 onSelectExperiment={handleSelectExperiment}
@@ -475,7 +477,7 @@ const AppContent: React.FC = () => {
               />
             ) : activeTab === 'classes' ? (
               <ClassesView
-                onBackToHome={() => setActiveTab('home')}
+                onBackToHome={() => setActiveTab('experiments')}
                 onLaunchExperiment={(id) => {
                   if (id === 'titration') handleSelectExperiment('titration');
                   else if (id === 'conservation') handleSelectExperiment('conservation');
@@ -484,7 +486,7 @@ const AppContent: React.FC = () => {
               />
             ) : activeTab === 'theory-notes' ? (
               <TheoryNotesView
-                onBackToHome={() => setActiveTab('home')}
+                onBackToHome={() => setActiveTab('experiments')}
                 onLaunchExperiment={(id) => {
                   if (id === 'titration') handleSelectExperiment('titration');
                   else if (id === 'conservation') handleSelectExperiment('conservation');
@@ -493,7 +495,7 @@ const AppContent: React.FC = () => {
               />
             ) : activeTab === 'progress' ? (
               <ProgressView
-                onBackToHome={() => setActiveTab('home')}
+                onBackToHome={() => setActiveTab('experiments')}
                 onLaunchExperiment={(id) => {
                   if (id === 'titration') handleSelectExperiment('titration');
                   else if (id === 'conservation') handleSelectExperiment('conservation');

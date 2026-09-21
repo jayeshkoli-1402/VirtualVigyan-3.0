@@ -56,7 +56,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   ] as const;
 
   const handleNavClick = (tab: NavItem) => {
-    onSelectTab(tab);
+    if (tab === 'home' && onReturnToLanding) {
+      onReturnToLanding();
+    } else {
+      onSelectTab(tab);
+    }
     if (isMobile && onCloseMobile) {
       onCloseMobile();
     }
@@ -205,45 +209,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               </button>
             );
           })}
-
-          {/* Explicit Return to Landing Page Button */}
-          {onReturnToLanding && (
-            <button
-              type="button"
-              onClick={() => {
-                onReturnToLanding();
-                if (isMobile && onCloseMobile) onCloseMobile();
-              }}
-              title="Return to VirtualVigyan Landing Page"
-              style={{
-                width: '100%',
-                border: '1px solid rgba(37, 99, 235, 0.15)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                padding: '9px 14px',
-                borderRadius: 10,
-                fontSize: '0.84rem',
-                fontWeight: 600,
-                color: '#2563eb',
-                background: 'rgba(37, 99, 235, 0.06)',
-                marginTop: 6,
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.12)';
-                e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.06)';
-                e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.15)';
-              }}
-            >
-              <span style={{ fontSize: '1rem', width: 20, textAlign: 'center' }}>🌐</span>
-              <span>Landing Page</span>
-            </button>
-          )}
         </nav>
       </div>
 

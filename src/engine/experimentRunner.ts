@@ -127,7 +127,7 @@ export function detectChemicalAddition(
   if (norm.includes('lead') || norm.includes('pb_no3_2')) {
     return { substanceId: 'pb_no3_2', volumeMl: 10, molarity: 0.1 };
   }
-  if (norm.includes('thiosulfate') || norm.includes('na2s2o3')) {
+  if (norm.includes('thiosulfate') || norm.includes('thiosulphate') || norm.includes('na2s2o3')) {
     return { substanceId: 'na2s2o3', volumeMl: 15, molarity: 0.1 };
   }
 
@@ -701,8 +701,13 @@ export function createExperimentReducer(
           return state;
         }
 
-        // Process first matching interaction
-        const interaction = interactions[0];
+        // Process matching interaction whose conditions are satisfied, or fallback to first
+        const interaction =
+          interactions.find(i => {
+            if (i.guard && evaluateCondition(i.guard.condition, state)) return false;
+            if (!i.conditions) return true;
+            return i.conditions.every(c => evaluateCondition(c, state));
+          }) ?? interactions[0];
 
         // Check conditions
         if (interaction.conditions) {
@@ -969,6 +974,8 @@ export function createExperimentReducer(
           'sampleEdtaVolume',
           'volumeA',
           'volumeB',
+          'volumeY',
+          'volumeZ',
           'thiosulphateVolume',
           'naohVolume',
           'buretteReading',
@@ -980,6 +987,13 @@ export function createExperimentReducer(
             if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
             if (key === 'volumeA' && state.flags['methylOrangeAdded']) continue;
             if (key === 'volumeB' && (!state.flags['pEndpointReached'] || !state.flags['methylOrangeAdded'])) continue;
+            if (key === 'volumeY' && (!state.flags['methylOrangeAdded'] || state.flags['phenolphthaleinAdded'])) continue;
+            if (key === 'volumeZ') {
+              if (!state.flags['moEndpointReached'] || !state.flags['phenolphthaleinAdded']) continue;
+              if ((newVariables['volumeZ'] as number) === 0) {
+                newVariables['volumeZ'] = newVariables['volumeY'] ?? newVariables['volumeAdded'] ?? 0;
+              }
+            }
 
             newVariables[key] = Math.round(((newVariables[key] as number) + flowAmount) * 1000) / 1000;
           }
@@ -995,6 +1009,7 @@ export function createExperimentReducer(
 
         const receivingVesselId =
           findTargetVesselId('flask-mouth-zone', config, state) ??
+          findTargetVesselId('flask-sample-zone', config, state) ??
           findTargetVesselId('beaker-mouth-zone', config, state) ??
           config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
           'flask';
@@ -1011,13 +1026,35 @@ export function createExperimentReducer(
           mixtures[receivingVesselId] = updatedMix;
         }
 
-        return {
+        let newStateResult: ExperimentState = {
           ...state,
           variables: newVariables,
           apparatusProps,
           vesselMixtures: mixtures,
           flags: { ...state.flags, isDropAnimating: stopcockOpen > 0 },
         };
+
+        // Check if any burette-driven titration interactions (e.g. endpoint color transitions) have their conditions met
+        for (const inter of config.interactions) {
+          if (
+            inter.trigger.type === 'drop' &&
+            (inter.trigger.source === 'burette' || inter.trigger.source === 'micro-burette') &&
+            inter.completesAction &&
+            !newStateResult.completedActions.includes(inter.completesAction)
+          ) {
+            const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, newStateResult));
+            const guardTriggered = inter.guard && evaluateCondition(inter.guard.condition, newStateResult);
+            if (conditionsMet && !guardTriggered) {
+              newStateResult = applyEffects(newStateResult, inter.effects);
+              newStateResult = {
+                ...newStateResult,
+                completedActions: [...newStateResult.completedActions, inter.completesAction],
+              };
+            }
+          }
+        }
+
+        return newStateResult;
       }
 
       // ── Single Discrete Drop Addition (+0.05 mL) ──
@@ -1061,6 +1098,8 @@ export function createExperimentReducer(
           'sampleEdtaVolume',
           'volumeA',
           'volumeB',
+          'volumeY',
+          'volumeZ',
           'thiosulphateVolume',
           'naohVolume',
           'buretteReading',
@@ -1071,6 +1110,13 @@ export function createExperimentReducer(
             if (key === 'sampleEdtaVolume' && (!state.flags['v1EndpointBlue'] || !state.flags['buretteRefilled'])) continue;
             if (key === 'volumeA' && state.flags['methylOrangeAdded']) continue;
             if (key === 'volumeB' && (!state.flags['pEndpointReached'] || !state.flags['methylOrangeAdded'])) continue;
+            if (key === 'volumeY' && (!state.flags['methylOrangeAdded'] || state.flags['phenolphthaleinAdded'])) continue;
+            if (key === 'volumeZ') {
+              if (!state.flags['moEndpointReached'] || !state.flags['phenolphthaleinAdded']) continue;
+              if ((newVariables['volumeZ'] as number) === 0) {
+                newVariables['volumeZ'] = newVariables['volumeY'] ?? newVariables['volumeAdded'] ?? 0;
+              }
+            }
 
             newVariables[key] = Math.round(((newVariables[key] as number) + dropVol) * 1000) / 1000;
           }
@@ -1085,6 +1131,7 @@ export function createExperimentReducer(
 
         const receivingVesselId =
           findTargetVesselId('flask-mouth-zone', config, state) ??
+          findTargetVesselId('flask-sample-zone', config, state) ??
           findTargetVesselId('beaker-mouth-zone', config, state) ??
           config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
           'flask';
@@ -1109,13 +1156,35 @@ export function createExperimentReducer(
           mixtures[receivingVesselId] = updatedMix;
         }
 
-        return {
+        let newDropStateResult: ExperimentState = {
           ...state,
           variables: newVariables,
           apparatusProps,
           vesselMixtures: mixtures,
           flags: { ...state.flags, isDropAnimating: true },
         };
+
+        // Check if any burette-driven titration interactions (e.g. endpoint color transitions) have their conditions met
+        for (const inter of config.interactions) {
+          if (
+            inter.trigger.type === 'drop' &&
+            (inter.trigger.source === 'burette' || inter.trigger.source === 'micro-burette') &&
+            inter.completesAction &&
+            !newDropStateResult.completedActions.includes(inter.completesAction)
+          ) {
+            const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, newDropStateResult));
+            const guardTriggered = inter.guard && evaluateCondition(inter.guard.condition, newDropStateResult);
+            if (conditionsMet && !guardTriggered) {
+              newDropStateResult = applyEffects(newDropStateResult, inter.effects);
+              newDropStateResult = {
+                ...newDropStateResult,
+                completedActions: [...newDropStateResult.completedActions, inter.completesAction],
+              };
+            }
+          }
+        }
+
+        return newDropStateResult;
       }
 
       case 'TICK': {

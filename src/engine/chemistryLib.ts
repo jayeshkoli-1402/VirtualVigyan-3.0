@@ -440,9 +440,21 @@ function chlorideMohr(variables: Record<string, number>): number {
   return (nAg * v * 35.5 * 1000) / vSample;
 }
 
+/** Mineral Acidity (ppm) = 10 * Y */
+function waterAcidityMineral(variables: Record<string, number>): number {
+  const y = variables['volumeY'] ?? 2.4;
+  return 10 * y;
+}
+
+/** Total Acidity (ppm) = 10 * Z */
+function waterAcidityTotal(variables: Record<string, number>): number {
+  const z = variables['volumeZ'] ?? 5.5;
+  return 10 * z;
+}
+
 /** Acidity (ppm) = volumeAdded * 10 */
 function waterAcidity(variables: Record<string, number>): number {
-  const v = variables['naohVolume'] ?? variables['volumeAdded'] ?? 5.4;
+  const v = variables['volumeZ'] ?? variables['volumeY'] ?? variables['naohVolume'] ?? variables['volumeAdded'] ?? 5.5;
   return v * 10;
 }
 
@@ -501,6 +513,8 @@ export const COMPUTE_FUNCTIONS: Record<string, ComputeFn> = {
   hclStrength,
   chlorideMohr,
   waterAcidity,
+  waterAcidityMineral,
+  waterAcidityTotal,
   waterAlkalinityP,
   waterAlkalinityM,
   acidValueOfOil,

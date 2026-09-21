@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { getEnrolledLabsForStudent, getStudentAttemptsCount } from '../../services/privateLabService';
+import {
+  getEnrolledLabsForStudent,
+  getStudentAttemptsCount,
+  syncPrivateLabsWithCloud,
+} from '../../services/privateLabService';
 import { getAllExperiments } from '../../experiments';
 import type { PrivateLab } from '../../types/privateLab';
 import { JoinLabModal } from './JoinLabModal';
@@ -23,6 +27,9 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
 
   useEffect(() => {
     refreshLabs();
+    syncPrivateLabsWithCloud().then(() => {
+      refreshLabs();
+    });
   }, [user]);
 
   const allExperiments = getAllExperiments();

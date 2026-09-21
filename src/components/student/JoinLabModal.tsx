@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
-import { joinPrivateLab } from '../../services/privateLabService';
+import { joinPrivateLabAsync } from '../../services/privateLabService';
 import type { PrivateLab } from '../../types/privateLab';
 
 interface JoinLabModalProps {
@@ -22,7 +22,7 @@ export const JoinLabModal: React.FC<JoinLabModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
       setErrorMsg('Please enter a valid laboratory code.');
@@ -34,28 +34,38 @@ export const JoinLabModal: React.FC<JoinLabModalProps> = ({
       return;
     }
 
+    if (user.role !== 'student') {
+      setErrorMsg(`You are currently signed in as "${user.role}". Joining classroom labs is reserved for student accounts.`);
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMsg(null);
 
-    const res = joinPrivateLab(code.trim(), {
-      studentId: user.id,
-      studentName: user.name || 'Student',
-      studentEmail: user.email,
-      avatar: user.avatar || '🎓',
-    });
+    try {
+      const res = await joinPrivateLabAsync(code.trim(), {
+        studentId: user.id,
+        studentName: user.name || 'Student',
+        studentEmail: user.email,
+        avatar: user.avatar || '🎓',
+      });
 
-    if (res.success && res.lab) {
-      setSuccessLab(res.lab);
-      setTimeout(() => {
+      if (res.success && res.lab) {
+        setSuccessLab(res.lab);
+        setTimeout(() => {
+          setIsSubmitting(false);
+          if (onJoinedSuccess) {
+            onJoinedSuccess(res.lab!);
+          }
+          onClose();
+        }, 900);
+      } else {
         setIsSubmitting(false);
-        if (onJoinedSuccess) {
-          onJoinedSuccess(res.lab!);
-        }
-        onClose();
-      }, 900);
-    } else {
+        setErrorMsg(res.message);
+      }
+    } catch (err: any) {
       setIsSubmitting(false);
-      setErrorMsg(res.message);
+      setErrorMsg(err?.message || 'Failed to verify lab code. Please check your network connection.');
     }
   };
 

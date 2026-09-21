@@ -524,7 +524,7 @@ const AppContent: React.FC = () => {
             }}
             onNavigateToAuth={handleNavigateToAuth}
             onOpenAdminPanel={() => setActiveExperiment('admin')}
-            onOpenJoinLab={() => setJoinLabModalOpen(true)}
+            onOpenJoinLab={user?.role === 'student' ? () => setJoinLabModalOpen(true) : undefined}
             isMobile={isMobile}
             onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
           />

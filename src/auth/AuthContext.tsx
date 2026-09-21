@@ -80,7 +80,7 @@ interface AuthContextType {
   register: (data: RegistrationData) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   allUsers: User[];
-  deleteUser?: (id: string) => Promise<void>;
+  deleteUser?: (id: string) => Promise<{ success: boolean; message: string }>;
   deleteCurrentAccount: (password?: string) => Promise<{ success: boolean; message: string }>;
   changeUserRole?: (id: string, newRole: UserRole) => Promise<void>;
   firestoreLocked: boolean;
@@ -324,11 +324,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    const deletedAccounts = getDeletedAccounts();
     const map = new Map<string, User>();
-    SEED_USERS.forEach((u) => map.set(u.email.toLowerCase(), u));
+    SEED_USERS.forEach((u) => {
+      if (!deletedAccounts.includes(u.email.toLowerCase())) {
+        map.set(u.email.toLowerCase(), u);
+      }
+    });
     usersList.forEach((u) => {
-      const existing = map.get(u.email.toLowerCase());
-      map.set(u.email.toLowerCase(), existing ? { ...existing, ...u } : u);
+      if (!deletedAccounts.includes(u.email.toLowerCase())) {
+        const existing = map.get(u.email.toLowerCase());
+        map.set(u.email.toLowerCase(), existing ? { ...existing, ...u } : u);
+      }
     });
 
     return Array.from(map.values()).map((u) => {
@@ -372,12 +379,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUsers = useCallback(async () => {
     try {
       const remoteUsers = await getAllUserProfiles();
+      const deletedAccounts = getDeletedAccounts();
       if (remoteUsers && remoteUsers.length > 0) {
         setAllUsers((prev) => {
           const map = new Map<string, User>();
-          SEED_USERS.forEach((u) => map.set(u.email.toLowerCase(), u));
-          prev.forEach((u) => map.set(u.email.toLowerCase(), u));
-          remoteUsers.forEach((u) => map.set(u.email.toLowerCase(), u));
+          SEED_USERS.forEach((u) => {
+            if (!deletedAccounts.includes(u.email.toLowerCase())) {
+              map.set(u.email.toLowerCase(), u);
+            }
+          });
+          prev.forEach((u) => {
+            if (!deletedAccounts.includes(u.email.toLowerCase())) {
+              map.set(u.email.toLowerCase(), u);
+            }
+          });
+          remoteUsers.forEach((u) => {
+            if (!deletedAccounts.includes(u.email.toLowerCase())) {
+              map.set(u.email.toLowerCase(), u);
+            }
+          });
           return Array.from(map.values()).map((u) => {
             if (isAdminEmail(u.email)) {
               return {
@@ -873,17 +893,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sessionStorage.removeItem('vv_activeTab');
   };
 
-  // ── Delete user (Admin capability) ──
-  const deleteUser = async (id: string) => {
+  // ── Delete user (Admin capability to purge any user from database) ──
+  const deleteUser = async (id: string): Promise<{ success: boolean; message: string }> => {
+    const targetUser = allUsers.find((u) => u.id === id);
+    const userEmail = targetUser?.email?.toLowerCase();
+
+    // 1. Delete document from Firestore
     try {
       await deleteUserFromFirestore(id);
-    } catch {
-      // handled
+    } catch (e) {
+      console.warn('[Admin] Firestore user delete notice:', e);
     }
-    setAllUsers((prev) => prev.filter((u) => u.id !== id));
-    if (currentUser?.id === id) {
+
+    // 2. Mark account as deleted so it never resurrects
+    if (userEmail) {
+      markAccountAsDeleted(userEmail);
+    }
+
+    // 3. Purge from local caches (vv_registered_users)
+    try {
+      const rawReg = localStorage.getItem('vv_registered_users');
+      if (rawReg) {
+        const parsed = JSON.parse(rawReg);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter(
+            (u: any) => u.id !== id && (!userEmail || u.email?.toLowerCase() !== userEmail)
+          );
+          localStorage.setItem('vv_registered_users', JSON.stringify(filtered));
+        }
+      }
+    } catch {}
+
+    // 4. Update in-memory state and persist immediately to vv_users_db
+    const updatedUsers = allUsers.filter(
+      (u) => u.id !== id && (!userEmail || u.email?.toLowerCase() !== userEmail)
+    );
+    setAllUsers(updatedUsers);
+    localStorage.setItem('vv_users_db', JSON.stringify(updatedUsers));
+
+    // 5. If the admin deleted their own currently logged-in account, logout cleanly
+    if (currentUser?.id === id || (userEmail && currentUser?.email?.toLowerCase() === userEmail)) {
       await logout();
     }
+
+    return {
+      success: true,
+      message: `User ${targetUser?.name || 'account'} (${targetUser?.email || id}) was permanently removed from the platform database.`,
+    };
   };
 
   // ── Delete current user account (Self-service, e.g. accidental teacher registration) ──

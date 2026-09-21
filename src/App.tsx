@@ -40,6 +40,7 @@ import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
 import { AboutModal } from './components/home/AboutModal';
 import { HowItWorksModal } from './components/home/HowItWorksModal';
+import { StudentProfileSetupModal } from './components/auth/StudentProfileSetupModal';
 import LandingPage from './components/landing/LandingPage';
 import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
 
@@ -81,6 +82,7 @@ const AppContent: React.FC = () => {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [howItWorksModalOpen, setHowItWorksModalOpen] = useState(false);
+  const [profileSetupOpen, setProfileSetupOpen] = useState(false);
 
   const [state, dispatch] = useReducer(titrationReducer, initialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
@@ -333,7 +335,7 @@ const AppContent: React.FC = () => {
         onBackToLab={() => {
           setShowLanding(false);
           setActiveExperiment('select');
-          setActiveTab('home');
+          setActiveTab('experiments');
         }}
         onRoleRedirect={(role) => {
           setShowLanding(false);
@@ -343,8 +345,14 @@ const AppContent: React.FC = () => {
             setActiveExperiment('teacher');
           } else {
             setActiveExperiment('select');
-            setActiveTab('home');
+            setActiveTab('experiments');
           }
+        }}
+        onOpenProfileSetup={() => {
+          setShowLanding(false);
+          setActiveExperiment('select');
+          setActiveTab('experiments');
+          setProfileSetupOpen(true);
         }}
       />
     );
@@ -389,6 +397,13 @@ const AppContent: React.FC = () => {
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
           initialTab={authModalTab}
+          onOpenProfileSetup={() => {
+            setShowLanding(false);
+            sessionStorage.setItem('vv_showLanding', 'false');
+            setActiveExperiment('select');
+            setActiveTab('experiments');
+            setProfileSetupOpen(true);
+          }}
           onRoleRedirect={(role) => {
             setShowLanding(false);
             sessionStorage.setItem('vv_showLanding', 'false');
@@ -401,6 +416,10 @@ const AppContent: React.FC = () => {
               setActiveTab('experiments');
             }
           }}
+        />
+        <StudentProfileSetupModal
+          isOpen={profileSetupOpen}
+          onClose={() => setProfileSetupOpen(false)}
         />
       </>
     );
@@ -441,6 +460,7 @@ const AppContent: React.FC = () => {
             setActiveExperiment('select');
           }}
           onNavigateToAuth={handleNavigateToAuth}
+          onOpenProfileSetup={() => setProfileSetupOpen(true)}
           isMobile={isMobile}
           isOpenMobile={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
@@ -512,6 +532,10 @@ const AppContent: React.FC = () => {
           onClose={() => setSettingsModalOpen(false)}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onOpenProfileEditor={() => {
+            setSettingsModalOpen(false);
+            setProfileSetupOpen(true);
+          }}
         />
         <AboutModal
           isOpen={aboutModalOpen}
@@ -521,7 +545,7 @@ const AppContent: React.FC = () => {
           isOpen={howItWorksModalOpen}
           onClose={() => setHowItWorksModalOpen(false)}
           onStartExploring={() => {
-            setActiveTab('home');
+            setActiveTab('experiments');
             const section = document.getElementById('browse-experiments-section');
             section?.scrollIntoView({ behavior: 'smooth' });
           }}
@@ -530,11 +554,16 @@ const AppContent: React.FC = () => {
           isOpen={authModalOpen}
           onClose={() => setAuthModalOpen(false)}
           initialTab={authModalTab}
+          onOpenProfileSetup={() => setProfileSetupOpen(true)}
           onRoleRedirect={(role) => {
             if (role === 'admin') setActiveExperiment('admin');
             else if (role === 'teacher') setActiveExperiment('teacher');
             else setActiveExperiment('select');
           }}
+        />
+        <StudentProfileSetupModal
+          isOpen={profileSetupOpen}
+          onClose={() => setProfileSetupOpen(false)}
         />
       </div>
     );
@@ -847,6 +876,7 @@ const AppContent: React.FC = () => {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         initialTab={authModalTab}
+        onOpenProfileSetup={() => setProfileSetupOpen(true)}
         onRoleRedirect={(role) => {
           setShowLanding(false);
           if (role === 'admin') {
@@ -855,9 +885,13 @@ const AppContent: React.FC = () => {
             setActiveExperiment('teacher');
           } else {
             setActiveExperiment('select');
-            setActiveTab('home');
+            setActiveTab('experiments');
           }
         }}
+      />
+      <StudentProfileSetupModal
+        isOpen={profileSetupOpen}
+        onClose={() => setProfileSetupOpen(false)}
       />
     </div>
   );

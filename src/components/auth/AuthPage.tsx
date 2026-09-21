@@ -5,6 +5,7 @@ import type { UserRole } from '../../auth/types';
 interface AuthPageProps {
   onBackToLab: () => void;
   onRoleRedirect: (role: UserRole) => void;
+  onOpenProfileSetup?: () => void;
   initialRole?: 'student' | 'teacher';
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -13,6 +14,7 @@ interface AuthPageProps {
 export const AuthPage: React.FC<AuthPageProps> = ({
   onBackToLab,
   onRoleRedirect,
+  onOpenProfileSetup,
   initialRole = 'student',
   theme,
   onToggleTheme,
@@ -140,9 +142,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({
       });
 
       if (res.success && res.role) {
-        setSuccessMessage('Account created successfully! Redirecting to your workspace...');
+        setSuccessMessage('Account created successfully!');
         setTimeout(() => {
-          onRoleRedirect(res.role!);
+          if (res.role === 'student' && onOpenProfileSetup) {
+            onOpenProfileSetup();
+          } else {
+            onRoleRedirect(res.role!);
+          }
         }, 500);
       } else {
         setErrorMessage(res.message || 'Registration encountered an issue.');

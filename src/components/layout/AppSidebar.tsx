@@ -19,6 +19,7 @@ interface AppSidebarProps {
   onSelectTab: (tab: NavItem) => void;
   onReturnToLanding?: () => void;
   onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
+  onOpenProfileSetup?: () => void;
   isMobile?: boolean;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -29,6 +30,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onSelectTab,
   onReturnToLanding,
   onNavigateToAuth,
+  onOpenProfileSetup,
   isMobile = false,
   isOpenMobile = false,
   onCloseMobile,
@@ -230,18 +232,54 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <span style={{ fontSize: 16 }}>{user.avatar || '👤'}</span>
                   <div
                     style={{
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      whiteSpace: 'nowrap',
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 16,
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      flexShrink: 0,
                     }}
                   >
-                    {user.name}
+                    {user.avatar && user.avatar.startsWith('http') ? (
+                      <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span>{user.avatar || '👤'}</span>
+                    )}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {user.name}
+                    </div>
+                    {user.username && (
+                      <div
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          color: '#2563eb',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        @{user.username}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <span
@@ -259,7 +297,44 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   {user.role}
                 </span>
               </div>
+
+              {/* Academic Class & Branch Tag */}
+              {(user.grade || user.branch) && (
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    color: 'var(--text-muted)',
+                    marginTop: 3,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user.grade} {user.branch ? `• ${user.branch}` : ''}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {onOpenProfileSetup && (
+                  <>
+                    <button
+                      onClick={() => {
+                        onOpenProfileSetup();
+                        if (isMobile && onCloseMobile) onCloseMobile();
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#2563eb',
+                      }}
+                    >
+                      ✏️ Edit Profile
+                    </button>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                  </>
+                )}
                 {user.role === 'admin' && (
                   <>
                     <button
@@ -286,11 +361,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     all: 'unset',
                     cursor: 'pointer',
                     fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#2563eb',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
                   }}
                 >
-                  Switch / Re-login
+                  Switch
                 </button>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
                 <button

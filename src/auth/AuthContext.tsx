@@ -31,6 +31,7 @@ interface AuthContextType {
   firestoreLocked: boolean;
   firestoreMessage: string | null;
   refreshUsers: () => Promise<void>;
+  updateUserProfile: (updatedFields: Partial<User>) => Promise<void>;
 }
 
 // ── Admin Emails Whitelist & Default Credentials ──
@@ -770,6 +771,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // ── Update student/user profile ──
+  const updateUserProfile = async (updatedFields: Partial<User>) => {
+    if (!currentUser) return;
+    const merged: User = {
+      ...currentUser,
+      ...updatedFields,
+      profileCompleted: true,
+    };
+    setCurrentUser(merged);
+    setAllUsers((prev) =>
+      prev.map((u) => (u.id === merged.id || u.email.toLowerCase() === merged.email.toLowerCase() ? merged : u))
+    );
+    localStorage.setItem('vv_active_user', JSON.stringify(merged));
+    try {
+      await saveUserProfile(merged);
+    } catch (e) {
+      console.warn('[Firestore] Profile sync warning:', e);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -784,6 +805,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firestoreLocked: firestoreLockedState,
         firestoreMessage,
         refreshUsers,
+        updateUserProfile,
       }}
     >
       {children}

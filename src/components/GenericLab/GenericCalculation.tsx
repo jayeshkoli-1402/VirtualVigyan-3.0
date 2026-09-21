@@ -100,6 +100,11 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                   <span style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                     {form.symbol} =
                   </span>
+                  {form.bracketed && (
+                    <span style={{ fontSize: '1.6rem', fontWeight: 300, color: 'var(--text-secondary)', lineHeight: 1 }}>
+                      [
+                    </span>
+                  )}
                   <div style={{
                     display: 'inline-flex',
                     flexDirection: 'column',
@@ -126,6 +131,16 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                       {form.denominator}
                     </div>
                   </div>
+                  {form.bracketed && (
+                    <span style={{ fontSize: '1.6rem', fontWeight: 300, color: 'var(--text-secondary)', lineHeight: 1 }}>
+                      ]
+                    </span>
+                  )}
+                  {form.multiplier && (
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      {form.multiplier}
+                    </span>
+                  )}
                   {form.unit && (
                     <span style={{
                       fontSize: '0.85rem',
@@ -146,6 +161,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                     marginTop: 10,
                     borderTop: '1px solid var(--border, rgba(148, 163, 184, 0.3))',
                     paddingTop: 8,
+                    whiteSpace: 'pre-line',
                   }}>
                     {renderChemicalSubscripts(form.notes)}
                   </div>
@@ -165,25 +181,55 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           Recorded Values
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {Object.entries(state.variables)
-            .filter(([key]) => !key.startsWith('_') && !['stopcockOpen', 'maxFlowRate', 'pAlkalinity', 'mAlkalinity', 'mineralAcidity', 'totalAcidity'].includes(key))
-            .map(([key, value]) => {
-              const isMasked = calcConfig.hideRecordedValueKeys?.includes(key) || ['volumeA', 'volumeB', 'volumeY', 'volumeZ', 'volumeAdded'].includes(key);
+          {calcConfig.recordedValues ? (
+            calcConfig.recordedValues.map((item, idx) => {
+              const rawVal = item.key ? (state.variables[item.key] ?? item.value) : item.value;
+              let formattedVal: string;
+              if (typeof rawVal === 'number') {
+                formattedVal = item.decimals !== undefined ? rawVal.toFixed(item.decimals) : rawVal.toString();
+              } else if (rawVal !== undefined && rawVal !== null) {
+                formattedVal = String(rawVal);
+              } else {
+                formattedVal = '—';
+              }
+              const displayVal = item.unit ? `${formattedVal} ${item.unit}` : formattedVal;
+
               return (
-                <div key={key} style={{
+                <div key={idx} style={{
                   display: 'flex', justifyContent: 'space-between',
                   fontSize: '0.8rem', padding: '4px 0',
                   borderBottom: '1px solid var(--border)',
                 }}>
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    {formatVariableName(key)}
+                    {item.label}
                   </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: isMasked ? 'var(--text-muted)' : 'inherit' }}>
-                    {isMasked ? '— (Recorded by student)' : typeof value === 'number' ? value.toFixed(2) : value}
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {displayVal}
                   </span>
                 </div>
               );
-            })}
+            })
+          ) : (
+            Object.entries(state.variables)
+              .filter(([key]) => !key.startsWith('_') && !['stopcockOpen', 'maxFlowRate', 'pAlkalinity', 'mAlkalinity', 'mineralAcidity', 'totalAcidity'].includes(key))
+              .map(([key, value]) => {
+                const isMasked = calcConfig.hideRecordedValueKeys?.includes(key) || ['volumeA', 'volumeB', 'volumeY', 'volumeZ', 'volumeAdded'].includes(key);
+                return (
+                  <div key={key} style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    fontSize: '0.8rem', padding: '4px 0',
+                    borderBottom: '1px solid var(--border)',
+                  }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>
+                      {formatVariableName(key)}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: isMasked ? 'var(--text-muted)' : 'inherit' }}>
+                      {isMasked ? '— (Recorded by student)' : typeof value === 'number' ? value.toFixed(2) : value}
+                    </span>
+                  </div>
+                );
+              })
+          )}
         </div>
       </div>
 

@@ -73,34 +73,6 @@ export const viscosityOstwald: ExperimentConfig = {
       label: 'Suction Bulb & Tube',
       icon: '🎈',
     },
-    {
-      id: 'digital-balance',
-      component: 'DigitalBalance',
-      label: 'Digital Analytical Balance',
-      icon: '⚖️',
-      initialProps: { width: 145, height: 105, massGrams: 18.24, label: '18.240 g' },
-    },
-    {
-      id: 'pycnometer',
-      component: 'SpecificGravityBottle',
-      label: '25 mL Specific Gravity Bottle',
-      icon: '🧴',
-      initialProps: { liquidLevel: 0.8, width: 75, height: 115, label: '25 mL Sp. Gr.' },
-    },
-    {
-      id: 'water-bath',
-      component: 'WaterBath',
-      label: 'Constant Temp Water Bath (30°C)',
-      icon: '♨️',
-      initialProps: { width: 130, height: 90, label: 'Water Bath 30°C' },
-    },
-    {
-      id: 'thermometer',
-      component: 'Thermometer',
-      label: 'Laboratory Thermometer',
-      icon: '🌡️',
-      initialProps: { temperature: 30, width: 35, height: 150 },
-    },
   ],
 
   // ── Drop Zones ──
@@ -131,14 +103,6 @@ export const viscosityOstwald: ExperimentConfig = {
       rejectMessage: 'Attach suction tube to the narrow capillary limb.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'viscometer' },
     },
-    {
-      id: 'balance-pan-zone',
-      label: 'Weigh on Digital Balance',
-      accepts: ['pycnometer'],
-      position: { x: 80, y: 72 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Place the pycnometer onto the analytical balance pan.',
-    },
   ],
 
   // ── Bench ──
@@ -146,8 +110,6 @@ export const viscosityOstwald: ExperimentConfig = {
     backgroundElements: [
       { component: 'RetortStand', props: { hideLowerClamp: true }, position: { x: 44, y: 52 }, scale: 1.1 },
       { component: 'Stopwatch', position: { x: 78, y: 50 }, scale: 1.05 },
-      { component: 'WaterBath', position: { x: 18, y: 72 }, scale: 0.95 },
-      { component: 'DigitalBalance', position: { x: 80, y: 72 }, scale: 0.95 },
     ],
   },
 
@@ -202,11 +164,25 @@ export const viscosityOstwald: ExperimentConfig = {
       dynamicInstructions: [
         {
           condition: { type: 'flag', key: 'sampleTimed', equals: true },
-          instruction: '✓ Flow timing stopped! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue".',
+          instruction: '✓ Liquid A flow timing complete! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue to Water Reference".',
+        },
+        {
+          condition: { type: 'flag', key: 'sampleStoppedEarly', equals: true },
+          instruction: '⚠️ Liquid has not reached Mark D yet. Resume the flow and continue timing.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'timerRunning', equals: true },
+              { type: 'flag', key: 'sampleReachedD', equals: true },
+            ],
+          },
+          instruction: '⏱️ Meniscus reached Mark D! Press "Stop Timing" to record efflux time.',
         },
         {
           condition: { type: 'flag', key: 'timerRunning', equals: true },
-          instruction: '⏱️ Flowing from C → D... Press "Stop Timing" whenever meniscus reaches Mark D.',
+          instruction: '⏱️ Flowing from C → D... Press "Stop Timing" once meniscus reaches Mark D.',
         },
       ],
       requiredActions: ['time-sample'],
@@ -220,11 +196,25 @@ export const viscosityOstwald: ExperimentConfig = {
       dynamicInstructions: [
         {
           condition: { type: 'flag', key: 'waterTimed', equals: true },
-          instruction: '✓ Water flow timing stopped! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue to Calculations".',
+          instruction: '✓ Water flow timing complete! Recorded flow time. You can resume dropping, restart from Mark C, or click "Continue to Calculations".',
+        },
+        {
+          condition: { type: 'flag', key: 'waterStoppedEarly', equals: true },
+          instruction: '⚠️ Liquid has not reached Mark D yet. Resume the flow and continue timing.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'timerRunning', equals: true },
+              { type: 'flag', key: 'waterReachedD', equals: true },
+            ],
+          },
+          instruction: '⏱️ Water meniscus reached Mark D! Press "Stop Timing" to record efflux time.',
         },
         {
           condition: { type: 'flag', key: 'timerRunning', equals: true },
-          instruction: '⏱️ Water flowing from C → D... Press "Stop Timing" whenever meniscus reaches Mark D.',
+          instruction: '⏱️ Water flowing from C → D... Press "Stop Timing" once meniscus reaches Mark D.',
         },
         {
           condition: { type: 'flag', key: 'suckedAboveMark', equals: true },
@@ -266,16 +256,6 @@ export const viscosityOstwald: ExperimentConfig = {
 
   // ── Interactions ──
   interactions: [
-    {
-      id: 'inter-weigh-pycnometer',
-      trigger: { type: 'drop', source: 'pycnometer', target: 'balance-pan-zone' },
-      effects: [
-        { type: 'placeApparatus', apparatusId: 'pycnometer', zoneId: 'balance-pan-zone' },
-        { type: 'setFlag', key: 'pycnometerWeighed', value: true },
-        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'massGrams', value: 40.74 },
-        { type: 'setApparatusProp', apparatusId: 'digital-balance', prop: 'label', value: '40.740 g' },
-      ],
-    },
     {
       id: 'inter-mount',
       trigger: { type: 'drop', source: 'viscometer', target: 'stand-clamp-zone' },
@@ -352,6 +332,10 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
         { type: 'setFlag', key: 'waterSucked', value: true },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setFlag', key: 'sampleStoppedEarly', value: false },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: false },
+        { type: 'setFlag', key: 'sampleReachedD', value: false },
+        { type: 'setFlag', key: 'waterReachedD', value: false },
         { type: 'setVariable', key: '_flowProgress', value: 0 },
         { type: 'setVariable', key: '_timerSeconds', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'viscometer', prop: 'liquidLevel', value: 0.95 },
@@ -366,19 +350,36 @@ export const viscosityOstwald: ExperimentConfig = {
       conditions: [{ type: 'flag', key: 'suckedAboveMark', equals: true }],
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: true },
+        { type: 'setFlag', key: 'sampleStoppedEarly', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
       ],
     },
-    // Complete sample flow timing at any moment chosen by student
+    // Complete sample flow timing when meniscus has reached Mark D
     {
       id: 'inter-stop-sample-flow',
       trigger: { type: 'click', elementId: 'stop-sample-flow' },
+      conditions: [{ type: 'variable', key: '_flowProgress', op: '>=', value: 1.0 }],
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'sampleTimed', value: true },
+        { type: 'setFlag', key: 'sampleReachedD', value: true },
+        { type: 'setFlag', key: 'sampleStoppedEarly', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: 'flowTimeSample', value: 24.5 },
       ],
       completesAction: 'time-sample',
+    },
+    // Early stop for sample when meniscus has not reached Mark D yet
+    {
+      id: 'inter-stop-sample-early',
+      trigger: { type: 'click', elementId: 'stop-sample-flow' },
+      conditions: [{ type: 'variable', key: '_flowProgress', op: '<', value: 1.0 }],
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'sampleTimed', value: false },
+        { type: 'setFlag', key: 'sampleStoppedEarly', value: true },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
+      ],
     },
     // Option to retry sample timing if student chooses
     {
@@ -387,6 +388,9 @@ export const viscosityOstwald: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'sampleTimed', value: false },
+        { type: 'setFlag', key: 'sampleStoppedEarly', value: false },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setFlag', key: 'sampleReachedD', value: false },
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
         { type: 'setVariable', key: '_flowProgress', value: 0 },
         { type: 'setVariable', key: '_timerSeconds', value: 0 },
@@ -438,6 +442,8 @@ export const viscosityOstwald: ExperimentConfig = {
         { type: 'setFlag', key: 'suckedAboveMark', value: false },
         { type: 'setFlag', key: 'waterSucked', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: false },
+        { type: 'setFlag', key: 'waterReachedD', value: false },
         { type: 'setVariable', key: '_flowProgress', value: 0 },
         { type: 'setVariable', key: '_timerSeconds', value: 0 },
         { type: 'setVariable', key: 'flowTimeWater', value: 0 },
@@ -454,19 +460,36 @@ export const viscosityOstwald: ExperimentConfig = {
       conditions: [{ type: 'flag', key: 'suckedAboveMark', equals: true }],
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: true },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
       ],
     },
-    // Complete water flow timing at any moment chosen by student
+    // Complete water flow timing when meniscus has reached Mark D
     {
       id: 'inter-stop-water-flow',
       trigger: { type: 'click', elementId: 'stop-water-flow' },
+      conditions: [{ type: 'variable', key: '_flowProgress', op: '>=', value: 1.0 }],
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'waterTimed', value: true },
+        { type: 'setFlag', key: 'waterReachedD', value: true },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: false },
         { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setVariable', key: 'flowTimeWater', value: 18.2 },
       ],
       completesAction: 'time-water',
+    },
+    // Early stop when meniscus has not reached Mark D yet
+    {
+      id: 'inter-stop-water-early',
+      trigger: { type: 'click', elementId: 'stop-water-flow' },
+      conditions: [{ type: 'variable', key: '_flowProgress', op: '<', value: 1.0 }],
+      effects: [
+        { type: 'setFlag', key: 'timerRunning', value: false },
+        { type: 'setFlag', key: 'waterTimed', value: false },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: true },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: true },
+      ],
     },
     // Option to retry water timing if student chooses
     {
@@ -475,6 +498,9 @@ export const viscosityOstwald: ExperimentConfig = {
       effects: [
         { type: 'setFlag', key: 'timerRunning', value: false },
         { type: 'setFlag', key: 'waterTimed', value: false },
+        { type: 'setFlag', key: 'waterStoppedEarly', value: false },
+        { type: 'setFlag', key: 'stoppedTooEarly', value: false },
+        { type: 'setFlag', key: 'waterReachedD', value: false },
         { type: 'setFlag', key: 'suckedAboveMark', value: true },
         { type: 'setFlag', key: 'waterSucked', value: true },
         { type: 'setVariable', key: '_flowProgress', value: 0 },
@@ -501,6 +527,20 @@ export const viscosityOstwald: ExperimentConfig = {
         flowTimeSample: 1,
         _flowProgress: 1 / 24.5, // flows to mark D in 24.5s
       },
+      onConditionMet: [
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'variable', key: '_flowProgress', op: '>=', value: 1.0 },
+              { type: 'flag', key: 'sampleReachedD', equals: false },
+            ],
+          },
+          effects: [
+            { type: 'setFlag', key: 'sampleReachedD', value: true },
+          ],
+        },
+      ],
     },
     {
       // Timing Distilled Water
@@ -516,6 +556,20 @@ export const viscosityOstwald: ExperimentConfig = {
         flowTimeWater: 1,
         _flowProgress: 1 / 18.2, // flows to mark D in 18.2s
       },
+      onConditionMet: [
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'variable', key: '_flowProgress', op: '>=', value: 1.0 },
+              { type: 'flag', key: 'waterReachedD', equals: false },
+            ],
+          },
+          effects: [
+            { type: 'setFlag', key: 'waterReachedD', value: true },
+          ],
+        },
+      ],
     },
   ],
 
@@ -543,34 +597,52 @@ export const viscosityOstwald: ExperimentConfig = {
   calculation: {
     title: "Ostwald Viscometer Observations & Calculations",
     instruction:
-      'According to Poiseuille’s Law, the rate of liquid flow through a capillary tube is inversely proportional to its viscosity coefficient.\n\n' +
-      'By comparing the flow times of Liquid A and Water through the same viscometer capillary between fiducial marks C and D, the relative viscosity relationship is:\n' +
-      'η_A / η_W = (t_A × d_A) / (t_W × d_W)\n\n' +
-      'Therefore:\n' +
-      'η_A = (t_A × d_A) / (t_W × d_W) × η_W\n\n' +
-      'Where:\n' +
-      '• t_A, t_W = measured flow times in seconds (from your stopwatch readings)\n' +
-      '• d_A = density of Liquid A = 0.79 g/cm³\n' +
-      '• d_W = density of water at 25°C = 0.997 g/cm³\n' +
-      '• η_W = viscosity of water at 25°C = 0.0089 poise',
+      'According to Poiseuille’s Law, the rate of flow through a capillary tube is inversely proportional to the viscosity of the fluid.\n\n' +
+      'By comparing the flow times of Liquid Sample A and Distilled Water through the same viscometer capillary between marks C and D under identical temperature conditions, the viscosity of Liquid Sample A is calculated using the relative viscosity formula below.',
+    formulas: [
+      {
+        symbol: 'η_A',
+        numerator: 't_A × d_A',
+        denominator: 't_W × d_W',
+        bracketed: true,
+        multiplier: '× η_W',
+        unit: 'poise',
+        notes:
+          'Where:\n' +
+          'η_A = viscosity of Liquid Sample A\n' +
+          't_A = flow time of Liquid Sample A\n' +
+          'd_A = density of Liquid Sample A\n' +
+          't_W = flow time of water\n' +
+          'd_W = density of water\n' +
+          'η_W = viscosity of water',
+      },
+    ],
+    recordedValues: [
+      { key: 'flowTimeSample', label: 'Flow Time — Liquid Sample A (t_A)', unit: 's', decimals: 2 },
+      { key: 'densitySample', label: 'Density — Liquid Sample A (d_A)', value: 0.79, unit: 'g/cm³', decimals: 3 },
+      { key: 'flowTimeWater', label: 'Flow Time — Water (t_W)', unit: 's', decimals: 2 },
+      { key: 'densityWater', label: 'Density — Water (d_W)', value: 0.997, unit: 'g/cm³', decimals: 3 },
+      { key: 'viscosityWater', label: 'Viscosity — Water (η_W)', value: 0.0089, unit: 'poise', decimals: 4 },
+    ],
     fields: [
       {
         id: 'viscosityValue',
-        label: "1. Coefficient of Viscosity η_A (in poise): η_A = (t_A·d_A)/(t_W·d_W)·η_W  [Constants: d_A=0.79 g/cm³, d_W=0.997 g/cm³, η_W=0.0089 P]",
-        placeholder: 'Enter calculated η_A (e.g. 0.0095)...',
+        label: 'Calculate viscosity of Liquid Sample A',
+        placeholder: 'Enter calculated viscosity',
         unit: 'poise',
         expectedValue: 0.009493,
         expectedFormulaName: 'viscosityOstwald',
-        tolerance: 0.0008,
+        tolerance: 0.001,
         toleranceType: 'absolute',
       },
       {
         id: 'unitQuestion',
-        label: "2. What is 1 Poise in SI units (Pa·s)? (Enter numerical value: 1 Poise = ___ Pa·s)",
+        label: 'Convert viscosity from poise to Pa·s',
+        helperText: '1 Poise = ____ Pa·s',
         placeholder: 'Enter conversion factor',
         unit: 'Pa·s',
         expectedValue: 0.1,
-        tolerance: 0.01,
+        tolerance: 0.02,
         toleranceType: 'absolute',
       },
     ],
@@ -659,12 +731,16 @@ export const viscosityOstwald: ExperimentConfig = {
     sampleIntroduced: false,
     suckedAboveMark: false,
     sampleTimed: false,
+    sampleStoppedEarly: false,
+    sampleReachedD: false,
     stoppedTooEarly: false,
     viscoCleared: false,
     waterReady: false,
     waterSucked: false,
     waterIntroduced: false,
     waterTimed: false,
+    waterStoppedEarly: false,
+    waterReachedD: false,
     timerRunning: false,
   },
 };

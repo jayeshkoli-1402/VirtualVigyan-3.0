@@ -839,7 +839,13 @@ export function createExperimentReducer(
 
         if (interactions.length === 0) return state;
 
-        const interaction = interactions[0];
+        // Process matching interaction whose conditions are satisfied, or fallback to first
+        const interaction =
+          interactions.find(i => {
+            if (i.guard && evaluateCondition(i.guard.condition, state)) return false;
+            if (!i.conditions) return true;
+            return i.conditions.every(c => evaluateCondition(c, state));
+          }) ?? interactions[0];
 
         // Check conditions
         if (interaction.conditions) {
@@ -1213,6 +1219,12 @@ export function createExperimentReducer(
                 for (const event of update.onConditionMet) {
                   if (evaluateCondition(event.condition, newState)) {
                     newState = applyEffects(newState, event.effects);
+                    if (event.completesAction && !newState.completedActions.includes(event.completesAction)) {
+                      newState = {
+                        ...newState,
+                        completedActions: [...newState.completedActions, event.completesAction],
+                      };
+                    }
                     changed = true;
                   }
                 }

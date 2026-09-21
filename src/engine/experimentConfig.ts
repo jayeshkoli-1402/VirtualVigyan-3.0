@@ -400,6 +400,12 @@ export type CalculationFormulaItem = {
   /** Denominator of the fraction expression */
   denominator: string;
 
+  /** Optional trailing multiplier, e.g. '× η_W' or '× 100' */
+  multiplier?: string;
+
+  /** Whether the fraction should be wrapped in brackets [ ... ] */
+  bracketed?: boolean;
+
   /** Unit label, e.g. 'ppm CaCO₃ eq.' */
   unit?: string;
 
@@ -416,6 +422,15 @@ export type CalculationConfig = {
 
   /** Optional structured mathematical formulas with fraction typography */
   formulas?: CalculationFormulaItem[];
+
+  /** Optional clean list of recorded values with explicit labels, units, and decimal precision */
+  recordedValues?: Array<{
+    key?: string;
+    label: string;
+    value?: number | string;
+    unit?: string;
+    decimals?: number;
+  }>;
 
   /** Input fields for the student to fill */
   fields: CalculationField[];
@@ -595,6 +610,7 @@ export type ContinuousUpdateConfig = {
   onConditionMet?: Array<{
     condition: ConditionConfig;
     effects: InteractionEffect[];
+    completesAction?: string;
   }>;
 
   /**

@@ -457,7 +457,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const rawProgress = (state.variables['_flowProgress'] ?? 0) as number;
         const flowProg = rawProgress;
         const bulbBProg = Math.max(0, Math.min(1, flowProg));
-        const isBelowD = flowProg > 1.0;
+        const isBelowD = flowProg >= 1.0;
         const isBalanced = flowProg >= 1.5;
 
         let statusText = '';
@@ -466,14 +466,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             statusText = isBalanced
               ? `Hydrostatic balance reached at ${sampleTime.toFixed(1)} s! Both limbs equalized. Press Stop Timing.`
               : isBelowD
-                ? `Timing Liquid A: ${sampleTime.toFixed(1)} s. Meniscus flowed below Mark D towards balance. Stop whenever ready.`
-                : `Timing Liquid A: ${sampleTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop whenever ready.`;
+                ? `Timing Liquid A: ${sampleTime.toFixed(1)} s. Meniscus reached Mark D! Press Stop Timing to record efflux time.`
+                : `Timing Liquid A: ${sampleTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop once meniscus reaches Mark D.`;
           } else if (isCompleted || sampleTime > 0) {
-            statusText = isBalanced
-              ? `Both sides balanced at hydrostatic equilibrium (${sampleTime.toFixed(1)} s). You can restart from Mark C, or continue.`
-              : isBelowD
-                ? `Flow paused below Mark D at ${sampleTime.toFixed(1)} s. Resume dropping to balance, restart from Mark C, or continue.`
-                : `Flow paused at ${sampleTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% of Bulb B). Resume dropping, restart, or continue with current reading.`;
+            statusText = isCompleted
+              ? isBalanced
+                ? `Both sides balanced at hydrostatic equilibrium (${sampleTime.toFixed(1)} s). You can restart from Mark C, or continue to water reference.`
+                : `Liquid A efflux completed to Mark D (${sampleTime.toFixed(1)} s). You can restart from Mark C, or continue to water reference.`
+              : `Liquid has not reached Mark D yet (${sampleTime.toFixed(1)} s, ${Math.round(bulbBProg * 100)}% through Bulb B). Resume the flow and continue timing.`;
           } else {
             statusText = 'Liquid A ready above Mark C. Start the stopwatch to begin timing.';
           }
@@ -488,14 +488,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             statusText = isBalanced
               ? `Hydrostatic balance reached at ${waterTime.toFixed(1)} s! Both limbs equalized. Press Stop Timing.`
               : isBelowD
-                ? `Timing Distilled Water: ${waterTime.toFixed(1)} s. Meniscus flowed below Mark D towards balance. Stop whenever ready.`
-                : `Timing Distilled Water: ${waterTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop whenever ready.`;
+                ? `Timing Distilled Water: ${waterTime.toFixed(1)} s. Meniscus reached Mark D! Press Stop Timing to record efflux time.`
+                : `Timing Distilled Water: ${waterTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% through Bulb B). Meniscus flowing C → D. Stop once meniscus reaches Mark D.`;
           } else if (isCompleted || waterTime > 0) {
-            statusText = isBalanced
-              ? `Both sides balanced at hydrostatic equilibrium (${waterTime.toFixed(1)} s). You can restart from Mark C, or continue to calculations.`
-              : isBelowD
-                ? `Water flow paused below Mark D at ${waterTime.toFixed(1)} s. Resume dropping to balance, restart from Mark C, or continue to calculations.`
-                : `Water flow paused at ${waterTime.toFixed(1)} s (${Math.round(bulbBProg * 100)}% of Bulb B). Resume dropping, restart, or continue to calculations.`;
+            statusText = isCompleted
+              ? isBalanced
+                ? `Both sides balanced at hydrostatic equilibrium (${waterTime.toFixed(1)} s). You can restart from Mark C, or continue to calculations.`
+                : `Water efflux completed to Mark D (${waterTime.toFixed(1)} s). You can restart from Mark C, or continue to calculations.`
+              : `Liquid has not reached Mark D yet (${waterTime.toFixed(1)} s, ${Math.round(bulbBProg * 100)}% through Bulb B). Resume the flow and continue timing.`;
           } else {
             statusText = 'Water ready above Mark C. Start the stopwatch to begin timing.';
           }
@@ -520,7 +520,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               transform: 'translateX(-50%)',
               zIndex: 30,
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
-              border: `1.5px solid ${isTiming ? '#059669' : (isCompleted || currentTime > 0) ? '#10b981' : '#0284c7'}`,
+              border: `1.5px solid ${isTiming ? '#059669' : isCompleted ? '#10b981' : currentTime > 0 ? '#f59e0b' : '#0284c7'}`,
               borderRadius: 'var(--radius-lg)',
               padding: '8px 16px',
               boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
@@ -654,7 +654,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             )}
 
             {/* Continue button after student stops timing */}
-            {!isTiming && (isCompleted || currentTime > 0) && (
+            {!isTiming && isCompleted && (
               <button
                 id="btn-bench-advance"
                 className="btn-primary"

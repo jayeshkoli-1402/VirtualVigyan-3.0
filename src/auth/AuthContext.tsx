@@ -355,25 +355,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let profile = await getUserProfile(uid);
 
         if (!profile) {
-          // Check local cache
+          // Check localStorage cached profile first (preserves correct role from registration)
+          let cachedProfile: any = null;
+          try {
+            const cached = localStorage.getItem('vv_active_user');
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (parsed && parsed.email && parsed.email.toLowerCase() === email.toLowerCase()) {
+                cachedProfile = parsed;
+              }
+            }
+          } catch { /* ignore */ }
+
+          // Check local seed users
           const localMatch = SEED_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-          const role = isSpecialAdmin ? 'admin' : (localMatch?.role || deduceRole(email));
           const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
+
+          // Role priority: admin whitelist > cached profile > seed user > deduceRole fallback
+          const role = isSpecialAdmin
+            ? 'admin'
+            : (cachedProfile?.role || localMatch?.role || deduceRole(email));
 
           profile = {
             id: uid,
-            name: firebaseUser.displayName || adminMeta?.name || localMatch?.name || (email.split('@')[0] || 'User'),
+            name: firebaseUser.displayName || cachedProfile?.name || adminMeta?.name || localMatch?.name || (email.split('@')[0] || 'User'),
             email,
             role,
-            avatar: role === 'admin' ? '🛡️' : role === 'teacher' ? '👨‍🏫' : '🎓',
-            createdAt: localMatch?.createdAt || new Date().toISOString().split('T')[0],
-            grade: localMatch?.grade || 'Class 11',
-            school: localMatch?.school || '',
-            institution: adminMeta?.institution || localMatch?.institution || '',
-            department: adminMeta?.department || localMatch?.department || '',
-            completedLabs: localMatch?.completedLabs || 0,
-            avgScore: localMatch?.avgScore || 0,
+            avatar: cachedProfile?.avatar || (role === 'admin' ? '🛡️' : role === 'teacher' ? '👨‍🏫' : '🎓'),
+            createdAt: cachedProfile?.createdAt || localMatch?.createdAt || new Date().toISOString().split('T')[0],
+            grade: cachedProfile?.grade || localMatch?.grade || (role === 'student' ? 'Class 11' : undefined),
+            school: cachedProfile?.school || localMatch?.school || '',
+            institution: adminMeta?.institution || cachedProfile?.institution || localMatch?.institution || '',
+            department: adminMeta?.department || cachedProfile?.department || localMatch?.department || '',
+            completedLabs: cachedProfile?.completedLabs || localMatch?.completedLabs || 0,
+            avgScore: cachedProfile?.avgScore || localMatch?.avgScore || 0,
             permissions: role === 'admin' ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'] : undefined,
+            // Preserve extended profile fields
+            username: cachedProfile?.username,
+            branch: cachedProfile?.branch,
+            rollNumber: cachedProfile?.rollNumber,
+            bio: cachedProfile?.bio,
+            profileCompleted: cachedProfile?.profileCompleted,
           };
           saveUserProfile(profile).catch(() => {});
         }

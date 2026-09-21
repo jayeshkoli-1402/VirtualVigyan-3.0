@@ -38,21 +38,23 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
+
+  // Role-gated navigation: students see student links, teachers see teacher portal, admins see everything
+  const navLinks: Array<{ id: NavItem; label: string; icon: string }> = [
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'experiments', label: 'Browse Experiments', icon: '🧪' },
     { id: 'classes', label: 'My Classes', icon: '📚' },
     { id: 'theory-notes', label: 'Theory & Notes', icon: '📖' },
     { id: 'progress', label: 'Progress & Analytics', icon: '📊' },
-    { id: 'teacher', label: 'Teacher Portal', icon: '👨‍🏫' },
+    // Teacher Portal: visible only to teacher and admin roles
+    ...((user?.role === 'teacher' || user?.role === 'admin')
+      ? [{ id: 'teacher' as NavItem, label: 'Teacher Portal', icon: '👨‍🏫' }]
+      : []),
+    // Admin Panel: visible only to admin role
+    ...(user?.role === 'admin'
+      ? [{ id: 'admin' as NavItem, label: 'Admin Panel', icon: '🛡️' }]
+      : []),
   ];
-
-  const navLinks = user?.role === 'admin'
-    ? [
-        ...baseNavLinks,
-        { id: 'admin' as const, label: 'Admin Panel', icon: '🛡️' },
-      ]
-    : baseNavLinks;
 
   const secondaryNav = [
     { id: 'settings', label: 'Settings', icon: '⚙️' },

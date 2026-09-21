@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ConservationState, ConservationAction } from '../../engine/conservationState';
 import {
   ConservationStep,
@@ -7,6 +7,10 @@ import {
   getConservationStepInstruction,
 } from '../../engine/conservationState';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
+import { getStepWhyExplanation } from '../../data/experimentWhyData';
+import ContextualWhyModal from '../common/ContextualWhyModal';
+import ExperimentSafetyModal from '../common/ExperimentSafetyModal';
 
 interface ConservationInstructionsProps {
   state: ConservationState;
@@ -24,6 +28,8 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
   onToggleCollapse,
 }) => {
   const { t, tStep, tDynamic, language } = useLanguage();
+  const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
+  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
   const currentStepIndex = CONSERVATION_STEP_ORDER.indexOf(state.step);
   const stepData = tStep(
     'conservation',
@@ -66,17 +72,52 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
         }}
       >
         {!isCollapsed && (
-          <span
-            style={{
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
-              color: 'var(--text-muted)',
-            }}
-          >
-            {t('lab.instructions', 'Instructions')}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: 'var(--text-muted)',
+              }}
+            >
+              {t('lab.instructions', 'Instructions')}
+            </span>
+            <button
+              id="btn-instructions-safety-conservation"
+              type="button"
+              onClick={() => setSafetyModalOpen(true)}
+              aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
+              title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: '0.66rem',
+                fontWeight: 700,
+                color: '#d97706',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                padding: '2px 7px',
+                borderRadius: 5,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🛡️</span>
+              <span>{t('safety.buttonLabel', 'Safety')}</span>
+            </button>
+          </div>
         )}
         <button
           onClick={onToggleCollapse}
@@ -98,27 +139,76 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
       ) : (
         <>
           {/* Current Instruction */}
-          <div
-            className="glass-card"
-            style={{
-              padding: '12px',
-              marginBottom: 12,
-              background: 'rgba(5, 150, 105, 0.04)',
-              border: '1px solid rgba(5, 150, 105, 0.15)',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '0.62rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: '#059669',
-                marginBottom: 6,
-              }}
-            >
-              {t('lab.currentInstruction', 'Current Step')}
-            </div>
+          {(() => {
+            const whyExplanation = getStepWhyExplanation('conservation', state.step, language);
+
+            return (
+              <div
+                className="glass-card"
+                style={{
+                  padding: '12px',
+                  marginBottom: 12,
+                  background: 'rgba(5, 150, 105, 0.04)',
+                  border: '1px solid rgba(5, 150, 105, 0.15)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: '#059669',
+                    }}
+                  >
+                    {t('lab.currentInstruction', 'Current Step')}
+                  </div>
+
+                  {/* Contextual Why Button */}
+                  {whyExplanation && (
+                    <button
+                      id="btn-step-why-conservation"
+                      type="button"
+                      onClick={() => setWhyModalOpen(true)}
+                      aria-label={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                      title={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: 'rgba(5, 150, 105, 0.12)',
+                        border: '1px solid rgba(5, 150, 105, 0.35)',
+                        color: '#059669',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(5, 150, 105, 0.22)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(5, 150, 105, 0.12)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <span style={{ fontWeight: 800 }}>?</span>
+                      <span>{t('why.buttonLabel', 'Why?')}</span>
+                    </button>
+                  )}
+                </div>
             <p
               style={{
                 fontSize: '0.8rem',
@@ -167,7 +257,9 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 {t('conservation.observedPrecipitate', '✅ I\'ve Observed the Precipitate → Continue')}
               </button>
             )}
-          </div>
+            </div>
+          );
+        })()}
 
           {/* Mistake Message */}
           {mistakeMessage && (
@@ -324,6 +416,29 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
           </div>
         </>
       )}
+
+      {/* Contextual Why Explanation Modal */}
+      {(() => {
+        const whyExplanation = getStepWhyExplanation('conservation', state.step, language);
+
+        return (
+          <ContextualWhyModal
+            isOpen={whyModalOpen}
+            onClose={() => setWhyModalOpen(false)}
+            stepTitle={stepData.title}
+            conceptTitle={whyExplanation?.conceptTitle}
+            explanation={whyExplanation?.explanation || ''}
+          />
+        );
+      })()}
+
+      {/* Experiment Safety Center Modal */}
+      <ExperimentSafetyModal
+        isOpen={safetyModalOpen}
+        onClose={() => setSafetyModalOpen(false)}
+        experimentId="conservation"
+        experimentTitle={EXPERIMENT_TRANSLATIONS['conservation']?.[language]?.title || 'Law of Conservation of Mass'}
+      />
     </div>
   );
 };

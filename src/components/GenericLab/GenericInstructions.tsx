@@ -4,11 +4,14 @@
  * ═══════════════════════════════════════════════════════════════════
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { ExperimentConfig, ExperimentState, ExperimentAction } from '../../engine/experimentConfig';
 import { evaluateCondition } from '../../engine/experimentRunner';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
+import { getStepWhyExplanation } from '../../data/experimentWhyData';
+import ContextualWhyModal from '../common/ContextualWhyModal';
+import ExperimentSafetyModal from '../common/ExperimentSafetyModal';
 
 type GenericInstructionsProps = {
   config: ExperimentConfig;
@@ -30,6 +33,8 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   hideProcedure = false,
 }) => {
   const { t, language, tDynamic } = useLanguage();
+  const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
+  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
   const currentStep = config.steps[state.currentStepIndex];
 
   // Get dynamic instruction text
@@ -82,13 +87,48 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   return (
     <div style={{ padding: '12px 14px 20px 14px', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{
-          fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
-          textTransform: 'uppercase', letterSpacing: '0.05em',
-        }}>
-          {t('lab.instructions', 'Instructions')}
-        </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{
+            fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
+            textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0,
+          }}>
+            {t('lab.instructions', 'Instructions')}
+          </h2>
+          <button
+            id="btn-instructions-safety"
+            type="button"
+            onClick={() => setSafetyModalOpen(true)}
+            aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
+            title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              color: '#d97706',
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              padding: '2px 7px',
+              borderRadius: 5,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span>🛡️</span>
+            <span>{t('safety.buttonLabel', 'Safety')}</span>
+          </button>
+        </div>
         <button
           onClick={onToggleCollapse}
           style={{
@@ -106,6 +146,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
         const localized = EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.steps[currentStep?.id];
         const stepTitle = localized?.title || (currentStep?.label ? tDynamic(currentStep.label) : t('common.step', 'Step'));
         const stepInstruction = localized?.instruction || tDynamic(getInstruction());
+        const whyExplanation = currentStep ? getStepWhyExplanation(config.id, currentStep.id, language) : null;
 
         return (
           <div style={{
@@ -129,11 +170,52 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
               marginBottom: 6,
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'space-between',
               gap: 6,
             }}>
-              {hideProcedure && <span>🔒</span>}
-              <span>{hideProcedure ? t('lab.assessmentMode', 'Assessment Mode') : stepTitle}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {hideProcedure && <span>🔒</span>}
+                <span>{hideProcedure ? t('lab.assessmentMode', 'Assessment Mode') : stepTitle}</span>
+              </div>
+
+              {/* Contextual Why Button */}
+              {whyExplanation && !hideProcedure && (
+                <button
+                  id="btn-step-why"
+                  type="button"
+                  onClick={() => setWhyModalOpen(true)}
+                  aria-label={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                  title={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    background: 'rgba(37, 99, 235, 0.15)',
+                    border: '1px solid rgba(37, 99, 235, 0.35)',
+                    color: '#1d4ed8',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.25)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(37, 99, 235, 0.15)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <span style={{ fontWeight: 800 }}>?</span>
+                  <span>{t('why.buttonLabel', 'Why?')}</span>
+                </button>
+              )}
             </div>
+
             {hideProcedure ? (
               <div style={{
                 fontSize: '0.8rem',
@@ -274,6 +356,31 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Contextual Why Explanation Modal */}
+      {(() => {
+        const whyExplanation = currentStep ? getStepWhyExplanation(config.id, currentStep.id, language) : null;
+        const localized = EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.steps[currentStep?.id];
+        const stepTitle = localized?.title || (currentStep?.label ? tDynamic(currentStep.label) : t('common.step', 'Step'));
+
+        return (
+          <ContextualWhyModal
+            isOpen={whyModalOpen}
+            onClose={() => setWhyModalOpen(false)}
+            stepTitle={stepTitle}
+            conceptTitle={whyExplanation?.conceptTitle}
+            explanation={whyExplanation?.explanation || ''}
+          />
+        );
+      })()}
+
+      {/* Experiment Safety Center Modal */}
+      <ExperimentSafetyModal
+        isOpen={safetyModalOpen}
+        onClose={() => setSafetyModalOpen(false)}
+        experimentId={config.id}
+        experimentTitle={EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.title || config.title}
+      />
     </div>
   );
 };

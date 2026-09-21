@@ -48,6 +48,7 @@ import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { LanguageSelector } from './components/common/LanguageSelector';
 import { getLocalizedExperimentTitle } from './i18n/experimentTranslations';
+import ExperimentSafetyModal from './components/common/ExperimentSafetyModal';
 
 type ActiveExperiment = 'select' | 'auth' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
@@ -80,6 +81,7 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavItem>(() => {
     return (sessionStorage.getItem('vv_activeTab') as NavItem) || 'experiments';
   });
+  const [headerSafetyModalOpen, setHeaderSafetyModalOpen] = useState(false);
 
   // When user is authenticated, keep landing hidden and route properly
   useEffect(() => {
@@ -143,6 +145,20 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     sessionStorage.setItem('vv_activeTab', activeTab);
   }, [activeTab]);
+
+  // Automatically open pre-lab Safety Briefing when entering an experiment
+  useEffect(() => {
+    const isActualExperiment =
+      !showLanding &&
+      activeExperiment !== 'select' &&
+      activeExperiment !== 'admin' &&
+      activeExperiment !== 'teacher' &&
+      activeExperiment !== 'auth';
+
+    if (isActualExperiment) {
+      setHeaderSafetyModalOpen(true);
+    }
+  }, [activeExperiment, showLanding]);
 
   // dnd-kit sensors: pointer (mouse) + touch
   const pointerSensor = useSensor(PointerSensor, {
@@ -729,6 +745,42 @@ const AppContent: React.FC = () => {
             </div>
           )}
 
+          {/* Safety Center Header Button */}
+          {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'auth' && (
+            <button
+              id="btn-top-safety-center"
+              onClick={() => setHeaderSafetyModalOpen(true)}
+              title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
+              aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                color: '#d97706',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                padding: '5px 11px',
+                borderRadius: 'var(--radius-md)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🛡️</span>
+              <span>{t('safety.buttonLabel', 'Safety')}</span>
+            </button>
+          )}
+
           {/* Language Selector */}
           <LanguageSelector variant="pill" />
 
@@ -951,6 +1003,14 @@ const AppContent: React.FC = () => {
       <StudentProfileSetupModal
         isOpen={profileSetupOpen}
         onClose={() => setProfileSetupOpen(false)}
+      />
+
+      {/* Global Laboratory Safety Center Modal */}
+      <ExperimentSafetyModal
+        isOpen={headerSafetyModalOpen}
+        onClose={() => setHeaderSafetyModalOpen(false)}
+        experimentId={activeExperiment === 'conservation-vr' ? 'conservation' : activeExperiment}
+        experimentTitle={headerInfo.subtitle}
       />
     </div>
   );

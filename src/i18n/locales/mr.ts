@@ -618,5 +618,31 @@ export const mr: TranslationDictionary = {
   'report.authenticatedRecord': 'प्रमाणित व्हर्च्युअल प्रयोगशाळा नोंद',
   'report.rubricBreakdown': 'गुणदान निकष तपशील',
   'report.experimentCompletedSuccess': 'प्रमाणित कार्यप्रणालीनुसार प्रयोगशाळा प्रात्यक्षिक यशस्वीरीत्या पूर्ण केले गेले.',
+
+  // Contextual Why Feature
+  'why.buttonLabel': 'का?',
+  'why.buttonAria': 'या टप्प्यामागील वैज्ञानिक कारण समजून घ्या',
+  'why.modalTitle': 'वैज्ञानिक तत्त्व',
+  'why.stepContext': 'चालू टप्पा',
+  'why.gotIt': 'समजले',
+  'why.listen': 'ऐका',
+  'why.stopListening': 'थांबवा',
+
+  // Experiment Safety Center
+  'safety.buttonLabel': 'सुरक्षा',
+  'safety.buttonAria': 'प्रयोगशाळा सुरक्षा केंद्र उघडा',
+  'safety.centerTitle': 'सुरक्षा केंद्र',
+  'safety.subtitle': 'आवश्यक खबरदारी आणि प्रयोगशाळा सुरक्षा मार्गदर्शक',
+  'safety.ppeTitle': 'आवश्यक पीपीई (PPE)',
+  'safety.ppeDesc': 'या प्रयोगासाठी अनिवार्य वैयक्तिक सुरक्षा उपकरणे',
+  'safety.hazardsTitle': 'रासायनिक धोके',
+  'safety.hazardsDesc': 'वापरलेल्या रसायनांचे आणि अभिकर्मकांचे विशिष्ट धोके',
+  'safety.precautionsTitle': 'हाताळणी खबरदारी',
+  'safety.precautionsDesc': 'सुरक्षित हाताळणी पद्धती आणि मार्गदर्शक सूचना',
+  'safety.spillTitle': 'सांडल्यास (Spill) मार्गदर्शन',
+  'safety.spillDesc': 'तात्काळ प्रथमोपचार आणि उदासीनीकरण कार्यपद्धती',
+  'safety.disposalTitle': 'विल्हेवाट (Disposal) मार्गदर्शन',
+  'safety.disposalDesc': 'सुरक्षित प्रयोगशाळा कचरा वर्गीकरण आणि विल्हेवाट',
+  'safety.close': 'सुरक्षा केंद्र बंद करा',
 };
 

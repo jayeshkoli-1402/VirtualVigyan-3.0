@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { TitrationState, TitrationAction } from '../engine/titrationState';
 import { Step, STEP_ORDER, STEP_LABELS, getStepInstruction } from '../engine/titrationState';
 import { useLanguage } from '../i18n/LanguageContext';
 import { EXPERIMENT_TRANSLATIONS } from '../i18n/experimentTranslations';
+import { getStepWhyExplanation } from '../data/experimentWhyData';
+import ContextualWhyModal from './common/ContextualWhyModal';
+import ExperimentSafetyModal from './common/ExperimentSafetyModal';
 
 interface InstructionsPanelProps {
   state: TitrationState;
@@ -20,6 +23,8 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
   onToggleCollapse,
 }) => {
   const { t, language, tDynamic } = useLanguage();
+  const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
+  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
   const currentStepIndex = STEP_ORDER.indexOf(state.step);
 
   const getLocalizedInstruction = (): string => {
@@ -79,17 +84,53 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
         }}
       >
         {!isCollapsed && (
-          <h2
-            style={{
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              color: 'var(--text-muted)',
-            }}
-          >
-            {t('lab.instructions', 'Instructions')}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h2
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--text-muted)',
+                margin: 0,
+              }}
+            >
+              {t('lab.instructions', 'Instructions')}
+            </h2>
+            <button
+              id="btn-instructions-safety-titration"
+              type="button"
+              onClick={() => setSafetyModalOpen(true)}
+              aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
+              title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: '#d97706',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                padding: '2px 7px',
+                borderRadius: 5,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🛡️</span>
+              <span>{t('safety.buttonLabel', 'Safety')}</span>
+            </button>
+          </div>
         )}
         {onToggleCollapse && (
           <button
@@ -117,26 +158,75 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
       {!isCollapsed ? (
         <>
           {/* Current instruction */}
-          <div
-            style={{
-              background: '#eff6ff',
-              border: '1px solid #bfdbfe',
-              borderRadius: 'var(--radius-md)',
-              padding: 14,
-            }}
-          >
-            <div
-              style={{
-                fontSize: '0.65rem',
-                color: '#1d4ed8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                marginBottom: 6,
-                fontWeight: 700,
-              }}
-            >
-              {t('lab.currentInstruction', 'Current Step')}
-            </div>
+          {(() => {
+            const whyExplanation = getStepWhyExplanation('titration', state.step, language);
+
+            return (
+              <div
+                style={{
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: 'var(--radius-md)',
+                  padding: 14,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: 6,
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.65rem',
+                      color: '#1d4ed8',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {t('lab.currentInstruction', 'Current Step')}
+                  </div>
+
+                  {/* Contextual Why Button */}
+                  {whyExplanation && (
+                    <button
+                      id="btn-step-why-titration"
+                      type="button"
+                      onClick={() => setWhyModalOpen(true)}
+                      aria-label={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                      title={t('why.buttonAria', 'Learn the scientific reason behind this step')}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: 'rgba(37, 99, 235, 0.15)',
+                        border: '1px solid rgba(37, 99, 235, 0.35)',
+                        color: '#1d4ed8',
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(37, 99, 235, 0.25)';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(37, 99, 235, 0.15)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <span style={{ fontWeight: 800 }}>?</span>
+                      <span>{t('why.buttonLabel', 'Why?')}</span>
+                    </button>
+                  )}
+                </div>
             <p
               style={{
                 fontSize: '0.8rem',
@@ -161,7 +251,9 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
                 <span style={{ color: 'var(--text-secondary)' }}>{stepGuidance.dontGuidance}</span>
               </div>
             )}
-          </div>
+            </div>
+          );
+        })()}
 
           {/* Action button for ENDPOINT_MARKED */}
           {state.step === Step.ENDPOINT_MARKED && dispatch && (
@@ -341,6 +433,31 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
           })}
         </div>
       )}
+
+      {/* Contextual Why Explanation Modal */}
+      {(() => {
+        const whyExplanation = getStepWhyExplanation('titration', state.step, language);
+        const expTrans = EXPERIMENT_TRANSLATIONS['titration']?.[language];
+        const stepTitle = expTrans?.steps[state.step]?.title || STEP_LABELS[state.step];
+
+        return (
+          <ContextualWhyModal
+            isOpen={whyModalOpen}
+            onClose={() => setWhyModalOpen(false)}
+            stepTitle={stepTitle}
+            conceptTitle={whyExplanation?.conceptTitle}
+            explanation={whyExplanation?.explanation || ''}
+          />
+        );
+      })()}
+
+      {/* Experiment Safety Center Modal */}
+      <ExperimentSafetyModal
+        isOpen={safetyModalOpen}
+        onClose={() => setSafetyModalOpen(false)}
+        experimentId="titration"
+        experimentTitle={EXPERIMENT_TRANSLATIONS['titration']?.[language]?.title || 'Acid-Base Titration (HCl vs NaOH)'}
+      />
     </div>
   );
 };

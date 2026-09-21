@@ -646,5 +646,31 @@ export const en: TranslationDictionary = {
   'report.authenticatedRecord': 'Certified Virtual Laboratory Record',
   'report.rubricBreakdown': 'Scoring Rubric Breakdown',
   'report.experimentCompletedSuccess': 'The laboratory practical was successfully performed and completed in accordance with standard operating procedures.',
+
+  // Contextual Why Feature
+  'why.buttonLabel': 'Why?',
+  'why.buttonAria': 'Learn the scientific reason behind this step',
+  'why.modalTitle': 'Scientific Principle',
+  'why.stepContext': 'Current Step',
+  'why.gotIt': 'Got it',
+  'why.listen': 'Listen',
+  'why.stopListening': 'Stop',
+
+  // Experiment Safety Center
+  'safety.buttonLabel': 'Safety',
+  'safety.buttonAria': 'Open Experiment Safety Center',
+  'safety.centerTitle': 'Safety Center',
+  'safety.subtitle': 'Essential precautions & laboratory safety guidance',
+  'safety.ppeTitle': 'Required PPE',
+  'safety.ppeDesc': 'Personal protective equipment mandatory for this experiment',
+  'safety.hazardsTitle': 'Chemical Hazards',
+  'safety.hazardsDesc': 'Specific hazards for reagents and chemicals used',
+  'safety.precautionsTitle': 'Handling Precautions',
+  'safety.precautionsDesc': 'Safe operation protocols and technique tips',
+  'safety.spillTitle': 'Spill Guidance',
+  'safety.spillDesc': 'Immediate first-response and neutralization procedures',
+  'safety.disposalTitle': 'Disposal Guidance',
+  'safety.disposalDesc': 'Safe laboratory waste segregation and disposal',
+  'safety.close': 'Close Safety Center',
 };
 

@@ -647,5 +647,31 @@ export const hi: TranslationDictionary = {
   'report.authenticatedRecord': 'प्रमाणित वर्चुअल प्रयोगशाला रिकॉर्ड',
   'report.rubricBreakdown': 'अंकन मानदंड विवरण',
   'report.experimentCompletedSuccess': 'मानक संचालन प्रक्रियाओं के अनुसार प्रयोगशाला प्रयोग सफलतापूर्वक निष्पादित और पूर्ण किया गया।',
+
+  // Contextual Why Feature
+  'why.buttonLabel': 'क्यों?',
+  'why.buttonAria': 'इस चरण के पीछे का वैज्ञानिक कारण जानें',
+  'why.modalTitle': 'वैज्ञानिक सिद्धांत',
+  'why.stepContext': 'वर्तमान चरण',
+  'why.gotIt': 'समझ गया',
+  'why.listen': 'सुनें',
+  'why.stopListening': 'रोकें',
+
+  // Experiment Safety Center
+  'safety.buttonLabel': 'सुरक्षा',
+  'safety.buttonAria': 'प्रयोगशाला सुरक्षा केंद्र खोलें',
+  'safety.centerTitle': 'सुरक्षा केंद्र',
+  'safety.subtitle': 'आवश्यक सावधानियां एवं प्रयोगशाला सुरक्षा दिशानिर्देश',
+  'safety.ppeTitle': 'आवश्यक पीपीई (PPE)',
+  'safety.ppeDesc': 'इस प्रयोग के लिए अनिवार्य व्यक्तिगत सुरक्षा उपकरण',
+  'safety.hazardsTitle': 'रासायनिक खतरे',
+  'safety.hazardsDesc': 'प्रयुक्त अभिकर्मकों और रसायनों के विशिष्ट खतरे',
+  'safety.precautionsTitle': 'हैंडलिंग सावधानियां',
+  'safety.precautionsDesc': 'सुरक्षित संचालन प्रोटोकॉल और तकनीक युक्तियां',
+  'safety.spillTitle': 'रिसाव (स्पिल) मार्गदर्शन',
+  'safety.spillDesc': 'तत्काल प्राथमिक प्रतिक्रिया और उदासीनीकरण प्रक्रियाएं',
+  'safety.disposalTitle': 'निस्तारण मार्गदर्शन',
+  'safety.disposalDesc': 'सुरक्षित प्रयोगशाला अपशिष्ट पृथक्करण और निस्तारण',
+  'safety.close': 'सुरक्षा केंद्र बंद करें',
 };
 

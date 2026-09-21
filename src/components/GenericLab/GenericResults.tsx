@@ -12,6 +12,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { recordPrivateLabSubmission } from '../../services/privateLabService';
 import { recordStudentPerformance } from '../../services/studentHistoryService';
 import type { PrivateLabContext } from '../../types/privateLab';
+import { buildReportData } from '../../services/reportService';
+import { LabReportModal } from '../report/LabReportModal';
 
 type GenericResultsProps = {
   config: ExperimentConfig;
@@ -28,11 +30,17 @@ const GenericResults: React.FC<GenericResultsProps> = ({
   onBackToSelector,
   privateLabContext,
 }) => {
-  const { t, tDynamic } = useLanguage();
+  const { t, language, tDynamic } = useLanguage();
   const { user } = useAuth();
   const recordedRef = useRef(false);
   const scoreResult = useMemo(() => computeScore(config, state), [config, state]);
   const [animatedScore, setAnimatedScore] = useState(0);
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  const reportData = useMemo(() => {
+    if (!scoreResult) return null;
+    return buildReportData(config, state, scoreResult, user, language, t, tDynamic);
+  }, [config, state, scoreResult, user, language, t, tDynamic]);
 
   useEffect(() => {
     if (user && !recordedRef.current) {
@@ -280,6 +288,36 @@ const GenericResults: React.FC<GenericResultsProps> = ({
         </div>
       )}
 
+      {/* Report Button */}
+      {reportData && (
+        <div style={{ marginBottom: 14 }}>
+          <button
+            type="button"
+            onClick={() => setShowReportModal(true)}
+            style={{
+              width: '100%',
+              padding: '12px 18px',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, #0284c7, #0f766e)',
+              border: 'none',
+              color: '#ffffff',
+              fontSize: '0.88rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>📄</span>
+            <span>{t('report.generateReport', 'Generate Lab Report')}</span>
+          </button>
+        </div>
+      )}
+
       {/* Action buttons */}
       <div style={{ display: 'flex', gap: 10 }}>
         <button
@@ -297,6 +335,15 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           {t('results.backToExperiments', 'Back to Experiments')}
         </button>
       </div>
+
+      {/* Lab Report Modal */}
+      {reportData && (
+        <LabReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportData={reportData}
+        />
+      )}
     </div>
   );
 };

@@ -158,6 +158,7 @@ interface ExperimentSelectorProps {
   onGoToNotes?: () => void;
   onOpenHowItWorks?: () => void;
   externalSearchQuery?: string;
+  showHeroBanner?: boolean;
 }
 
 export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
@@ -166,6 +167,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   onGoToNotes = () => {},
   onOpenHowItWorks = () => {},
   externalSearchQuery = '',
+  showHeroBanner = false,
 }) => {
   const { user } = useAuth();
   const [selectedClass, setSelectedClass] = useState<string>('All');
@@ -241,14 +243,55 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-      {/* ── 1. Hero Banner ── */}
-      <HeroBanner
-        onStartExploring={() => {
-          const section = document.getElementById('browse-experiments-section');
-          section?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onViewHowItWorks={onOpenHowItWorks}
-      />
+      {/* ── 1. Hero Banner (shown when requested) ── */}
+      {showHeroBanner ? (
+        <HeroBanner
+          onStartExploring={() => {
+            const section = document.getElementById('browse-experiments-section');
+            section?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onViewHowItWorks={onOpenHowItWorks}
+        />
+      ) : (
+        /* Dedicated Browse Experiments Header */
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+            <h1
+              style={{
+                fontFamily: 'var(--font-heading)',
+                fontSize: '1.75rem',
+                fontWeight: 800,
+                color: 'var(--text-primary)',
+                margin: 0,
+                letterSpacing: '-0.025em',
+              }}
+            >
+              Browse Experiments
+            </h1>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                color: '#2563eb',
+                background: 'rgba(37, 99, 235, 0.1)',
+                padding: '4px 10px',
+                borderRadius: 9999,
+              }}
+            >
+              {ALL_EXPERIMENTS.length} Total Practicals
+            </span>
+          </div>
+          <p
+            style={{
+              fontSize: '0.88rem',
+              color: 'var(--text-muted)',
+              margin: 0,
+            }}
+          >
+            Explore all 12 curriculum-aligned interactive chemistry practicals with real-time procedural checks and grading.
+          </p>
+        </div>
+      )}
 
       {/* ── Admin Superuser Active Banner ── */}
       {user?.role === 'admin' && (

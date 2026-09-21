@@ -35,6 +35,7 @@ import TeacherDashboard from './components/teacher/TeacherDashboard';
 import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { ClassesView } from './components/home/ClassesView';
+import { HomeDashboardView } from './components/home/HomeDashboardView';
 import { TheoryNotesView } from './components/home/TheoryNotesView';
 import { ProgressView } from './components/home/ProgressView';
 import { SettingsModal } from './components/home/SettingsModal';
@@ -452,8 +453,19 @@ const AppContent: React.FC = () => {
 
           {/* Views */}
           <main style={{ flex: 1, padding: isMobile ? '20px 16px' : '32px 36px', boxSizing: 'border-box' }}>
-            {activeTab === 'home' || activeTab === 'experiments' ? (
+            {activeTab === 'home' ? (
+              <HomeDashboardView
+                onSelectExperiment={handleSelectExperiment}
+                onSelectEngineExperiment={(id) => setActiveExperiment(id)}
+                onBrowseAll={() => setActiveTab('experiments')}
+                onGoToNotes={() => setActiveTab('theory-notes')}
+                onGoToClasses={() => setActiveTab('classes')}
+                onGoToProgress={() => setActiveTab('progress')}
+                onOpenHowItWorks={() => setHowItWorksModalOpen(true)}
+              />
+            ) : activeTab === 'experiments' ? (
               <ExperimentSelector
+                showHeroBanner={false}
                 onSelectExperiment={handleSelectExperiment}
                 onSelectEngineExperiment={(id) => setActiveExperiment(id)}
                 onSelectVR={() => setActiveExperiment('conservation-vr')}

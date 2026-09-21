@@ -6,6 +6,8 @@ import {
   onAuthStateChanged,
   updateProfile,
   deleteUser as deleteFirebaseUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import {
@@ -20,6 +22,57 @@ import {
 } from '../firebase/firestoreService';
 import type { User, UserRole, RegistrationData, AuthResponse } from './types';
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallbackValue: T): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      resolve(fallbackValue);
+    }, ms);
+  });
+  return Promise.race([
+    promise.then((res) => {
+      clearTimeout(timer);
+      return res;
+    }),
+    timeoutPromise,
+  ]);
+}
+
+const DELETED_ACCOUNTS_KEY = 'vv_deleted_accounts';
+
+export function getDeletedAccounts(): string[] {
+  try {
+    const raw = localStorage.getItem(DELETED_ACCOUNTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function markAccountAsDeleted(email: string) {
+  try {
+    const norm = email.trim().toLowerCase();
+    const list = getDeletedAccounts();
+    if (!list.includes(norm)) {
+      list.push(norm);
+      localStorage.setItem(DELETED_ACCOUNTS_KEY, JSON.stringify(list));
+    }
+  } catch {}
+}
+
+export function unmarkAccountAsDeleted(email: string) {
+  try {
+    const norm = email.trim().toLowerCase();
+    const list = getDeletedAccounts().filter((e) => e !== norm);
+    localStorage.setItem(DELETED_ACCOUNTS_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+export function isAccountDeleted(email: string): boolean {
+  const norm = email.trim().toLowerCase();
+  return getDeletedAccounts().includes(norm);
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -28,7 +81,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   allUsers: User[];
   deleteUser?: (id: string) => Promise<void>;
-  deleteCurrentAccount: () => Promise<{ success: boolean; message: string }>;
+  deleteCurrentAccount: (password?: string) => Promise<{ success: boolean; message: string }>;
   changeUserRole?: (id: string, newRole: UserRole) => Promise<void>;
   firestoreLocked: boolean;
   firestoreMessage: string | null;
@@ -351,6 +404,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const email = firebaseUser.email || '';
         const isSpecialAdmin = isAdminEmail(email);
 
+        if (isAccountDeleted(email)) {
+          try { await withTimeout(signOut(auth), 1500, undefined); } catch {}
+          setCurrentUser(null);
+          setLoading(false);
+          return;
+        }
+
         // Fetch from Firestore with timeout
         let profile = await getUserProfile(uid);
 
@@ -369,6 +429,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           // Check local seed users
           const localMatch = SEED_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
+
+          // If no profile exists and this is not an admin, not a demo seed user, and not in cached session:
+          // The account was deleted. Sign out cleanly and do not resurrect it.
+          if (!isSpecialAdmin && !localMatch && !cachedProfile) {
+            try { await withTimeout(signOut(auth), 1500, undefined); } catch {}
+            setCurrentUser(null);
+            setLoading(false);
+            return;
+          }
+
           const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
 
           // Role priority: admin whitelist > cached profile > seed user > deduceRole fallback
@@ -451,6 +521,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isSpecialAdmin = isAdminEmail(emailNorm);
     const isDefaultAdminPass = password.trim() === DEFAULT_ADMIN_PASSWORD;
 
+    // Reject deleted accounts immediately
+    if (!isSpecialAdmin && isAccountDeleted(emailNorm)) {
+      return {
+        success: false,
+        message: 'This account has been deleted. Please register if you wish to create a new account.',
+      };
+    }
+
     try {
       // 1. Attempt standard Firebase Auth sign-in
       let userCredential;
@@ -506,7 +584,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           // Check local registered users if Firebase Auth network or credential error
           const localUser = allUsers.find((u) => u.email.toLowerCase() === emailNorm);
-          if (localUser && password.length >= 4) {
+          if (localUser && !isAccountDeleted(emailNorm) && password.length >= 4) {
             console.warn('[Auth] Verified via local database for:', emailNorm);
             setCurrentUser(localUser);
             return {
@@ -526,6 +604,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!profile) {
         const seed = SEED_USERS.find((u) => u.email.toLowerCase() === emailNorm);
         const adminMeta = ADMIN_DIRECTORY[emailNorm];
+
+        // Regular accounts without a profile were deleted or do not exist!
+        // Never auto-create a profile to resurrect a deleted account.
+        if (!isSpecialAdmin && !seed) {
+          try {
+            await withTimeout(signOut(auth), 1500, undefined);
+          } catch {}
+          if (fbUser) {
+            try {
+              await withTimeout(deleteFirebaseUser(fbUser), 2000, undefined);
+            } catch {}
+          }
+          return {
+            success: false,
+            message: 'No active account found for this email. It may have been deleted. Please register to create an account.',
+          };
+        }
+
         const role = isSpecialAdmin ? 'admin' : (seed?.role || deduceRole(emailNorm));
         profile = {
           id: uid,
@@ -632,6 +728,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ── Registration handler with Firebase Authentication ──
   const register = async (data: RegistrationData): Promise<AuthResponse> => {
     const emailNorm = data.email.trim().toLowerCase();
+    // Release email if previously marked deleted
+    unmarkAccountAsDeleted(emailNorm);
+
     const isSpecialAdmin = isAdminEmail(emailNorm);
     const assignedRole: UserRole = isSpecialAdmin ? 'admin' : data.role;
 
@@ -656,14 +755,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(fbUser, { displayName: data.name.trim() }).catch(() => {});
       } catch (authErr: any) {
         if (authErr.code === 'auth/email-already-in-use') {
-          // If already registered, attempt to log in
+          // If already registered or lingering from past deletion, sign in and re-bind role
           try {
             const cred = await signInWithEmailAndPassword(auth, emailNorm, data.password);
             fbUser = cred.user;
           } catch {
             return {
               success: false,
-              message: 'An account with this email address already exists. Please sign in instead.',
+              message: 'An account with this email address already exists. Please sign in instead, or check your password.',
             };
           }
         } else if (authErr.code === 'auth/weak-password') {
@@ -699,6 +798,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Set user immediately for instant response
       setCurrentUser(newUser);
+      localStorage.setItem('vv_active_user', JSON.stringify(newUser));
       setAllUsers((prev) => {
         const filtered = prev.filter((u) => u.email.toLowerCase() !== emailNorm);
         return [...filtered, newUser];
@@ -758,7 +858,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // ── Logout handler ──
   const logout = async () => {
     try {
-      await signOut(auth);
+      await withTimeout(signOut(auth), 1500, undefined);
     } catch (err) {
       console.warn('SignOut error:', err);
     }
@@ -783,7 +883,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // ── Delete current user account (Self-service, e.g. accidental teacher registration) ──
-  const deleteCurrentAccount = async (): Promise<{ success: boolean; message: string }> => {
+  const deleteCurrentAccount = async (password?: string): Promise<{ success: boolean; message: string }> => {
     if (!currentUser) {
       return { success: false, message: 'No active session found.' };
     }
@@ -791,26 +891,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userId = currentUser.id;
     const userEmail = currentUser.email?.toLowerCase();
 
-    // 1. Delete from Firebase Auth if currently authenticated
-    try {
-      if (auth.currentUser) {
-        await deleteFirebaseUser(auth.currentUser);
+    // 1. If password provided, re-authenticate first to ensure Firebase Auth deletion is authorized
+    if (password && auth.currentUser && auth.currentUser.email) {
+      try {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, password);
+        await withTimeout(reauthenticateWithCredential(auth.currentUser, credential), 3000, undefined);
+      } catch (authErr: any) {
+        console.warn('[Auth] Re-authentication before delete error:', authErr);
+        if (authErr?.code === 'auth/wrong-password' || authErr?.code === 'auth/invalid-credential') {
+          return {
+            success: false,
+            message: 'Incorrect password. Please enter your valid password to delete your account.',
+          };
+        }
       }
-    } catch (fbErr) {
-      console.warn('[Auth] Firebase Auth delete user notice:', fbErr);
     }
 
-    // 2. Delete Firestore document
+    // 2. Delete from Firebase Auth with strict 2.5s timeout
+    try {
+      if (auth.currentUser) {
+        await withTimeout(deleteFirebaseUser(auth.currentUser), 2500, undefined);
+      }
+    } catch (fbErr: any) {
+      console.warn('[Auth] Firebase Auth delete user notice:', fbErr);
+      if (fbErr?.code === 'auth/requires-recent-login' && !password) {
+        return {
+          success: false,
+          message: 'For security, please enter your password to authorize permanent deletion.',
+        };
+      }
+    }
+
+    // 3. Mark in deleted accounts registry to prevent immediate re-login with deleted credentials
+    if (userEmail) {
+      markAccountAsDeleted(userEmail);
+    }
+
+    // 4. Delete Firestore document with timeout
     try {
       await deleteUserFromFirestore(userId);
     } catch (fsErr) {
       console.warn('[Firestore] Delete document error:', fsErr);
     }
 
-    // 3. Purge from in-memory allUsers list
+    // 5. Purge from in-memory allUsers list
     setAllUsers((prev) => prev.filter((u) => u.id !== userId && u.email?.toLowerCase() !== userEmail));
 
-    // 4. Purge from localStorage
+    // 6. Purge all localStorage caches for this user
     localStorage.removeItem('vv_active_user');
     localStorage.removeItem('vv_attempts');
     localStorage.removeItem('vv_lab_drafts');
@@ -828,7 +955,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // ignore
     }
 
-    // 5. Sign out cleanly
+    // 7. Sign out cleanly
     await logout();
 
     return {

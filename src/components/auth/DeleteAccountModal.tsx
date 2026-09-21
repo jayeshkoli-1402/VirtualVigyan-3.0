@@ -14,6 +14,8 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 }) => {
   const { user, deleteCurrentAccount } = useAuth();
   const [confirmed, setConfirmed] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -24,11 +26,15 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
   const handleDelete = async () => {
     if (!confirmed) return;
+    if (!password.trim()) {
+      setErrorMsg('Please enter your account password to authorize permanent deletion.');
+      return;
+    }
     setIsDeleting(true);
     setErrorMsg(null);
 
     try {
-      const res = await deleteCurrentAccount();
+      const res = await deleteCurrentAccount(password.trim());
       if (res.success) {
         onClose();
         if (onAccountDeleted) {
@@ -251,6 +257,72 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
             </div>
           )}
 
+          {/* Password confirmation for security and Firebase Auth re-authentication */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <label
+              htmlFor="input-delete-account-password"
+              style={{
+                fontSize: '0.8rem',
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <span>🔒</span>
+              <span>Confirm Password:</span>
+              <span style={{ fontSize: '0.74rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+                (required to permanently delete and free this email)
+              </span>
+            </label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <input
+                id="input-delete-account-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setErrorMsg(null);
+                }}
+                placeholder="Enter your account password"
+                disabled={isDeleting}
+                style={{
+                  width: '100%',
+                  padding: '10px 42px 10px 14px',
+                  borderRadius: 10,
+                  background: 'var(--bg-secondary)',
+                  border: errorMsg && errorMsg.toLowerCase().includes('password')
+                    ? '1px solid #ef4444'
+                    : '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.88rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  all: 'unset',
+                  position: 'absolute',
+                  right: 12,
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  fontSize: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </div>
+
           {/* Confirmation Checkbox */}
           <label
             style={{
@@ -316,20 +388,20 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
           <button
             id="btn-confirm-delete-account"
             onClick={handleDelete}
-            disabled={!confirmed || isDeleting}
+            disabled={!confirmed || !password.trim() || isDeleting}
             style={{
               all: 'unset',
-              cursor: !confirmed || isDeleting ? 'not-allowed' : 'pointer',
+              cursor: !confirmed || !password.trim() || isDeleting ? 'not-allowed' : 'pointer',
               padding: '9px 20px',
               borderRadius: 10,
-              background: !confirmed || isDeleting ? 'rgba(239, 68, 68, 0.3)' : '#dc2626',
+              background: !confirmed || !password.trim() || isDeleting ? 'rgba(239, 68, 68, 0.3)' : '#dc2626',
               color: '#ffffff',
               fontWeight: 700,
               fontSize: '0.84rem',
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              boxShadow: !confirmed || isDeleting ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.35)',
+              boxShadow: !confirmed || !password.trim() || isDeleting ? 'none' : '0 4px 12px rgba(220, 38, 38, 0.35)',
               transition: 'all 0.15s ease',
             }}
           >

@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { LanguageSelector } from '../common/LanguageSelector';
-
 interface TopHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -13,25 +11,26 @@ interface TopHeaderProps {
   onOpenAdminPanel?: () => void;
   onOpenJoinLab?: () => void;
   onToggleMobileSidebar?: () => void;
+  onOpenSettings?: () => void;
   isMobile?: boolean;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   searchQuery,
   onSearchChange,
-  theme,
-  onToggleTheme,
+  theme: _theme,
+  onToggleTheme: _onToggleTheme,
   onOpenAuthModal,
   onNavigateToAuth,
   onOpenAdminPanel,
   onOpenJoinLab,
   onToggleMobileSidebar,
+  onOpenSettings,
   isMobile = false,
 }) => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Global Ctrl+K shortcut listener to focus search
@@ -170,103 +169,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Right Side: Language, Theme Toggle & Profile Info ── */}
+      {/* ── Right Side: Action Badges & Profile Info ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Language Selector */}
-        <LanguageSelector variant="pill" />
-
-        {/* Theme Dropdown / Toggle Button */}
-        <div style={{ position: 'relative' }}>
-          <button
-            id="btn-theme-dropdown"
-            onClick={() => setThemeMenuOpen(!themeMenuOpen)}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '6px 12px',
-              borderRadius: 9999,
-              border: '1px solid var(--border)',
-              background: 'var(--bg-card)',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              color: 'var(--text-secondary)',
-              boxShadow: 'var(--shadow-xs)',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <span>{theme === 'light' ? '☀️' : '🌙'}</span>
-            <span>{theme === 'light' ? 'Light' : 'Dark'}</span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>˅</span>
-          </button>
-
-          {/* Theme Dropdown Menu */}
-          {themeMenuOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 40,
-                right: 0,
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: 10,
-                boxShadow: 'var(--shadow-md)',
-                padding: 4,
-                width: 120,
-                zIndex: 100,
-              }}
-            >
-              <button
-                onClick={() => {
-                  if (theme !== 'light') onToggleTheme();
-                  setThemeMenuOpen(false);
-                }}
-                style={{
-                  all: 'unset',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '7px 10px',
-                  borderRadius: 6,
-                  fontSize: '0.78rem',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <span>☀️</span>
-                <span>Light</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (theme !== 'dark') onToggleTheme();
-                  setThemeMenuOpen(false);
-                }}
-                style={{
-                  all: 'unset',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '7px 10px',
-                  borderRadius: 6,
-                  fontSize: '0.78rem',
-                  fontWeight: 500,
-                  color: 'var(--text-primary)',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <span>🌙</span>
-                <span>Dark</span>
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Join Lab Shortcut Button (Strictly visible only to students) */}
         {user?.role === 'student' && onOpenJoinLab && (
@@ -488,28 +392,30 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     <span>{t('layout.adminCenter', 'Admin Command Center')}</span>
                   </button>
                 )}
-                <button
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    if (onNavigateToAuth) onNavigateToAuth('student');
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    width: '100%',
-                    padding: '6px 12px',
-                    borderRadius: 6,
-                    fontSize: '0.78rem',
-                    color: 'var(--text-primary)',
-                    boxSizing: 'border-box',
-                  }}
-                >
-                  <span>🔐</span>
-                  <span>{t('layout.switchAccount', 'Auth Page / Switch Account')}</span>
-                </button>
+                {onOpenSettings && (
+                  <button
+                    onClick={() => {
+                      setProfileMenuOpen(false);
+                      onOpenSettings();
+                    }}
+                    style={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '6px 12px',
+                      borderRadius: 6,
+                      fontSize: '0.78rem',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <span>⚙️</span>
+                    <span>{t('nav.settings', 'Settings')}</span>
+                  </button>
+                )}
               </div>
 
               <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />

@@ -527,6 +527,7 @@ const AppContent: React.FC = () => {
             onOpenJoinLab={user?.role === 'student' ? () => setJoinLabModalOpen(true) : undefined}
             isMobile={isMobile}
             onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+            onOpenSettings={() => setSettingsModalOpen(true)}
           />
 
           {/* Views */}

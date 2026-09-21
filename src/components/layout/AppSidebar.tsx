@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useAuth } from '../../auth/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 export type NavItem =
   | 'home'
@@ -37,9 +36,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   isOpenMobile = false,
   onCloseMobile,
 }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { t } = useLanguage();
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Role-gated navigation with localization: students see student links, teachers see teacher portal, admins see everything
   const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
@@ -63,7 +61,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   ];
   const secondaryNav = [
     { id: 'settings', label: t('nav.settings', 'Settings'), icon: '⚙️' },
-    { id: 'about', label: t('nav.about', 'About'), icon: 'ℹ️' },
   ] as const;
 
   const handleNavClick = (tab: NavItem) => {
@@ -344,8 +341,21 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
                   </>
                 )}
+                <button
+                  onClick={() => handleNavClick('settings')}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  ⚙️ {t('nav.settings', 'Settings')}
+                </button>
                 {user.role === 'admin' && (
                   <>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
                     <button
                       onClick={() => handleNavClick('admin')}
                       style={{
@@ -358,55 +368,8 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     >
                       🛡️ Admin Panel
                     </button>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
                   </>
                 )}
-                <button
-                  onClick={() => {
-                    if (onNavigateToAuth) onNavigateToAuth(user.role === 'teacher' ? 'teacher' : 'student');
-                    if (isMobile && onCloseMobile) onCloseMobile();
-                  }}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  Switch
-                </button>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
-                <button
-                  onClick={logout}
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#ef4444',
-                  }}
-                >
-                  {t('nav.logout', 'Sign Out')}
-                </button>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
-                <button
-                  id="btn-sidebar-delete-account"
-                  onClick={() => {
-                    setDeleteModalOpen(true);
-                    if (isMobile && onCloseMobile) onCloseMobile();
-                  }}
-                  title="Accidentally registered with wrong role? Delete account to re-register."
-                  style={{
-                    all: 'unset',
-                    cursor: 'pointer',
-                    fontSize: '0.72rem',
-                    fontWeight: 600,
-                    color: '#dc2626',
-                  }}
-                >
-                  Delete Account
-                </button>
               </div>
             </div>
           ) : (
@@ -518,12 +481,6 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Delete Account Modal */}
-      <DeleteAccountModal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-      />
     </aside>
   );
 };

@@ -13,7 +13,7 @@ interface SettingsModalProps {
   onOpenProfileEditor?: () => void;
 }
 
-type SettingsTab = 'profile' | 'appearance' | 'audio' | 'simulation' | 'storage';
+type SettingsTab = 'profile' | 'language' | 'appearance' | 'audio' | 'simulation' | 'storage';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -22,8 +22,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onToggleTheme,
   onOpenProfileEditor,
 }) => {
-  const { t } = useLanguage();
-  const { user } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
 
@@ -124,11 +124,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   const tabs: Array<{ id: SettingsTab; label: string; icon: string }> = [
-    { id: 'profile', label: 'Profile', icon: '👤' },
-    { id: 'appearance', label: 'Appearance', icon: '🎨' },
-    { id: 'audio', label: 'Audio & Haptics', icon: '🔊' },
-    { id: 'simulation', label: 'Simulation & Safety', icon: '⚡' },
-    { id: 'storage', label: 'Storage & Reset', icon: '💾' },
+    { id: 'profile', label: t('settings.tabProfile', 'Profile'), icon: '👤' },
+    { id: 'language', label: t('settings.tabLanguage', 'Language / भाषा'), icon: '🌐' },
+    { id: 'appearance', label: t('settings.tabAppearance', 'Appearance'), icon: '🎨' },
+    { id: 'audio', label: t('settings.tabAudio', 'Audio & Haptics'), icon: '🔊' },
+    { id: 'simulation', label: t('settings.tabSimulation', 'Simulation & Safety'), icon: '⚡' },
+    { id: 'storage', label: t('settings.tabStorage', 'Storage & Reset'), icon: '💾' },
   ];
 
   return (
@@ -340,7 +341,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                     {onOpenProfileEditor && (
                       <button
                         onClick={() => {
@@ -364,6 +365,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ✏️ Edit Student Profile
                       </button>
                     )}
+                    <button
+                      id="btn-settings-profile-signout"
+                      onClick={async () => {
+                        onClose();
+                        await logout();
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        background: 'rgba(239, 68, 68, 0.08)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        color: '#ef4444',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#ef4444';
+                        e.currentTarget.style.color = '#ffffff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                        e.currentTarget.style.color = '#ef4444';
+                      }}
+                    >
+                      🚪 {t('nav.logout', 'Sign Out')}
+                    </button>
                   </div>
 
                   {/* Danger Zone: Delete Account */}
@@ -432,20 +465,195 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* ── TAB 2: Appearance & Display ── */}
+          {/* ── TAB: Dedicated Language & Regional Preferences ── */}
+          {activeTab === 'language' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Heading & Context */}
+              <div>
+                <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>🌐</span>
+                  <span>{t('settings.languageHeading', 'Platform Language / भाषा निवडा')}</span>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4, lineHeight: 1.45 }}>
+                  {t('settings.languageSubheading', 'VirtualVigyan supports full multilingual learning in English, Hindi (हिन्दी), and Marathi (मराठी). Experiment instructions, apparatus, theory, observations, calculations, and rubrics update instantly.')}
+                </div>
+              </div>
+
+              {/* Language Cards Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(165px, 1fr))', gap: 12 }}>
+                {[
+                  {
+                    code: 'en' as const,
+                    name: 'English',
+                    nativeName: 'English',
+                    flag: '🇬🇧',
+                    subtext: 'Global Standard',
+                    badge: 'NCERT & CBSE',
+                    greeting: 'Welcome to Lab',
+                  },
+                  {
+                    code: 'hi' as const,
+                    name: 'Hindi',
+                    nativeName: 'हिन्दी',
+                    flag: '🇮🇳',
+                    subtext: 'राष्ट्रीय पाठ्यक्रम',
+                    badge: '100% अनुवादित',
+                    greeting: 'प्रयोगशाला में स्वागत है',
+                  },
+                  {
+                    code: 'mr' as const,
+                    name: 'Marathi',
+                    nativeName: 'मराठी',
+                    flag: '🇮🇳',
+                    subtext: 'महाराष्ट्र व DBATU',
+                    badge: '100% भाषांतरित',
+                    greeting: 'प्रयोगशाळेत स्वागत आहे',
+                  },
+                ].map((item) => {
+                  const isSelected = language === item.code;
+                  return (
+                    <button
+                      key={item.code}
+                      onClick={() => {
+                        setLanguage(item.code);
+                        showToast(
+                          item.code === 'hi'
+                            ? 'भाषा बदलकर हिन्दी कर दी गई है! (Hindi activated)'
+                            : item.code === 'mr'
+                            ? 'भाषा बदलून मराठी करण्यात आली आहे! (Marathi activated)'
+                            : 'Language changed to English!'
+                        );
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        padding: '16px 14px',
+                        borderRadius: 14,
+                        border: isSelected
+                          ? '2px solid var(--accent-blue, #2563eb)'
+                          : '1.5px solid var(--border)',
+                        background: isSelected
+                          ? 'rgba(37, 99, 235, 0.08)'
+                          : 'var(--bg-secondary)',
+                        boxShadow: isSelected ? '0 0 0 1px var(--accent-blue, #2563eb)' : 'none',
+                        transition: 'all 0.18s ease',
+                        position: 'relative',
+                        boxSizing: 'border-box',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 10 }}>
+                        <span style={{ fontSize: '1.5rem' }}>{item.flag}</span>
+                        {isSelected ? (
+                          <span
+                            style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 800,
+                              color: '#ffffff',
+                              background: 'var(--accent-blue, #2563eb)',
+                              padding: '3px 8px',
+                              borderRadius: 999,
+                            }}
+                          >
+                            ✓ {t('common.active', 'Active')}
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '0.66rem',
+                              color: 'var(--text-muted)',
+                              background: 'var(--border)',
+                              padding: '2px 7px',
+                              borderRadius: 999,
+                            }}
+                          >
+                            {item.subtext}
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '1.18rem', fontWeight: 800, color: isSelected ? 'var(--accent-blue, #2563eb)' : 'var(--text-primary)' }}>
+                        {item.nativeName}
+                      </div>
+
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                        {item.name} • {item.greeting}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 12,
+                          fontSize: '0.7rem',
+                          fontWeight: 700,
+                          color: isSelected ? '#16a34a' : 'var(--text-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <span>✓</span>
+                        <span>{item.badge}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Live Preview Card */}
+              <div
+                style={{
+                  padding: '16px 18px',
+                  borderRadius: 14,
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--accent-blue, #2563eb)', marginBottom: 8 }}>
+                  ⚡ {t('settings.livePreview', 'Live Translation Preview / थेट पूर्वावलोकन')}
+                </div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+                  {language === 'hi'
+                    ? '🧪 अम्ल-क्षार अनुमापन (HCl बनाम NaOH)'
+                    : language === 'mr'
+                    ? '🧪 आम्ल-आम्लारी अनुमापन (HCl विरुद्ध NaOH)'
+                    : '🧪 Acid-Base Titration (HCl vs NaOH)'}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  {language === 'hi'
+                    ? 'निर्देश: 25 mL अज्ञात हाइड्रोक्लोरिक अम्ल वाले शंक्वाकार फ्लास्क में फिनॉल्फथलीन सूचक की 2 बूंदें मिलाएं।'
+                    : language === 'mr'
+                    ? 'सूचना: 25 mL अज्ञात हायड्रोक्लोरिक आम्ल असलेल्या शंकूपात्रात फिनॉल्फथॅलीन दर्शकाचे 2 थेंब टाका.'
+                    : 'Instruction: Add 2 drops of Phenolphthalein indicator to the conical flask containing 25 mL unknown HCl.'}
+                </div>
+                <div style={{ marginTop: 10, fontSize: '0.74rem', color: '#16a34a', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>✓</span>
+                  <span>
+                    {language === 'hi'
+                      ? 'संपूर्ण प्रयोगशाला, उपकरण, सिद्धांत और गणनाएं इस भाषा में उपलब्ध हैं।'
+                      : language === 'mr'
+                      ? 'संपूर्ण प्रयोगशाळा, उपकरणे, सिद्धांत आणि गणना या भाषेत उपलब्ध आहेत.'
+                      : 'All laboratory simulations, glassware, theory notes, and evaluations adapt to this language.'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB 3: Appearance & Display ── */}
           {activeTab === 'appearance' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              {/* Language selection setting */}
-              <div>
-                <div style={{ marginBottom: 8 }}>
+              {/* Quick Language row in appearance */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid var(--border)' }}>
+                <div>
                   <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {t('settings.languageTitle', 'Interface Language')}
+                    {t('settings.languageTitle', 'Interface Language / भाषा')}
                   </div>
                   <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                    {t('settings.languageDesc', 'Select your preferred language. All lab instructions and controls will update immediately.')}
+                    English • हिन्दी (Hindi) • मराठी (Marathi)
                   </div>
                 </div>
-                <LanguageSelector variant="buttons" />
+                <LanguageSelector variant="pill" />
               </div>
 
               {/* Theme */}
@@ -775,10 +983,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             padding: '14px 24px',
             borderTop: '1px solid var(--border)',
             display: 'flex',
-            justifyContent: 'flex-end',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             background: 'var(--bg-card)',
           }}
         >
+          {user ? (
+            <button
+              id="btn-settings-footer-signout"
+              onClick={async () => {
+                onClose();
+                await logout();
+              }}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                padding: '7px 14px',
+                borderRadius: 8,
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: '#ef4444',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#ef4444';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+                e.currentTarget.style.color = '#ef4444';
+              }}
+            >
+              <span>🚪</span>
+              <span>{t('nav.logout', 'Sign Out')}</span>
+            </button>
+          ) : <div />}
+
           <button
             onClick={onClose}
             style={{

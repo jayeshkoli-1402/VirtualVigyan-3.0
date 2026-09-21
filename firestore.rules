@@ -30,6 +30,13 @@ service cloud.firestore {
       allow write: if isAuthenticated();
     }
 
+    // Private classroom labs & assessments
+    match /private_labs/{labId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
     // Student lab results, assessments and simulations
     match /lab_results/{resultId} {
       allow read: if isAuthenticated();
@@ -38,3 +45,5 @@ service cloud.firestore {
     }
   }
 }
+
+

@@ -73,6 +73,36 @@ export function isAccountDeleted(email: string): boolean {
   return getDeletedAccounts().includes(norm);
 }
 
+export function getFirebaseFriendlyErrorMessage(code?: string, fallbackMessage?: string): string {
+  switch (code) {
+    case 'auth/operation-not-allowed':
+      return 'Email/Password sign-in is disabled in Firebase Console. Please enable "Email/Password" under Firebase Console > Authentication > Sign-in method.';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized in Firebase. Please add this domain to Firebase Console > Authentication > Settings > Authorized domains.';
+    case 'auth/network-request-failed':
+      return 'Network connection failed. Please check your internet connection or firewall/ad-blocker.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email address already exists. Please sign in instead, or use a different email.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Please use at least 6 characters.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+      return 'Invalid email or password. Please check your credentials and try again.';
+    case 'auth/user-not-found':
+      return 'No account found for this email. Please register to create an account.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please wait a moment before trying again.';
+    case 'auth/api-key-not-valid':
+    case 'auth/invalid-api-key':
+      return 'Firebase API key is invalid or restricted in Google Cloud Console.';
+    default:
+      return fallbackMessage || 'Authentication failed. Please check your credentials and try again.';
+  }
+}
+
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -605,18 +635,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } else if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
           console.warn('[Auth] Admin credentials verified via Admin Superuser pass for:', emailNorm);
-        } else {
-          // Check local registered users if Firebase Auth network or credential error
+        } else if (err.code === 'auth/network-request-failed') {
+          // If offline / network error, allow local cached session if available
           const localUser = allUsers.find((u) => u.email.toLowerCase() === emailNorm);
-          if (localUser && !isAccountDeleted(emailNorm) && password.length >= 4) {
-            console.warn('[Auth] Verified via local database for:', emailNorm);
+          if (localUser && !isAccountDeleted(emailNorm)) {
+            console.warn('[Auth] Offline mode: Verified via local database for:', emailNorm);
             setCurrentUser(localUser);
             return {
               success: true,
-              message: `Welcome back, ${localUser.name}!`,
+              message: `Welcome back, ${localUser.name}! (Offline Mode)`,
               role: localUser.role,
             };
           }
+          throw signErr;
+        } else {
           throw signErr;
         }
       }
@@ -730,17 +762,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const error = err as { code?: string; message?: string };
-      let message = 'Invalid credentials. Please verify your email / username and password.';
-
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-        message = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (error.code === 'auth/user-not-found') {
-        message = 'No account found for this email. Please register to create an account.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Please enter a valid email address.';
-      } else if (error.code === 'auth/too-many-requests') {
-        message = 'Too many failed sign-in attempts. Please wait a moment or reset your password.';
-      }
+      const message = getFirebaseFriendlyErrorMessage(error.code, error.message);
 
       return {
         success: false,
@@ -789,12 +811,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               message: 'An account with this email address already exists. Please sign in instead, or check your password.',
             };
           }
-        } else if (authErr.code === 'auth/weak-password') {
-          return { success: false, message: 'Password is too weak. Please use at least 6 characters.' };
-        } else if (authErr.code === 'auth/invalid-email') {
-          return { success: false, message: 'Please enter a valid email address.' };
+        } else if (isSpecialAdmin && data.password.length >= 6) {
+          console.warn('[Auth] Special admin offline fallback for:', emailNorm, authErr);
         } else {
-          console.warn('[Auth] Firebase Auth creation error, falling back to local registration:', authErr);
+          console.error('[Auth] Firebase Auth creation error:', authErr);
+          const friendlyMessage = getFirebaseFriendlyErrorMessage(authErr.code, authErr.message);
+          return {
+            success: false,
+            message: friendlyMessage,
+          };
         }
       }
 
@@ -862,15 +887,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const error = err as { code?: string; message?: string };
-      let message = 'Registration failed. Please try again.';
-
-      if (error.code === 'auth/email-already-in-use') {
-        message = 'An account with this email address already exists. Please sign in instead.';
-      } else if (error.code === 'auth/weak-password') {
-        message = 'Password is too weak. Please use at least 6 characters with numbers or symbols.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'The email address format is not valid. Please verify.';
-      }
+      const message = getFirebaseFriendlyErrorMessage(error.code, error.message || 'Registration failed. Please try again.');
 
       return {
         success: false,

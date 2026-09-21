@@ -160,6 +160,11 @@ When creating any new experiment from user submissions:
    - Never hardcode `#ffffff` or `#000000` for cards, text, or borders in UI components.
    - Use CSS custom property design tokens (`var(--bg-card)`, `var(--bg-primary)`, `var(--text-primary)`, `var(--border-subtle)`).
 9. **Registration:** Always export from local folder and append the new config to `experiments` in `src/experiments/index.ts`.
-
-
-
+10. **UI & Scroll-Animation Safety Rules (The Zero-Invisibility Mandate):**
+    - **NEVER hide DOM elements permanently with `opacity: 0` without safety fallbacks.** Scroll-reveal animations must never leave content stuck in a blank state if an IntersectionObserver fails, is delayed, or encounters an unexpected environment.
+    - **Dual-Class CSS Synchronization:** If CSS or JS toggles animation states (e.g. `.visible` or `.active`), CSS MUST declare dual selectors (`.ln-reveal.visible, .ln-reveal.active { opacity: 1; transform: translateY(0); }`). Never rely on a single class name across separate files without aliasing both.
+    - **Safety Fallback Timers:** Every IntersectionObserver script controlling visibility must include a progressive enhancement fallback timer (e.g. `1000ms–1500ms`) that automatically applies the active/visible classes to all observed elements so content is guaranteed to render.
+    - **Pre-check IntersectionObserver Support:** If `!('IntersectionObserver' in window)`, immediately add visible classes to all elements.
+    - **Avoid Nested Reveals:** Do not wrap an entire container with `.ln-reveal` if its internal child items also have `.ln-reveal`. Only animate either the container or the child elements to prevent compound opacity/transform collapses.
+    - **Reduced Motion & Print:** Always include `@media (prefers-reduced-motion: reduce)` and `@media print` resetting `.ln-reveal` to `opacity: 1; transform: none;`.
+    - **Visual Verification Before Push:** Always visually inspect the rendered page or build preview across both Dark Mode and Light Mode to ensure no sections collapse into blank white space.

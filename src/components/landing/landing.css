@@ -1332,22 +1332,32 @@
 
 .ln-reveal {
   opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(24px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
-.ln-reveal.visible {
+/* Progressive enhancement: support both .visible and .active class names */
+.ln-reveal.visible,
+.ln-reveal.active {
   opacity: 1;
   transform: translateY(0);
 }
 
-.ln-reveal-d1 { transition-delay: 0.06s; }
-.ln-reveal-d2 { transition-delay: 0.12s; }
-.ln-reveal-d3 { transition-delay: 0.18s; }
-.ln-reveal-d4 { transition-delay: 0.24s; }
-.ln-reveal-d5 { transition-delay: 0.30s; }
-.ln-reveal-d6 { transition-delay: 0.36s; }
+@media print {
+  .ln-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.ln-reveal-d1 { transition-delay: 0.05s; }
+.ln-reveal-d2 { transition-delay: 0.10s; }
+.ln-reveal-d3 { transition-delay: 0.15s; }
+.ln-reveal-d4 { transition-delay: 0.20s; }
+.ln-reveal-d5 { transition-delay: 0.25s; }
+.ln-reveal-d6 { transition-delay: 0.30s; }
 
 /* ══════════════════════════════════════════════════════════════════
    KEYFRAMES

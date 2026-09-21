@@ -29,23 +29,44 @@ const LandingPage: React.FC<LandingPageProps> = ({
   theme,
   onToggleTheme,
 }) => {
-  // Reveal animations via IntersectionObserver
+  // Reveal animations via IntersectionObserver with progressive enhancement fallback
   useEffect(() => {
     const reveals = document.querySelectorAll('.ln-reveal');
+    if (!reveals.length) return;
+
+    // Graceful fallback for environments without IntersectionObserver
+    if (!('IntersectionObserver' in window)) {
+      reveals.forEach((el) => {
+        el.classList.add('visible', 'active');
+      });
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add('active');
+            entry.target.classList.add('visible', 'active');
             observer.unobserve(entry.target);
           }
         });
       },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px 60px 0px' }
     );
 
     reveals.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
+
+    // Safety fallback: ensure no element remains permanently invisible if observer is delayed
+    const fallbackTimer = setTimeout(() => {
+      reveals.forEach((el) => {
+        el.classList.add('visible', 'active');
+      });
+    }, 1000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallbackTimer);
+    };
   }, []);
 
   // Scroll to top when landing page mounts

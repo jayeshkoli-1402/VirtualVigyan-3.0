@@ -75,7 +75,7 @@ const HowItWorksSection: React.FC = () => {
           </p>
         </div>
 
-        <div className="ln-timeline ln-reveal">
+        <div className="ln-timeline">
           {steps.map((step, i) => (
             <div key={step.num} className={`ln-timeline-step ln-reveal ln-reveal-d${i + 1}`}>
               <div className="ln-timeline-circle">{step.num}</div>

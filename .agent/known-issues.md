@@ -162,3 +162,21 @@ There are zero automated tests. All validation was done manually. The `engine/` 
    - Added "🧪 Inspect Reaction" button in workbench action bar and on placed vessel badges.
    - Interactive chemical inspection modal showing live molar composition ($n$, $C$), limiting/excess reagents, precipitate mass, pH gauge, temperature, reaction logs with scientific explanations, and an interactive "Reagent Playground" to pour arbitrary reagents $X_1 \dots X_n$ with variable quantities.
 5. **`scripts/test_stoichiometry.mjs`:** 29 automated test assertions validating limiting reagents, equivalence points, precipitates, gas volumes, and temperatures (100% pass rate).
+
+### 26. Landing Page Scroll-Reveal Class Mismatch and Visibility Collapse (FIXED)
+**Was:** In commit `52e9e13`, `src/components/landing/landing.css` defined `.ln-reveal { opacity: 0; transform: translateY(30px); }` and `.ln-reveal.visible { opacity: 1; transform: translateY(0); }`. However, in `src/components/landing/LandingPage.tsx`, the `IntersectionObserver` callback added `entry.target.classList.add('active')` instead of `'visible'`.
+Because `.active` was added instead of `.visible`:
+1. Every element bearing `.ln-reveal` remained permanently trapped at `opacity: 0`.
+2. Over 80% of the landing page vanished into giant white voids (TrustBar cards, How It Works timeline, Experiment Showcase headers/filter pills, Lab Preview interactive workbench, Learning loop, Students & Teachers role cards, About cards, FAQs, and Final CTA). Only background floating SVGs and card borders without `.ln-reveal` were visible.
+**Fix:**
+1. **Dual-Class CSS Synchronization (`src/components/landing/landing.css`):**
+   - Updated CSS to `.ln-reveal.visible, .ln-reveal.active { opacity: 1; transform: translateY(0); }`.
+   - Added `@media print { .ln-reveal { opacity: 1 !important; transform: none !important; } }`.
+2. **Progressive Fallback & Synchronized JS (`src/components/landing/LandingPage.tsx`):**
+   - Observer adds both `'visible'` and `'active'` to `classList`.
+   - Added `!('IntersectionObserver' in window)` fallback check to immediately reveal all elements.
+   - Added safety fallback `setTimeout` (1000ms) ensuring that no element is ever trapped invisible if an observer is throttled or delayed.
+   - Adjusted observer `threshold: 0.08` and `rootMargin: '0px 0px 60px 0px'` so animations trigger smoothly as elements scroll into view.
+3. **Removed Nested Reveals (`src/components/landing/HowItWorksSection.tsx`):**
+   - Removed redundant `.ln-reveal` on `.ln-timeline` wrapper so steps stagger cleanly without parent container opacity conflicts.
+4. **Prevention:** Enforced Zero-Invisibility Mandate in `.agent/conventions.md` and created root `AGENTS.md` and `GEMINI.md` requiring all contributor AI agents to inspect `.agent/` first.

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
-import type { UserRole } from '../../auth/types';
+import type { UserRole, User } from '../../auth/types';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 
 interface AdminPanelProps {
@@ -14,6 +14,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'experiments'>('overview');
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionNotice, setActionNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete || !deleteUser) return;
+    setIsDeleting(true);
+    try {
+      const res = await deleteUser(userToDelete.id);
+      setActionNotice({
+        type: 'success',
+        message: res?.message || `User ${userToDelete.name} was successfully removed from the platform database.`,
+      });
+      setUserToDelete(null);
+    } catch (err: any) {
+      setActionNotice({
+        type: 'error',
+        message: err?.message || 'Failed to remove user from database.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const engineExperiments = getAllExperiments();
   const totalExperiments = engineExperiments.length + 2; // + Titration + Conservation
@@ -377,6 +400,46 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
       {/* TAB 2: USER ROSTER & ROLES */}
       {activeTab === 'users' && (
         <div className="clay-card" style={{ padding: 26 }}>
+          {/* Action Feedback Notice */}
+          {actionNotice && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '12px 18px',
+                borderRadius: 12,
+                background:
+                  actionNotice.type === 'success' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                border: `1px solid ${
+                  actionNotice.type === 'success' ? 'rgba(5, 150, 105, 0.35)' : 'rgba(239, 68, 68, 0.35)'
+                }`,
+                color: actionNotice.type === 'success' ? '#059669' : '#ef4444',
+                fontSize: '0.84rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{actionNotice.type === 'success' ? '✓' : '⚠️'}</span>
+                <span>{actionNotice.message}</span>
+              </div>
+              <button
+                onClick={() => setActionNotice(null)}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  color: 'inherit',
+                  fontWeight: 800,
+                  fontSize: '0.9rem',
+                  padding: '0 4px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Filter Bar */}
           <div
             style={{
@@ -471,7 +534,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
                       {u.createdAt}
                     </td>
                     <td style={{ padding: '14px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', alignItems: 'center' }}>
                         {u.role !== 'admin' && changeUserRole && (
                           <button
                             onClick={() =>
@@ -487,10 +550,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
                             Switch to {u.role === 'student' ? 'Teacher' : 'Student'}
                           </button>
                         )}
-                        {u.role !== 'admin' && deleteUser && (
+                        {deleteUser && (
                           <button
-                            onClick={() => deleteUser(u.id)}
+                            id={`btn-delete-user-${u.id}`}
+                            onClick={() => setUserToDelete(u)}
                             className="clay-btn"
+                            title={
+                              u.id === user?.id
+                                ? 'Delete your own administrator account (will sign you out)'
+                                : `Permanently remove ${u.name} from the platform database`
+                            }
                             style={{
                               padding: '6px 12px',
                               borderRadius: 12,
@@ -498,9 +567,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
                               border: '1px solid rgba(239, 68, 68, 0.3)',
                               color: '#ef4444',
                               fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
                             }}
                           >
-                            Delete
+                            {u.id === user?.id ? 'Delete (You)' : 'Delete'}
                           </button>
                         )}
                       </div>
@@ -635,6 +706,224 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Permanent User Deletion Confirmation Modal ── */}
+      {userToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 12000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(15, 23, 42, 0.78)',
+            backdropFilter: 'blur(8px)',
+            padding: 16,
+          }}
+          onClick={() => !isDeleting && setUserToDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 500,
+              background: 'var(--bg-card)',
+              borderRadius: 20,
+              border: '1.5px solid var(--border)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              position: 'relative',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '20px 24px',
+                background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.08))',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                  }}
+                >
+                  ⚠️
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                    Remove User from Database
+                  </h3>
+                  <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>
+                    Confirm permanent removal from platform records
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => !isDeleting && setUserToDelete(null)}
+                disabled={isDeleting}
+                style={{
+                  all: 'unset',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: '1.1rem',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* User Profile Summary Card */}
+              <div
+                style={{
+                  padding: '14px 16px',
+                  borderRadius: 14,
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                }}
+              >
+                <span style={{ fontSize: 32 }}>{userToDelete.avatar || '👤'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.96rem', color: 'var(--text-primary)' }}>
+                    {userToDelete.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
+                    {userToDelete.email}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, alignItems: 'center' }}>
+                    <span
+                      className="clay-badge"
+                      style={{
+                        fontSize: '0.68rem',
+                        padding: '2px 8px',
+                        textTransform: 'uppercase',
+                        fontWeight: 800,
+                        background:
+                          userToDelete.role === 'admin'
+                            ? 'rgba(124, 58, 237, 0.15)'
+                            : userToDelete.role === 'teacher'
+                            ? 'rgba(2, 132, 199, 0.15)'
+                            : 'rgba(5, 150, 105, 0.15)',
+                        color:
+                          userToDelete.role === 'admin'
+                            ? '#7c3aed'
+                            : userToDelete.role === 'teacher'
+                            ? '#0284c7'
+                            : '#059669',
+                      }}
+                    >
+                      {userToDelete.role}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      Joined {userToDelete.createdAt}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Text */}
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Are you sure you want to permanently delete this user? This action will purge their profile document from
+                Cloud Firestore, invalidate active sessions, and remove them from all local platform rosters.
+              </p>
+
+              {userToDelete.id === user?.id && (
+                <div
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    color: '#d97706',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span>⚠️</span>
+                  <span>Notice: You are deleting your own current administrator account. You will be automatically signed out.</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setUserToDelete(null)}
+                  disabled={isDeleting}
+                  style={{
+                    all: 'unset',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    flex: 1,
+                    padding: '11px',
+                    borderRadius: 12,
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.86rem',
+                    textAlign: 'center',
+                  }}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  id="btn-confirm-delete-user"
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  style={{
+                    all: 'unset',
+                    cursor: isDeleting ? 'not-allowed' : 'pointer',
+                    flex: 1.4,
+                    padding: '11px',
+                    borderRadius: 12,
+                    background: isDeleting ? 'rgba(239, 68, 68, 0.5)' : '#ef4444',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.86rem',
+                    textAlign: 'center',
+                    boxShadow: isDeleting ? 'none' : '0 4px 14px rgba(239, 68, 68, 0.35)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {isDeleting ? 'Removing User...' : 'Permanently Delete User'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

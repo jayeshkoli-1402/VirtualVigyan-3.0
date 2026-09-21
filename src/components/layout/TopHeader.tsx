@@ -268,8 +268,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
 
-        {/* Join Lab Shortcut Button */}
-        {onOpenJoinLab && (
+        {/* Join Lab Shortcut Button (Strictly visible only to students) */}
+        {user?.role === 'student' && onOpenJoinLab && (
           <button
             id="btn-header-join-lab"
             onClick={onOpenJoinLab}

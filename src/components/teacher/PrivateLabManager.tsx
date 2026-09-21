@@ -8,6 +8,7 @@ import {
   deletePrivateLab,
   exportGradebookCSV,
   updateSubmissionFeedback,
+  syncPrivateLabsWithCloud,
 } from '../../services/privateLabService';
 import type { PrivateLab, PrivateLabSubmission } from '../../types/privateLab';
 
@@ -59,6 +60,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
 
   useEffect(() => {
     loadLabs();
+    syncPrivateLabsWithCloud().then(loadLabs);
 
     const handleUpdate = () => {
       loadLabs();

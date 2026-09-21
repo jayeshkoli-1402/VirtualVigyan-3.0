@@ -10,8 +10,27 @@ import type {
   PrivateLabEnrolledStudent,
 } from '../types/privateLab';
 import { recordStudentPerformance } from './studentHistoryService';
+import {
+  savePrivateLabToFirestore,
+  getPrivateLabFromFirestoreByCode,
+  getAllPrivateLabsFromFirestore,
+  enrollStudentInFirestoreLab,
+  deletePrivateLabFromFirestore,
+} from '../firebase/firestoreService';
 
 const STORAGE_KEY = 'vv_private_labs';
+
+// Cross-tab broadcast & storage sync listener
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        window.dispatchEvent(new CustomEvent('vv_privatelabs_updated', { detail: parsed }));
+      } catch {}
+    }
+  });
+}
 
 // Sample pre-seeded demo private lab for immediate exploration
 const PRESEEDED_LABS: PrivateLab[] = [
@@ -112,7 +131,46 @@ export function getAllPrivateLabs(): PrivateLab[] {
 }
 
 /**
- * Persist private labs list to storage
+ * Sync private labs with Firestore cloud database
+ */
+export async function syncPrivateLabsWithCloud(): Promise<PrivateLab[]> {
+  try {
+    const remoteLabs = await getAllPrivateLabsFromFirestore();
+    if (remoteLabs && remoteLabs.length > 0) {
+      const localLabs = getAllPrivateLabs();
+      const map = new Map<string, PrivateLab>();
+      // Preserve local labs
+      localLabs.forEach((l) => map.set(l.id, l));
+      // Merge cloud labs
+      remoteLabs.forEach((rl) => {
+        const existing = map.get(rl.id);
+        if (existing) {
+          // Merge enrolled students and submissions
+          const enrolledMap = new Map<string, PrivateLabEnrolledStudent>();
+          (existing.enrolledStudents || []).forEach((s) => enrolledMap.set(s.studentEmail.toLowerCase(), s));
+          (rl.enrolledStudents || []).forEach((s) => enrolledMap.set(s.studentEmail.toLowerCase(), s));
+
+          map.set(rl.id, {
+            ...rl,
+            ...existing,
+            enrolledStudents: Array.from(enrolledMap.values()),
+          });
+        } else {
+          map.set(rl.id, rl);
+        }
+      });
+      const merged = Array.from(map.values());
+      savePrivateLabs(merged);
+      return merged;
+    }
+  } catch (e) {
+    console.warn('[PrivateLab] Cloud sync warning:', e);
+  }
+  return getAllPrivateLabs();
+}
+
+/**
+ * Persist private labs list to storage and broadcast update
  */
 export function savePrivateLabs(labs: PrivateLab[]): void {
   try {
@@ -123,6 +181,25 @@ export function savePrivateLabs(labs: PrivateLab[]): void {
   } catch (err) {
     console.error('[PrivateLab] Failed to save private labs to localStorage:', err);
   }
+}
+
+/**
+ * Flexible lab code matcher (handles casing, hyphens, spaces, and numeric suffixes)
+ */
+export function matchLabCode(enteredCode: string, labCode: string): boolean {
+  if (!enteredCode || !labCode) return false;
+  const c1 = enteredCode.trim().toUpperCase();
+  const c2 = labCode.trim().toUpperCase();
+  if (c1 === c2) return true;
+
+  const a1 = c1.replace(/[^A-Z0-9]/g, '');
+  const a2 = c2.replace(/[^A-Z0-9]/g, '');
+  if (a1 === a2) return true;
+
+  // If user entered only the number part e.g. "2394" matching "CHEM-2394"
+  if (a1.length >= 4 && (a2.endsWith(a1) || a1.endsWith(a2))) return true;
+
+  return false;
 }
 
 /**
@@ -144,7 +221,7 @@ export function generateLabCode(prefix = 'CHEM'): string {
 }
 
 /**
- * Create a new private lab
+ * Create a new private lab (persists locally and to Firestore cloud)
  */
 export function createPrivateLab(
   params: Omit<PrivateLab, 'id' | 'code' | 'createdAt' | 'enrolledStudents' | 'submissions'> & {
@@ -167,17 +244,49 @@ export function createPrivateLab(
 
   labs.unshift(newLab);
   savePrivateLabs(labs);
+
+  // Synchronize with Firestore cloud
+  savePrivateLabToFirestore(newLab).catch((err) => {
+    console.warn('[PrivateLab] Cloud save notice:', err);
+  });
+
   return newLab;
 }
 
 /**
- * Find a private lab by its unique join code (case-insensitive)
+ * Find a private lab by its unique join code (case-insensitive & tolerant)
  */
 export function getPrivateLabByCode(code: string): PrivateLab | null {
   if (!code) return null;
-  const clean = code.trim().toUpperCase().replace(/\s+/g, '-');
   const labs = getAllPrivateLabs();
-  return labs.find((l) => l.code.toUpperCase() === clean) || null;
+  return labs.find((l) => matchLabCode(code, l.code)) || null;
+}
+
+/**
+ * Find a private lab by code, checking local cache then Firestore cloud
+ */
+export async function getPrivateLabByCodeAsync(code: string): Promise<PrivateLab | null> {
+  if (!code) return null;
+  // 1. Check local storage first
+  const local = getPrivateLabByCode(code);
+  if (local) return local;
+
+  // 2. Query Firestore cloud
+  try {
+    const remoteLab = await getPrivateLabFromFirestoreByCode(code);
+    if (remoteLab) {
+      const labs = getAllPrivateLabs();
+      if (!labs.some((l) => l.id === remoteLab.id)) {
+        labs.unshift(remoteLab);
+        savePrivateLabs(labs);
+      }
+      return remoteLab;
+    }
+  } catch (err) {
+    console.warn('[PrivateLab] Cloud lookup failed:', err);
+  }
+
+  return null;
 }
 
 /**
@@ -210,12 +319,12 @@ export function getEnrolledLabsForStudent(studentEmail: string): PrivateLab[] {
   const norm = studentEmail.trim().toLowerCase();
   const labs = getAllPrivateLabs();
   return labs.filter((l) =>
-    l.enrolledStudents.some((st) => st.studentEmail?.toLowerCase() === norm)
+    (l.enrolledStudents || []).some((st) => st.studentEmail?.toLowerCase() === norm)
   );
 }
 
 /**
- * Student joins a private lab via join code
+ * Student joins a private lab via join code (synchronous local version)
  */
 export function joinPrivateLab(
   code: string,
@@ -242,7 +351,7 @@ export function joinPrivateLab(
   }
 
   const studentEmailNorm = student.studentEmail.trim().toLowerCase();
-  const alreadyEnrolled = lab.enrolledStudents.some(
+  const alreadyEnrolled = (lab.enrolledStudents || []).some(
     (st) => st.studentEmail?.toLowerCase() === studentEmailNorm
   );
 
@@ -268,7 +377,7 @@ export function joinPrivateLab(
     if (l.id === lab.id) {
       return {
         ...l,
-        enrolledStudents: [...l.enrolledStudents, newEnrollment],
+        enrolledStudents: [...(l.enrolledStudents || []), newEnrollment],
       };
     }
     return l;
@@ -276,7 +385,95 @@ export function joinPrivateLab(
 
   savePrivateLabs(updatedLabs);
 
+  enrollStudentInFirestoreLab(lab.id, newEnrollment).catch((e) => {
+    console.warn('[PrivateLab] Cloud enrollment sync warning:', e);
+  });
+
   const updatedLab = updatedLabs.find((l) => l.id === lab.id);
+  return {
+    success: true,
+    lab: updatedLab,
+    message: `Successfully enrolled in "${lab.title}"!`,
+  };
+}
+
+/**
+ * Student joins a private lab via join code (asynchronous with cloud fallback)
+ */
+export async function joinPrivateLabAsync(
+  code: string,
+  student: {
+    studentId: string;
+    studentName: string;
+    studentEmail: string;
+    avatar?: string;
+  }
+): Promise<{ success: boolean; lab?: PrivateLab; message: string; alreadyEnrolled?: boolean }> {
+  // Check local first, then cloud
+  const lab = await getPrivateLabByCodeAsync(code);
+  if (!lab) {
+    return {
+      success: false,
+      message: `Invalid join code "${code}". Please check with your teacher.`,
+    };
+  }
+
+  if (lab.status === 'closed') {
+    return {
+      success: false,
+      message: `This private lab (${lab.title}) is currently closed for new enrollments.`,
+    };
+  }
+
+  const studentEmailNorm = student.studentEmail.trim().toLowerCase();
+  const alreadyEnrolled = (lab.enrolledStudents || []).some(
+    (st) => st.studentEmail?.toLowerCase() === studentEmailNorm
+  );
+
+  if (alreadyEnrolled) {
+    return {
+      success: false,
+      alreadyEnrolled: true,
+      lab,
+      message: `You are already enrolled in "${lab.title}". Duplicate enrollments are prohibited.`,
+    };
+  }
+
+  const newEnrollment: PrivateLabEnrolledStudent = {
+    studentId: student.studentId,
+    studentName: student.studentName || 'Student',
+    studentEmail: studentEmailNorm,
+    avatar: student.avatar || '🎓',
+    joinedAt: new Date().toISOString(),
+  };
+
+  const labs = getAllPrivateLabs();
+  let updatedLab: PrivateLab | undefined;
+  const updatedLabs = labs.map((l) => {
+    if (l.id === lab.id) {
+      updatedLab = {
+        ...l,
+        enrolledStudents: [...(l.enrolledStudents || []), newEnrollment],
+      };
+      return updatedLab;
+    }
+    return l;
+  });
+
+  if (!updatedLab) {
+    updatedLab = {
+      ...lab,
+      enrolledStudents: [...(lab.enrolledStudents || []), newEnrollment],
+    };
+    updatedLabs.unshift(updatedLab);
+  }
+
+  savePrivateLabs(updatedLabs);
+
+  enrollStudentInFirestoreLab(lab.id, newEnrollment).catch((e) => {
+    console.warn('[PrivateLab] Cloud enrollment sync warning:', e);
+  });
+
   return {
     success: true,
     lab: updatedLab,
@@ -415,6 +612,9 @@ export function deletePrivateLab(labId: string): boolean {
   const filtered = labs.filter((l) => l.id !== labId);
   if (filtered.length !== labs.length) {
     savePrivateLabs(filtered);
+    deletePrivateLabFromFirestore(labId).catch((err) => {
+      console.warn('[PrivateLab] Cloud delete error:', err);
+    });
     return true;
   }
   return false;

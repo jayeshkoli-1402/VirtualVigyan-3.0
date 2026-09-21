@@ -8,6 +8,7 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRoleRedirect?: (role: UserRole) => void;
+  onOpenProfileSetup?: () => void;
   initialTab?: 'login' | 'register';
 }
 
@@ -15,6 +16,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onRoleRedirect,
+  onOpenProfileSetup,
   initialTab = 'login',
 }) => {
   const { t } = useLanguage();
@@ -88,7 +90,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
         setTimeout(() => {
           setSuccessMessage(null);
           onClose();
-          if (onRoleRedirect) onRoleRedirect(res.role!);
+          if (res.role === 'student' && onOpenProfileSetup) {
+            onOpenProfileSetup();
+          } else if (onRoleRedirect) {
+            onRoleRedirect(res.role!);
+          }
         }, 400);
       } else {
         setErrorMessage(res.message || 'Registration failed.');

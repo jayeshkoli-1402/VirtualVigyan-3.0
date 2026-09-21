@@ -8,8 +8,13 @@ export interface User {
   avatar?: string;
   createdAt: string;
   // Student attributes
+  username?: string;
   grade?: string;
+  branch?: string;
   school?: string;
+  rollNumber?: string;
+  bio?: string;
+  profileCompleted?: boolean;
   completedLabs?: number;
   avgScore?: number;
   // Teacher attributes

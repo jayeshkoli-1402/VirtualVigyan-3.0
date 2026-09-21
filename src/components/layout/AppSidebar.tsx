@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useAuth } from '../../auth/AuthContext';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 export type NavItem =
   | 'home'
@@ -20,6 +21,7 @@ interface AppSidebarProps {
   onSelectTab: (tab: NavItem) => void;
   onReturnToLanding?: () => void;
   onNavigateToAuth?: (initialRole?: 'student' | 'teacher') => void;
+  onOpenProfileSetup?: () => void;
   isMobile?: boolean;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -30,28 +32,35 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onSelectTab,
   onReturnToLanding,
   onNavigateToAuth,
+  onOpenProfileSetup,
   isMobile = false,
   isOpenMobile = false,
   onCloseMobile,
 }) => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  // Role-gated navigation with localization: students see student links, teachers see teacher portal, admins see everything
   const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
     { id: 'home', label: t('nav.home', 'Home'), icon: '🏠' },
     { id: 'experiments', label: t('nav.experiments', 'Browse Experiments'), icon: '🧪' },
     { id: 'classes', label: t('nav.classes', 'My Classes'), icon: '📚' },
     { id: 'theory-notes', label: t('nav.theoryNotes', 'Theory & Notes'), icon: '📖' },
     { id: 'progress', label: t('nav.progress', 'Progress & Analytics'), icon: '📊' },
-    { id: 'teacher', label: t('nav.teacherPortal', 'Teacher Portal'), icon: '👨‍🏫' },
   ];
 
-  const navLinks = user?.role === 'admin'
-    ? [
-        ...baseNavLinks,
-        { id: 'admin' as const, label: t('nav.adminPanel', 'Admin Center'), icon: '🛡️' },
-      ]
-    : baseNavLinks;
-
+  const navLinks: Array<{ id: NavItem; label: string; icon: string }> = [
+    ...baseNavLinks,
+    // Teacher Portal: visible only to teacher and admin roles
+    ...((user?.role === 'teacher' || user?.role === 'admin')
+      ? [{ id: 'teacher' as NavItem, label: t('nav.teacherPortal', 'Teacher Portal'), icon: '👨‍🏫' }]
+      : []),
+    // Admin Panel: visible only to admin role
+    ...(user?.role === 'admin'
+      ? [{ id: 'admin' as NavItem, label: t('nav.adminPanel', 'Admin Center'), icon: '🛡️' }]
+      : []),
+  ];
   const secondaryNav = [
     { id: 'settings', label: t('nav.settings', 'Settings'), icon: '⚙️' },
     { id: 'about', label: t('nav.about', 'About'), icon: 'ℹ️' },
@@ -232,18 +241,54 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <span style={{ fontSize: 16 }}>{user.avatar || '👤'}</span>
                   <div
                     style={{
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      color: 'var(--text-primary)',
-                      whiteSpace: 'nowrap',
+                      width: 30,
+                      height: 30,
+                      borderRadius: 8,
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 16,
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      flexShrink: 0,
                     }}
                   >
-                    {user.name}
+                    {user.avatar && user.avatar.startsWith('http') ? (
+                      <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <span>{user.avatar || '👤'}</span>
+                    )}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {user.name}
+                    </div>
+                    {user.username && (
+                      <div
+                        style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 600,
+                          color: '#2563eb',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        @{user.username}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <span
@@ -261,7 +306,44 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   {user.role}
                 </span>
               </div>
+
+              {/* Academic Class & Branch Tag */}
+              {(user.grade || user.branch) && (
+                <div
+                  style={{
+                    fontSize: '0.68rem',
+                    color: 'var(--text-muted)',
+                    marginTop: 3,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {user.grade} {user.branch ? `• ${user.branch}` : ''}
+                </div>
+              )}
+
               <div style={{ display: 'flex', gap: 6, marginTop: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                {onOpenProfileSetup && (
+                  <>
+                    <button
+                      onClick={() => {
+                        onOpenProfileSetup();
+                        if (isMobile && onCloseMobile) onCloseMobile();
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        color: '#2563eb',
+                      }}
+                    >
+                      ✏️ Edit Profile
+                    </button>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                  </>
+                )}
                 {user.role === 'admin' && (
                   <>
                     <button
@@ -288,11 +370,11 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     all: 'unset',
                     cursor: 'pointer',
                     fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#2563eb',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
                   }}
                 >
-                  Switch / Re-login
+                  Switch
                 </button>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
                 <button
@@ -306,6 +388,24 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                   }}
                 >
                   {t('nav.logout', 'Sign Out')}
+                </button>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                <button
+                  id="btn-sidebar-delete-account"
+                  onClick={() => {
+                    setDeleteModalOpen(true);
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  title="Accidentally registered with wrong role? Delete account to re-register."
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    color: '#dc2626',
+                  }}
+                >
+                  Delete Account
                 </button>
               </div>
             </div>
@@ -418,6 +518,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
     </aside>
   );
 };

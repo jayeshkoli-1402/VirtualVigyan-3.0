@@ -172,7 +172,7 @@ export async function deleteUserFromFirestore(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const userDocRef = doc(db, 'users', userId);
-    await deleteDoc(userDocRef);
+    await withTimeout(deleteDoc(userDocRef), 2000, undefined);
     return { success: true };
   } catch (err: unknown) {
     const error = err as { code?: string; message?: string };

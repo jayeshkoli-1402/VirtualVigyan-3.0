@@ -5,6 +5,7 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  deleteUser as deleteFirebaseUser,
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import {
@@ -27,6 +28,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   allUsers: User[];
   deleteUser?: (id: string) => Promise<void>;
+  deleteCurrentAccount: () => Promise<{ success: boolean; message: string }>;
   changeUserRole?: (id: string, newRole: UserRole) => Promise<void>;
   firestoreLocked: boolean;
   firestoreMessage: string | null;
@@ -758,6 +760,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // ── Delete current user account (Self-service, e.g. accidental teacher registration) ──
+  const deleteCurrentAccount = async (): Promise<{ success: boolean; message: string }> => {
+    if (!currentUser) {
+      return { success: false, message: 'No active session found.' };
+    }
+
+    const userId = currentUser.id;
+    const userEmail = currentUser.email?.toLowerCase();
+
+    // 1. Delete from Firebase Auth if currently authenticated
+    try {
+      if (auth.currentUser) {
+        await deleteFirebaseUser(auth.currentUser);
+      }
+    } catch (fbErr) {
+      console.warn('[Auth] Firebase Auth delete user notice:', fbErr);
+    }
+
+    // 2. Delete Firestore document
+    try {
+      await deleteUserFromFirestore(userId);
+    } catch (fsErr) {
+      console.warn('[Firestore] Delete document error:', fsErr);
+    }
+
+    // 3. Purge from in-memory allUsers list
+    setAllUsers((prev) => prev.filter((u) => u.id !== userId && u.email?.toLowerCase() !== userEmail));
+
+    // 4. Purge from localStorage
+    localStorage.removeItem('vv_active_user');
+    localStorage.removeItem('vv_attempts');
+    localStorage.removeItem('vv_lab_drafts');
+
+    try {
+      const raw = localStorage.getItem('vv_registered_users');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((u: any) => u.id !== userId && u.email?.toLowerCase() !== userEmail);
+          localStorage.setItem('vv_registered_users', JSON.stringify(filtered));
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // 5. Sign out cleanly
+    await logout();
+
+    return {
+      success: true,
+      message: 'Your account has been deleted. You can now re-register with your preferred role.',
+    };
+  };
+
   // ── Change user role (Admin capability) ──
   const changeUserRole = async (id: string, newRole: UserRole) => {
     try {
@@ -801,6 +858,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         allUsers,
         deleteUser,
+        deleteCurrentAccount,
         changeUserRole,
         firestoreLocked: firestoreLockedState,
         firestoreMessage,

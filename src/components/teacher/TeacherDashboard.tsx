@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 interface TeacherDashboardProps {
   onLaunchExperiment: (id: string) => void;
@@ -12,6 +13,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
   const { user, allUsers } = useAuth();
   const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation', 'titration', 'exp-ostwald-viscometer']);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const students = allUsers.filter((u) => u.role === 'student');
   const engineExperiments = getAllExperiments();
@@ -111,6 +113,40 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
             </p>
           </div>
         </div>
+
+        {user?.role === 'teacher' && (
+          <button
+            id="btn-teacher-delete-account"
+            onClick={() => setDeleteModalOpen(true)}
+            title="Registered as a teacher by mistake? Delete this account to re-register as a student."
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              padding: '8px 14px',
+              borderRadius: 10,
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#dc2626',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#dc2626';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)';
+              e.currentTarget.style.color = '#dc2626';
+            }}
+          >
+            <span>⚠️</span>
+            <span>Wrong Role? Delete Account</span>
+          </button>
+        )}
 
         {user?.role !== 'teacher' && user?.role !== 'admin' && onNavigateToAuth && (
           <button
@@ -367,6 +403,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onAccountDeleted={() => {
+          setDeleteModalOpen(false);
+          if (onNavigateToAuth) onNavigateToAuth('student');
+        }}
+      />
     </div>
   );
 };

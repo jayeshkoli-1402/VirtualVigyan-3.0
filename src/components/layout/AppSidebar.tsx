@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useAuth } from '../../auth/AuthContext';
+import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 export type NavItem =
   | 'home'
@@ -36,6 +37,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onCloseMobile,
 }) => {
   const { user, logout } = useAuth();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
     { id: 'home', label: 'Home', icon: '🏠' },
     { id: 'experiments', label: 'Browse Experiments', icon: '🧪' },
@@ -380,6 +382,24 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                 >
                   Sign Out
                 </button>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>•</span>
+                <button
+                  id="btn-sidebar-delete-account"
+                  onClick={() => {
+                    setDeleteModalOpen(true);
+                    if (isMobile && onCloseMobile) onCloseMobile();
+                  }}
+                  title="Accidentally registered with wrong role? Delete account to re-register."
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    color: '#dc2626',
+                  }}
+                >
+                  Delete Account
+                </button>
               </div>
             </div>
           ) : (
@@ -491,6 +511,12 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+      />
     </aside>
   );
 };

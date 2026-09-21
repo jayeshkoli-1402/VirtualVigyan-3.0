@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../auth/AuthContext';
+import { DeleteAccountModal } from './DeleteAccountModal';
 
 interface StudentProfileSetupModalProps {
   isOpen: boolean;
@@ -77,6 +78,7 @@ export const StudentProfileSetupModal: React.FC<StudentProfileSetupModalProps> =
   const [bio, setBio] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   // Initialize from user or passed props
   useEffect(() => {
@@ -683,8 +685,39 @@ export const StudentProfileSetupModal: React.FC<StudentProfileSetupModalProps> =
               {isSaving ? 'Saving Profile...' : 'Save & Enter Laboratory →'}
             </button>
           </div>
+
+          {/* Accidental registration helper */}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              Accidentally registered with the wrong role or email?{' '}
+            </span>
+            <button
+              type="button"
+              onClick={() => setDeleteModalOpen(true)}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                color: '#dc2626',
+                textDecoration: 'underline',
+              }}
+            >
+              Delete Account
+            </button>
+          </div>
         </form>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onAccountDeleted={() => {
+          setDeleteModalOpen(false);
+          onClose();
+        }}
+      />
     </div>
   );
 };

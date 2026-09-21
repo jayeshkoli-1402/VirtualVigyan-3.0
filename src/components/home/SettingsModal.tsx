@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useAuth } from '../../auth/AuthContext';
+import { DeleteAccountModal } from '../auth/DeleteAccountModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
 
   // Audio settings
   const [soundEffects, setSoundEffects] = useState(() => {
@@ -335,7 +337,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     {onOpenProfileEditor && (
                       <button
                         onClick={() => {
@@ -359,6 +361,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         ✏️ Edit Student Profile
                       </button>
                     )}
+                  </div>
+
+                  {/* Danger Zone: Delete Account */}
+                  <div
+                    style={{
+                      marginTop: 24,
+                      padding: '16px 18px',
+                      borderRadius: 14,
+                      background: 'rgba(239, 68, 68, 0.06)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span>⚠️</span>
+                          <span>Danger Zone: Delete Account</span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4, maxWidth: 360, lineHeight: 1.4 }}>
+                          Accidentally registered as the wrong role (e.g. Teacher instead of Student)? Deleting your account releases your email so you can sign up again.
+                        </div>
+                      </div>
+                      <button
+                        id="btn-settings-delete-account"
+                        onClick={() => setDeleteAccountModalOpen(true)}
+                        style={{
+                          all: 'unset',
+                          cursor: 'pointer',
+                          padding: '7px 14px',
+                          borderRadius: 8,
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          border: '1px solid rgba(239, 68, 68, 0.35)',
+                          color: '#dc2626',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          transition: 'all 0.15s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = '#dc2626';
+                          e.currentTarget.style.color = '#ffffff';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+                          e.currentTarget.style.color = '#dc2626';
+                        }}
+                      >
+                        🗑️ Delete Account
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -667,6 +721,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Reset Settings to Default
                 </button>
               </div>
+
+              {user && (
+                <div style={{ paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 700, color: '#dc2626', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>⚠️</span>
+                    <span>Permanently Delete Account</span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '4px 0 10px' }}>
+                    Erase this account, reset all saved lab simulations, and release your email address for re-registration.
+                  </div>
+                  <button
+                    onClick={() => setDeleteAccountModalOpen(true)}
+                    style={{
+                      all: 'unset',
+                      cursor: 'pointer',
+                      padding: '7px 14px',
+                      borderRadius: 8,
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: '#dc2626',
+                    }}
+                  >
+                    Delete Account & Data
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -699,6 +781,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      <DeleteAccountModal
+        isOpen={deleteAccountModalOpen}
+        onClose={() => setDeleteAccountModalOpen(false)}
+        onAccountDeleted={() => {
+          setDeleteAccountModalOpen(false);
+          onClose();
+        }}
+      />
     </div>
   );
 };

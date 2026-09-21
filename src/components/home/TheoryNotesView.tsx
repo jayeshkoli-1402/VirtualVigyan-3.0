@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { MathFormula } from '../common/MathFormula';
 import { TitrationGraph } from '../common/TitrationGraph';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { THEORY_TRANSLATIONS } from '../../i18n/theoryTranslations';
+import type { Language } from '../../i18n/types';
 
 interface TheoryNotesViewProps {
   onBackToHome: () => void;
@@ -319,8 +322,27 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
   onBackToHome,
   onLaunchExperiment,
 }) => {
+  const { language, t } = useLanguage();
   const [selectedTopic, setSelectedTopic] = useState(topics[0].id);
-  const current = topics.find((t) => t.id === selectedTopic) || topics[0];
+  const rawCurrent = topics.find((t) => t.id === selectedTopic) || topics[0];
+
+  const locCurrent = THEORY_TRANSLATIONS[rawCurrent.id]?.[language as Language];
+
+  const current = {
+    ...rawCurrent,
+    title: locCurrent?.title || rawCurrent.title,
+    classLevel: locCurrent?.classLevel || rawCurrent.classLevel,
+    theory: locCurrent?.theory || rawCurrent.theory,
+    keyConcepts: locCurrent?.keyConcepts || rawCurrent.keyConcepts,
+    viva: rawCurrent.viva.map((v, idx) => {
+      const ov = locCurrent?.viva?.[idx];
+      return {
+        ...v,
+        q: ov?.q || v.q,
+        a: ov?.a ? ov.a : v.a,
+      };
+    }),
+  };
 
   return (
     <div className="animate-fade-in" style={{ padding: '4px 0 40px' }}>
@@ -341,13 +363,13 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
               marginBottom: 8,
             }}
           >
-            ← Back to Dashboard
+            ← {t('common.backToDashboard', undefined, 'Back to Dashboard')}
           </button>
           <h2 style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', margin: 0 }}>
-            Theory, Formulas & Practical Notes
+            {t('views.notes.title', undefined, 'Theory, Formulas & Practical Notes')}
           </h2>
           <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-            Comprehensive laboratory references, chemical reaction equations, and viva voce questions.
+            {t('views.notes.subtitle', undefined, 'Comprehensive laboratory references, chemical reaction equations, and viva voce questions.')}
           </p>
         </div>
       </div>
@@ -356,12 +378,16 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 20 }}>
         {/* Left Topic List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {topics.map((t) => {
-            const isSel = selectedTopic === t.id;
+          {topics.map((tItem) => {
+            const isSel = selectedTopic === tItem.id;
+            const locItem = THEORY_TRANSLATIONS[tItem.id]?.[language as Language];
+            const displayTitle = locItem?.title || tItem.title;
+            const displayClass = locItem?.classLevel || tItem.classLevel;
+
             return (
               <button
-                key={t.id}
-                onClick={() => setSelectedTopic(t.id)}
+                key={tItem.id}
+                onClick={() => setSelectedTopic(tItem.id)}
                 style={{
                   all: 'unset',
                   cursor: 'pointer',
@@ -373,10 +399,10 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
                 }}
               >
                 <div style={{ fontSize: '0.84rem', fontWeight: isSel ? 700 : 600, color: isSel ? '#2563eb' : 'var(--text-primary)' }}>
-                  {t.title}
+                  {displayTitle}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                  {t.classLevel}
+                  {displayClass}
                 </div>
               </button>
             );
@@ -429,7 +455,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
                 flexShrink: 0,
               }}
             >
-              Launch Practical Simulation →
+              {t('common.startExperiment', undefined, 'Start Experiment')} →
             </button>
           </div>
 
@@ -444,7 +470,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
             }}
           >
             <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.03em' }}>
-              Working Mathematical Formula
+              {t('theory.workingFormula', 'Working Mathematical Formula')}
             </div>
             <MathFormula tex={current.formulaTex} display style={{ fontSize: '1.15rem' }} />
           </div>
@@ -484,7 +510,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
           {/* Theoretical Principle */}
           <div style={{ marginBottom: 20 }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
-              Theoretical Principle
+              {t('theory.principle', 'Theoretical Principle')}
             </h4>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
               {current.theory}
@@ -495,7 +521,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
           {current.keyConcepts && current.keyConcepts.length > 0 && (
             <div style={{ marginBottom: 20 }}>
               <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-                Key Concepts
+                {t('theory.keyConcepts', 'Key Concepts')}
               </h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {current.keyConcepts.map((c, i) => (
@@ -522,7 +548,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
           {/* Chemical Reactions */}
           <div style={{ marginBottom: 24 }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>
-              Balanced Chemical Reactions
+              {t('theory.chemicalReactions', 'Balanced Chemical Reactions')}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {current.reactions.map((rxn, i) => (
@@ -548,7 +574,7 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
           {/* Viva Voce Questions */}
           <div>
             <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 10 }}>
-              Frequently Asked Viva Voce Questions
+              {t('theory.vivaVoce', 'Frequently Asked Viva Voce Questions')}
             </h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {current.viva.map((v, i) => (
@@ -567,12 +593,12 @@ export const TheoryNotesView: React.FC<TheoryNotesViewProps> = ({
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: 6, lineHeight: 1.6 }}>
                     {v.aTex ? (
                       <>
-                        <strong>Ans: </strong>
+                        <strong>{t('theory.ans', 'Ans:')} </strong>
                         <MathFormula tex={v.aTex} />
                       </>
                     ) : (
                       <>
-                        <strong>Ans:</strong> {v.a}
+                        <strong>{t('theory.ans', 'Ans:')}</strong> {v.a}
                       </>
                     )}
                   </div>

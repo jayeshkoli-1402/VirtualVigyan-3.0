@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { ExperimentConfig, ExperimentState, ExperimentAction } from '../../engine/experimentConfig';
 import { computeScore } from '../../engine/scoringEngine';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type GenericResultsProps = {
   config: ExperimentConfig;
@@ -21,6 +22,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
   dispatch,
   onBackToSelector,
 }) => {
+  const { t, tDynamic } = useLanguage();
   const scoreResult = useMemo(() => computeScore(config, state), [config, state]);
   const [animatedScore, setAnimatedScore] = useState(0);
 
@@ -51,7 +53,14 @@ const GenericResults: React.FC<GenericResultsProps> = ({
     'Needs Practice': '#dc2626',
   };
 
-  const gradeColor = gradeColors[scoreResult.grade] ?? '#64748b';
+  const gradeNames: Record<string, string> = {
+    'Excellent': t('results.gradeExcellent', 'Excellent'),
+    'Good': t('results.gradeGood', 'Good'),
+    'Satisfactory': t('results.gradeSatisfactory', 'Satisfactory'),
+    'Needs Practice': t('results.gradeNeedsPractice', 'Needs Practice'),
+  };
+  const displayGrade = gradeNames[scoreResult.grade] ?? scoreResult.grade;
+  const gradeColor = gradeColors[scoreResult.grade] ?? '#059669';
 
   return (
     <div style={{
@@ -93,7 +102,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           color: gradeColor,
           marginBottom: 4,
         }}>
-          {scoreResult.grade}
+          {displayGrade}
         </div>
         <p style={{
           fontSize: '0.8rem',
@@ -102,7 +111,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           maxWidth: 400,
           margin: '0 auto',
         }}>
-          {scoreResult.feedback}
+          {tDynamic(scoreResult.feedback)}
         </p>
       </div>
 
@@ -112,7 +121,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12,
         }}>
-          Score Breakdown
+          {t('results.rubricBreakdown', 'Score Breakdown')}
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {scoreResult.breakdown.map((cat, i) => (
@@ -122,7 +131,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
                 alignItems: 'center', marginBottom: 4,
               }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)' }}>
-                  {cat.name}
+                  {tDynamic(cat.name)}
                 </span>
                 <span style={{
                   fontSize: '0.78rem', fontWeight: 600,
@@ -152,7 +161,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
               <div style={{
                 fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2,
               }}>
-                {cat.explanation}
+                {tDynamic(cat.explanation)}
               </div>
             </div>
           ))}
@@ -166,7 +175,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
             fontSize: '0.75rem', fontWeight: 700, color: '#d97706',
             textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8,
           }}>
-            Mistakes Made ({state.mistakes.length})
+            {t('results.mistakesMade', 'Mistakes Made')} ({state.mistakes.length})
           </h3>
           <ul style={{ paddingLeft: 16, margin: 0 }}>
             {[...new Set(state.mistakes)].map((m, i) => (
@@ -174,7 +183,7 @@ const GenericResults: React.FC<GenericResultsProps> = ({
                 fontSize: '0.75rem', color: 'var(--text-secondary)',
                 marginBottom: 4, lineHeight: 1.4,
               }}>
-                {m}
+                {tDynamic(m)}
               </li>
             ))}
           </ul>
@@ -188,14 +197,14 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           onClick={() => dispatch({ type: 'RESET' })}
           style={{ flex: 1 }}
         >
-          Try Again
+          {t('results.tryAgain', 'Try Again')}
         </button>
         <button
           className="btn-primary"
           onClick={onBackToSelector}
           style={{ flex: 1 }}
         >
-          Back to Experiments
+          {t('results.backToExperiments', 'Back to Experiments')}
         </button>
       </div>
     </div>
@@ -203,3 +212,4 @@ const GenericResults: React.FC<GenericResultsProps> = ({
 };
 
 export default GenericResults;
+

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export interface HazardWarningData {
   title: string;
@@ -15,6 +16,7 @@ interface ChemicalHazardWarningToastProps {
 }
 
 const ChemicalHazardWarningToast: React.FC<ChemicalHazardWarningToastProps> = ({ warning, onDismiss }) => {
+  const { t } = useLanguage();
   if (!warning) return null;
 
   return (
@@ -96,7 +98,7 @@ const ChemicalHazardWarningToast: React.FC<ChemicalHazardWarningToastProps> = ({
               fontWeight: 600,
             }}
           >
-            🛡️ <strong>Precaution:</strong> {warning.precaution}
+            🛡️ <strong>{t('safety.precaution')}:</strong> {warning.precaution}
           </div>
         </div>
       </div>

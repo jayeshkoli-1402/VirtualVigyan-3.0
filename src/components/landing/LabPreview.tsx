@@ -1,30 +1,24 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface LabPreviewProps {
   onStartExperiment: () => void;
 }
 
 const LabPreview: React.FC<LabPreviewProps> = ({ onStartExperiment }) => {
+  const { t } = useLanguage();
   const features = [
     {
-      title: 'Interactive Apparatus',
-      desc: 'Burettes, pipettes, graduated cylinders with precision controls',
+      title: t('landing.preview.feature1.title', 'Tactile Glassware Interaction'),
+      desc: t('landing.preview.feature1.desc', 'Drag and drop burettes, pipettes, and flasks with realistic positioning validation.'),
     },
     {
-      title: 'Chemical Handling',
-      desc: 'Reagent additions, indicator transitions, color changes',
+      title: t('landing.preview.feature2.title', 'Fluid Dynamics & Meniscus'),
+      desc: t('landing.preview.feature2.desc', 'Observe curved liquid surfaces, realistic bubbles, and dynamic color-changing indicators.'),
     },
     {
-      title: 'Step-by-Step Procedure',
-      desc: 'Guided checklists with contextual hints',
-    },
-    {
-      title: 'Validation',
-      desc: 'Live rule engine monitors every procedural step',
-    },
-    {
-      title: 'Calculations',
-      desc: 'Built-in formula solvers and titration curves',
+      title: t('landing.preview.feature3.title', 'Precision Stopcock Flow'),
+      desc: t('landing.preview.feature3.desc', 'Rotate the burette tap to control drop-by-drop titrant dispensing down to 0.05 mL accuracy.'),
     },
   ];
 
@@ -32,10 +26,10 @@ const LabPreview: React.FC<LabPreviewProps> = ({ onStartExperiment }) => {
     <section className="ln-section ln-section-alt">
       <div className="ln-container">
         <div className="ln-section-header ln-reveal">
-          <span className="ln-section-label">Virtual Workbench</span>
-          <h2 className="ln-section-heading">Step Inside the Virtual Laboratory</h2>
+          <span className="ln-section-label">{t('brand.tagline', 'Virtual Workbench')}</span>
+          <h2 className="ln-section-heading">{t('landing.preview.heading', 'A Realistic Laboratory on Your Screen')}</h2>
           <p className="ln-section-desc">
-            A purpose-built digital workbench where physical bench procedures are accurately mirrored.
+            {t('landing.preview.subheading', 'High-contrast SVG glassware with real-time liquid dynamics, meniscus indicators, and drag-and-drop apparatus control.')}
           </p>
         </div>
 
@@ -108,7 +102,7 @@ const LabPreview: React.FC<LabPreviewProps> = ({ onStartExperiment }) => {
                   <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite" />
                 </circle>
                 {/* Label */}
-                <text x="332" y="260" fill="#64748b" fontSize="9.5" fontFamily="'Inter', sans-serif" fontWeight="500">DIGITAL SENSOR ACTIVE</text>
+                <text x="332" y="260" fill="#64748b" fontSize="9.5" fontFamily="'Inter', sans-serif" fontWeight="500">{t('landing.preview.sensorActive', 'DIGITAL SENSOR ACTIVE')}</text>
 
                 {/* Connection cable */}
                 <path d="M310 232 Q252 245 205 275" stroke="#64748b" strokeWidth="1.8" fill="none" strokeDasharray="4,3" />
@@ -145,7 +139,7 @@ const LabPreview: React.FC<LabPreviewProps> = ({ onStartExperiment }) => {
                 className="ln-btn ln-btn-primary"
                 style={{ marginTop: 12, alignSelf: 'flex-start' }}
               >
-                Enter Laboratory →
+                {t('common.enterLaboratory', 'Enter Laboratory →')}
               </button>
             </div>
           </div>

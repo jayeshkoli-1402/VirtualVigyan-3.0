@@ -27,6 +27,7 @@ import GenericBench from './GenericBench';
 import GenericInstructions from './GenericInstructions';
 import GenericCalculation from './GenericCalculation';
 import GenericResults from './GenericResults';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type GenericLabProps = {
   config: ExperimentConfig;
@@ -34,6 +35,7 @@ type GenericLabProps = {
 };
 
 const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => {
+  const { tDynamic } = useLanguage();
   const [reducer, initialState] = createExperiment(config);
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -160,7 +162,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector }) => 
   const getDragLabel = (id: string) => {
     const apparatus = config.apparatus.find(a => a.id === id);
     return apparatus
-      ? { icon: apparatus.icon, label: apparatus.label }
+      ? { icon: apparatus.icon, label: tDynamic(apparatus.label) }
       : { icon: '📦', label: id };
   };
 

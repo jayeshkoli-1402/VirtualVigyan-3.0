@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import { getAllExperiments } from '../../experiments';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
 
 interface TeacherDashboardProps {
   onLaunchExperiment: (id: string) => void;
@@ -10,6 +12,7 @@ interface TeacherDashboardProps {
 
 const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment, onNavigateToAuth }) => {
   const { user, allUsers } = useAuth();
+  const { t, language } = useLanguage();
   const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation', 'titration', 'exp-ostwald-viscometer']);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
@@ -20,7 +23,11 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
     setAssignedLabs((prev) => {
       const isAssigned = prev.includes(labId);
       const next = isAssigned ? prev.filter((id) => id !== labId) : [...prev, labId];
-      setToastMsg(isAssigned ? 'Lab unassigned from student cohort.' : 'Lab assigned to students successfully!');
+      setToastMsg(
+        isAssigned
+          ? t('teacher.toastUnassigned', 'Lab unassigned from student cohort.')
+          : t('teacher.toastAssigned', 'Lab assigned to students successfully!')
+      );
       setTimeout(() => setToastMsg(null), 3000);
       return next;
     });
@@ -87,7 +94,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                   letterSpacing: '-0.02em',
                 }}
               >
-                Teacher & Faculty Dashboard
+                {t('teacher.dashboardTitle', 'Teacher & Faculty Dashboard')}
               </h2>
               <span
                 className="clay-badge"
@@ -100,14 +107,16 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                   padding: '3px 10px',
                 }}
               >
-                {user?.role === 'admin' ? '🛡️ Admin Superuser' : 'Educator Portal'}
+                {user?.role === 'admin'
+                  ? t('teacher.adminBadge', '🛡️ Admin Superuser')
+                  : t('teacher.portalBadge', 'Educator Portal')}
               </span>
             </div>
             <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '5px 0 0', fontWeight: 500 }}>
-              Welcome back, <strong>{user?.name || (user?.role === 'admin' ? 'Administrator' : 'Professor')}</strong>.{' '}
+              {t('teacher.welcomeBack', { name: user?.name || (user?.role === 'admin' ? 'Administrator' : 'Professor') }, `Welcome back, ${user?.name || 'Professor'}.`)}{' '}
               {user?.role === 'admin'
-                ? 'Superuser privileges active across all cohorts and lab experiments.'
-                : `${user?.department ? `${user.department} • ` : ''}${user?.institution || 'Academic Department'}`}
+                ? t('teacher.adminPrivileges', 'Superuser privileges active across all cohorts and lab experiments.')
+                : `${user?.department ? `${user.department} • ` : ''}${user?.institution || t('teacher.academicDept', 'Academic Department')}`}
             </p>
           </div>
         </div>
@@ -133,8 +142,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
             }}
           >
             <span>👨‍🏫</span>
-            <span>Sign In to Faculty Account</span>
-            <span>→</span>
+            <span>{t('teacher.signInBtn', 'Sign In to Faculty Account →')}</span>
           </button>
         )}
       </div>
@@ -150,32 +158,38 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
       >
         <div className="clay-card-sm" style={{ padding: 22 }}>
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Enrolled Students in Cohort
+            {t('teacher.enrolledStudents', 'Enrolled Students in Cohort')}
           </div>
           <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2.1rem', fontWeight: 900, color: 'var(--text-primary)', margin: '6px 0 6px' }}>
             {students.length}
           </div>
-          <div style={{ fontSize: '0.74rem', color: '#059669', fontWeight: 700 }}>Active & Registered</div>
+          <div style={{ fontSize: '0.74rem', color: '#059669', fontWeight: 700 }}>
+            {t('teacher.activeRegistered', 'Active & Registered')}
+          </div>
         </div>
 
         <div className="clay-card-sm" style={{ padding: 22 }}>
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Assigned Experiments
+            {t('teacher.assignedExperiments', 'Assigned Experiments')}
           </div>
           <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2.1rem', fontWeight: 900, color: '#0284c7', margin: '6px 0 6px' }}>
             {assignedLabs.length}
           </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>Active in syllabus</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {t('teacher.activeSyllabus', 'Active in syllabus')}
+          </div>
         </div>
 
         <div className="clay-card-sm" style={{ padding: 22 }}>
           <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            Cohort Performance Score
+            {t('teacher.cohortScore', 'Cohort Performance Score')}
           </div>
           <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2.1rem', fontWeight: 900, color: '#059669', margin: '6px 0 6px' }}>
             91.5%
           </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>Based on step accuracy & calculations</div>
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {t('teacher.scoreBasis', 'Based on step accuracy & calculations')}
+          </div>
         </div>
       </div>
 
@@ -184,17 +198,17 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
         {/* Student Performance Roster */}
         <div className="clay-card" style={{ padding: 26 }}>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, margin: '0 0 16px' }}>
-            Student Lab Performance Roster
+            {t('teacher.rosterTitle', 'Student Lab Performance Roster')}
           </h3>
 
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
-                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>Student</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>Class</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>Labs Done</th>
-                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>Avg Score</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>{t('teacher.colStudent', 'Student')}</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>{t('teacher.colClass', 'Class')}</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>{t('teacher.colLabsDone', 'Labs Done')}</th>
+                  <th style={{ padding: '10px 12px', fontWeight: 800 }}>{t('teacher.colAvgScore', 'Avg Score')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,7 +223,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>{st.grade || 'General'}</td>
+                    <td style={{ padding: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      {st.grade || t('teacher.generalClass', 'General')}
+                    </td>
                     <td style={{ padding: '12px', fontWeight: 800 }}>{st.completedLabs || 4}</td>
                     <td style={{ padding: '12px' }}>
                       <span
@@ -234,7 +250,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
         {/* Experiment Curriculum Assignment & Demonstration */}
         <div className="clay-card" style={{ padding: 26 }}>
           <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.1rem', fontWeight: 800, margin: '0 0 16px' }}>
-            Class Practical Assignments
+            {t('teacher.assignmentsTitle', 'Class Practical Assignments')}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -249,8 +265,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
               }}
             >
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>⚖️ Conservation of Mass</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Class 9 • BaCl₂ + Na₂SO₄</div>
+                <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
+                  ⚖️ {EXPERIMENT_TRANSLATIONS['conservation']?.[language]?.title || 'Conservation of Mass'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {language === 'hi' ? 'कक्षा 9' : language === 'mr' ? 'इयत्ता ९ वी' : 'Class 9'} • BaCl₂ + Na₂SO₄
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -262,7 +282,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                     fontSize: '0.74rem',
                   }}
                 >
-                  {assignedLabs.includes('conservation') ? '✓ Assigned' : '+ Assign'}
+                  {assignedLabs.includes('conservation')
+                    ? t('teacher.assigned', '✓ Assigned')
+                    : t('teacher.assign', '+ Assign')}
                 </button>
                 <button
                   onClick={() => onLaunchExperiment('conservation')}
@@ -273,7 +295,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                     fontSize: '0.74rem',
                   }}
                 >
-                  Demonstrate
+                  {t('teacher.demonstrate', 'Demonstrate')}
                 </button>
               </div>
             </div>
@@ -289,8 +311,12 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
               }}
             >
               <div>
-                <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>🧪 Acid-Base Titration</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>Class 11 • HCl + NaOH</div>
+                <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
+                  🧪 {EXPERIMENT_TRANSLATIONS['titration']?.[language]?.title || 'Acid-Base Titration'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {language === 'hi' ? 'कक्षा 11' : language === 'mr' ? 'इयत्ता ११ वी' : 'Class 11'} • HCl + NaOH
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
@@ -302,7 +328,9 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                     fontSize: '0.74rem',
                   }}
                 >
-                  {assignedLabs.includes('titration') ? '✓ Assigned' : '+ Assign'}
+                  {assignedLabs.includes('titration')
+                    ? t('teacher.assigned', '✓ Assigned')
+                    : t('teacher.assign', '+ Assign')}
                 </button>
                 <button
                   onClick={() => onLaunchExperiment('titration')}
@@ -313,57 +341,66 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
                     fontSize: '0.74rem',
                   }}
                 >
-                  Demonstrate
+                  {t('teacher.demonstrate', 'Demonstrate')}
                 </button>
               </div>
             </div>
 
             {/* DBATU / Engine Experiments */}
-            {engineExperiments.map((exp) => (
-              <div
-                key={exp.id}
-                className="clay-card-sm"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 18px',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
-                    {exp.icon} {exp.title}
+            {engineExperiments.map((exp) => {
+              const expTitle = EXPERIMENT_TRANSLATIONS[exp.id]?.[language]?.title || exp.title;
+              const classStr = typeof exp.class === 'number'
+                ? (language === 'hi' ? `कक्षा ${exp.class}` : language === 'mr' ? `इयत्ता ${exp.class}` : `Class ${exp.class}`)
+                : exp.class;
+
+              return (
+                <div
+                  key={exp.id}
+                  className="clay-card-sm"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 18px',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
+                      {exp.icon} {expTitle}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      {classStr}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                    {typeof exp.class === 'number' ? `Class ${exp.class}` : exp.class}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => toggleAssign(exp.id)}
+                      className={`clay-btn ${assignedLabs.includes(exp.id) ? 'clay-btn-emerald' : 'clay-btn-neutral'}`}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 12,
+                        fontSize: '0.74rem',
+                      }}
+                    >
+                      {assignedLabs.includes(exp.id)
+                        ? t('teacher.assigned', '✓ Assigned')
+                        : t('teacher.assign', '+ Assign')}
+                    </button>
+                    <button
+                      onClick={() => onLaunchExperiment(exp.id)}
+                      className="clay-btn clay-btn-neutral"
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 12,
+                        fontSize: '0.74rem',
+                      }}
+                    >
+                      {t('teacher.demonstrate', 'Demonstrate')}
+                    </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => toggleAssign(exp.id)}
-                    className={`clay-btn ${assignedLabs.includes(exp.id) ? 'clay-btn-emerald' : 'clay-btn-neutral'}`}
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: 12,
-                      fontSize: '0.74rem',
-                    }}
-                  >
-                    {assignedLabs.includes(exp.id) ? '✓ Assigned' : '+ Assign'}
-                  </button>
-                  <button
-                    onClick={() => onLaunchExperiment(exp.id)}
-                    className="clay-btn clay-btn-neutral"
-                    style={{
-                      padding: '6px 14px',
-                      borderRadius: 12,
-                      fontSize: '0.74rem',
-                    }}
-                  >
-                    Demonstrate
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -372,3 +409,4 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
 };
 
 export default TeacherDashboard;
+

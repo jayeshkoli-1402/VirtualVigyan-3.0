@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserRole } from '../../auth/types';
+import { LanguageSelector } from '../common/LanguageSelector';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface AuthPageProps {
   onBackToLab: () => void;
@@ -17,6 +19,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   theme,
   onToggleTheme,
 }) => {
+  const { t } = useLanguage();
   const { user, login, register, logout } = useAuth();
 
   // Active role portal: 'student' | 'teacher'
@@ -245,7 +248,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
             }}
           >
             <span>←</span>
-            <span>Return to Chemistry Lab</span>
+            <span>{t('auth.returnToLab', undefined, 'Return to Chemistry Lab')}</span>
           </button>
 
           <div style={{ height: 20, width: 1, background: 'var(--border)' }} />
@@ -334,6 +337,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
               </button>
             </div>
           )}
+
+          {/* Language Selector */}
+          <LanguageSelector variant="pill" />
 
           {/* Theme toggle */}
           <button

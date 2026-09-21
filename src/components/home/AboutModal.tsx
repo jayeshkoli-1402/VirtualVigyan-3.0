@@ -1,5 +1,6 @@
 import React from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface AboutModalProps {
   isOpen: boolean;
@@ -7,6 +8,7 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -43,10 +45,10 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <VirtualVigyanLogo size={40} />
             <div>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                VirtualVigyan
+                {t('brand.name', 'VirtualVigyan')}
               </h3>
               <div style={{ fontSize: '0.74rem', color: '#2563eb', fontWeight: 600 }}>
-                Interactive Chemistry Laboratory
+                {t('brand.tagline', 'Interactive Chemistry Laboratory')}
               </div>
             </div>
           </div>
@@ -66,7 +68,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 16 }}>
-          <strong>VirtualVigyan</strong> is an advanced, tactile digital chemistry laboratory designed to eliminate educational resource barriers. Students can perform authentic, quantitative chemistry experiments with interactive fluid dynamics, accurate stoichiometric calculations, and real-time error guidance on any device.
+          {t('about.description', 'VirtualVigyan is an advanced, tactile digital chemistry laboratory designed to eliminate educational resource barriers. Students can perform authentic, quantitative chemistry experiments with interactive fluid dynamics, accurate stoichiometric calculations, and real-time error guidance on any device.')}
         </p>
 
         <div
@@ -78,17 +80,16 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           }}
         >
           <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
-            Curriculum Alignment
+            {t('about.alignment', 'Curriculum Alignment')}
           </div>
-          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            • Dr. Babasaheb Ambedkar Technological University (DBATU) — F.Y. B.Tech<br />
-            • National Council of Educational Research and Training (NCERT) — Classes 9 to 12
+          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+            {t('about.curriculumDetails', '• Dr. Babasaheb Ambedkar Technological University (DBATU) — F.Y. B.Tech\n• National Council of Educational Research and Training (NCERT) — Classes 9 to 12')}
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--border)' }}>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            v2.0 • For Every Student, Everywhere
+            {t('about.tagline', 'v2.0 • For Every Student, Everywhere')}
           </div>
           <button
             onClick={onClose}
@@ -103,7 +104,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               fontWeight: 600,
             }}
           >
-            Close
+            {t('common.close', 'Close')}
           </button>
         </div>
       </div>

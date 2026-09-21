@@ -7,6 +7,7 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ExperimentConfig, ExperimentState } from '../../engine/experimentConfig';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type GenericToolboxProps = {
   config: ExperimentConfig;
@@ -21,6 +22,7 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t, tDynamic } = useLanguage();
   const currentStep = config.steps[state.currentStepIndex];
 
   return (
@@ -33,7 +35,7 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
         {!isCollapsed && (
           <h2 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
             textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Apparatus
+            {t('apparatus.title', 'Apparatus')}
           </h2>
         )}
         <button
@@ -65,7 +67,7 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
                   key={apparatus.id}
                   id={apparatus.id}
                   icon={apparatus.icon}
-                  label={apparatus.label}
+                  label={tDynamic(apparatus.label)}
                   disabled={isPlaced}
                   dimmed={!isActiveStep}
                 />

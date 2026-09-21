@@ -4,6 +4,7 @@ import type { TitrationState, TitrationAction } from '../engine/titrationState';
 import { Step, DROP_ZONES } from '../engine/titrationState';
 import { getFlaskColor } from '../engine/chemistryRules';
 import { canOperateStopcock } from '../engine/validation';
+import { useLanguage } from '../i18n/LanguageContext';
 import Burette from './Burette';
 import Flask from './Flask';
 import StopcockControl from './StopcockControl';
@@ -16,6 +17,7 @@ interface LabBenchProps {
 }
 
 const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) => {
+  const { t } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
   const [isStirring, setIsStirring] = React.useState(false);
   const flaskColor = getFlaskColor(state.volumeAdded, state.hasIndicator);
@@ -65,7 +67,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           }}
         >
           <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
-          <span>{isSwirling ? 'Swirling' : 'Shake'}</span>
+          <span>{isSwirling ? t('lab.swirling', 'Swirling') : t('lab.shake', 'Shake')}</span>
         </button>
 
         <button
@@ -90,7 +92,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           }}
         >
           <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isStirring ? 'spinBarRapid 0.4s linear infinite' : 'none' }}>🌀</span>
-          <span>{isStirring ? 'Stirring' : 'Stir'}</span>
+          <span>{isStirring ? t('lab.stirring', 'Stirring') : t('lab.stir', 'Stir')}</span>
         </button>
       </div>
       <svg
@@ -156,7 +158,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           <DropZoneOverlay
             zoneId={DROP_ZONES.BASE}
             x={90} y={300} width={100} height={92}
-            label="Conical Flask"
+            label={t('apparatus.flask', 'Conical Flask')}
             isActive={activeDropZone === DROP_ZONES.BASE}
             step={state.step}
             targetStep={Step.SETUP_STAND}
@@ -168,7 +170,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           <DropZoneOverlay
             zoneId={DROP_ZONES.BURETTE_TOP}
             x={115} y={8} width={50} height={32}
-            label="NaOH Reagent"
+            label={t('apparatus.naohBottle', 'NaOH Reagent')}
             isActive={activeDropZone === DROP_ZONES.BURETTE_TOP}
             step={state.step}
             targetStep={Step.FILL_BURETTE}
@@ -180,7 +182,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           <DropZoneOverlay
             zoneId={DROP_ZONES.FLASK_ZONE}
             x={110} y={292} width={60} height={52}
-            label={!state.acidMeasured ? 'Pipette' : !state.hasIndicator ? 'Indicator' : ''}
+            label={!state.acidMeasured ? t('apparatus.pipette', 'Pipette') : !state.hasIndicator ? t('apparatus.indicator', 'Indicator') : ''}
             isActive={activeDropZone === DROP_ZONES.FLASK_ZONE}
             step={state.step}
             targetStep={!state.acidMeasured ? Step.MEASURE_ACID : Step.ADD_INDICATOR}
@@ -193,7 +195,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
           <DropZoneOverlay
             zoneId={DROP_ZONES.HCL_BENCH_ZONE}
             x={8} y={340} width={58} height={50}
-            label="HCl Stock"
+            label={t('apparatus.hclBottle', 'HCl Stock')}
             isActive={activeDropZone === DROP_ZONES.HCL_BENCH_ZONE}
             step={state.step}
             targetStep={Step.MEASURE_ACID}
@@ -214,7 +216,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
             <DropZoneOverlay
               zoneId={DROP_ZONES.HCL_BOTTLE_ZONE}
               x={8} y={340} width={58} height={50}
-              label="Pipette"
+              label={t('apparatus.pipette', 'Pipette')}
               isActive={activeDropZone === DROP_ZONES.HCL_BOTTLE_ZONE}
               step={state.step}
               targetStep={Step.MEASURE_ACID}
@@ -374,7 +376,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
                   whiteSpace: 'nowrap',
                 }}
               >
-                Dispensed: {state.volumeAdded.toFixed(1)} mL
+                {t('lab.dispensed', { volume: state.volumeAdded.toFixed(1) }, `Dispensed: ${state.volumeAdded.toFixed(1)} mL`)}
               </div>
               <button
                 id="btn-mark-endpoint"
@@ -384,7 +386,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
                 }}
                 style={{ fontSize: '0.62rem', padding: '5px 8px', width: '100%', whiteSpace: 'nowrap', borderRadius: 6 }}
               >
-                ✋ Mark Endpoint
+                {t('lab.markEndpoint', '✋ Mark Endpoint')}
               </button>
             </div>
           </foreignObject>
@@ -399,7 +401,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
               onClick={() => dispatch({ type: 'PROCEED_TO_CALCULATION' })}
               style={{ fontSize: '0.65rem', padding: '8px 10px', width: '100%', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
             >
-              Proceed to Calculation →
+              {t('lab.proceedCalculation', 'Proceed to Calculation →')}
             </button>
           </foreignObject>
         )}

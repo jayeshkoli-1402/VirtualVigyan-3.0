@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { TitrationAction } from '../engine/titrationState';
 import { validateConcentration, evaluateEndpoint } from '../engine/validation';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface CalculationFormProps {
   markedVolume: number;
@@ -8,6 +9,7 @@ interface CalculationFormProps {
 }
 
 const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatch }) => {
+  const { t } = useLanguage();
   const [inputValue, setInputValue] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState<ReturnType<typeof validateConcentration> | null>(null);
@@ -54,10 +56,10 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
           color: 'var(--text-primary)',
         }}
       >
-        Calculate Unknown Concentration
+        {t('calc.title', undefined, 'Calculate Unknown Concentration')}
       </h3>
       <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: 20, lineHeight: 1.5 }}>
-        Using your recorded endpoint volume, calculate the molar concentration of the unknown HCl solution.
+        {t('calc.subtitle', undefined, 'Using your recorded endpoint volume, calculate the molar concentration of the unknown HCl solution.')}
       </p>
 
       {/* Given values */}
@@ -80,7 +82,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
             fontWeight: 700,
           }}
         >
-          Given Experimental Values
+          {t('calc.givenValues', undefined, 'Given Experimental Values')}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
@@ -115,7 +117,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
           textAlign: 'center',
         }}
       >
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Formula: </span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('calc.formula', undefined, 'Formula')}: </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>
           M<sub>HCl</sub> = (V<sub>NaOH</sub> × M<sub>NaOH</sub>) / V<sub>HCl</sub>
         </span>
@@ -124,7 +126,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
       {/* Input form */}
       <form onSubmit={handleSubmit}>
         <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-          Calculated HCl Concentration (M):
+          {t('calc.inputLabel', undefined, 'Calculated HCl Concentration (M):')}
         </label>
         <div style={{ display: 'flex', gap: 10 }}>
           <input
@@ -156,7 +158,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
               className="btn-primary"
               disabled={!inputValue || parseFloat(inputValue) <= 0}
             >
-              Verify Answer
+              {t('calc.submitAnswers', undefined, 'Verify Answer')}
             </button>
           )}
         </div>
@@ -177,11 +179,11 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 18 }}>✅</span>
                 <span style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Correct Calculation!
+                  {t('calc.correctTitle', undefined, 'Correct Calculation!')}
                 </span>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', lineHeight: 1.5 }}>
-                Your answer is within ±10% tolerance of the expected concentration ({result.expected.toFixed(4)} M).
+                {t('calc.correctRange', 'Your answer is within ±10% tolerance of the expected concentration.')} ({result.expected.toFixed(4)} M)
               </p>
             </div>
           ) : (
@@ -196,11 +198,11 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <span style={{ fontSize: 18 }}>❌</span>
                 <span style={{ color: '#dc2626', fontWeight: 700, fontSize: '0.9rem' }}>
-                  Calculation Error
+                  {t('calc.incorrectTitle', undefined, 'Calculation Needs Review')}
                 </span>
               </div>
               <p style={{ color: '#475569', fontSize: '0.8rem', marginBottom: 10, lineHeight: 1.5 }}>
-                Here is the correct worked formula:
+                {t('calc.workedSolution', undefined, 'Worked Solution & Step-by-Step Proof')}:
               </p>
               <pre
                 style={{
@@ -227,7 +229,7 @@ const CalculationForm: React.FC<CalculationFormProps> = ({ markedVolume, dispatc
             onClick={handleContinue}
             style={{ width: '100%', marginTop: 16 }}
           >
-            Continue to Results →
+            {t('common.continue', undefined, 'Continue to Results')} →
           </button>
         </div>
       )}

@@ -42,11 +42,15 @@ import { AboutModal } from './components/home/AboutModal';
 import { HowItWorksModal } from './components/home/HowItWorksModal';
 import LandingPage from './components/landing/LandingPage';
 import { VirtualVigyanLogo } from './components/common/VirtualVigyanLogo';
+import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
+import { LanguageSelector } from './components/common/LanguageSelector';
+import { getLocalizedExperimentTitle } from './i18n/experimentTranslations';
 
 type ActiveExperiment = 'select' | 'auth' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
@@ -280,12 +284,12 @@ const AppContent: React.FC = () => {
   // Drag overlay label
   const getDragLabel = (id: string) => {
     const labels: Record<string, { icon: string; label: string }> = {
-      [DRAG_ITEMS.BURETTE]: { icon: '🧪', label: 'Burette' },
-      [DRAG_ITEMS.FLASK]: { icon: '⚗️', label: 'Conical Flask' },
-      [DRAG_ITEMS.PIPETTE]: { icon: '💉', label: 'Pipette' },
-      [DRAG_ITEMS.HCL_BOTTLE]: { icon: '🧴', label: 'HCl Stock' },
-      [DRAG_ITEMS.NAOH_BOTTLE]: { icon: '🫧', label: 'NaOH Reagent' },
-      [DRAG_ITEMS.INDICATOR]: { icon: '💧', label: 'Phenolphthalein' },
+      [DRAG_ITEMS.BURETTE]: { icon: '🧪', label: t('apparatus.burette', 'Burette') },
+      [DRAG_ITEMS.FLASK]: { icon: '⚗️', label: t('apparatus.flask', 'Conical Flask') },
+      [DRAG_ITEMS.PIPETTE]: { icon: '💉', label: t('apparatus.pipette', 'Pipette') },
+      [DRAG_ITEMS.HCL_BOTTLE]: { icon: '🧴', label: t('apparatus.hclBottle', 'HCl Stock') },
+      [DRAG_ITEMS.NAOH_BOTTLE]: { icon: '🫧', label: t('apparatus.naohBottle', 'NaOH Reagent') },
+      [DRAG_ITEMS.INDICATOR]: { icon: '💧', label: t('apparatus.indicator', 'Phenolphthalein') },
     };
     return labels[id] || { icon: '📦', label: id };
   };
@@ -293,27 +297,27 @@ const AppContent: React.FC = () => {
   // Get experiment-specific header info
   const getHeaderInfo = () => {
     if (activeExperiment === 'admin') {
-      return { subtitle: '🛡️ Admin & Moderator Command Center', color: '#7c3aed' };
+      return { subtitle: t('nav.adminPanel', '🛡️ Admin & Moderator Command Center'), color: '#7c3aed' };
     }
     if (activeExperiment === 'teacher') {
-      return { subtitle: '👨‍🏫 Teacher & Faculty Portal', color: '#0284c7' };
+      return { subtitle: t('nav.teacherPortal', '👨‍🏫 Teacher & Faculty Portal'), color: '#0284c7' };
     }
     if (activeExperiment === 'conservation') {
-      return { subtitle: 'Conservation of Mass', color: '#059669' };
+      return { subtitle: getLocalizedExperimentTitle('conservation-of-mass', language, 'Conservation of Mass'), color: '#059669' };
     }
     if (activeExperiment === 'conservation-vr') {
-      return { subtitle: '🥽 Conservation of Mass (3D VR Lab)', color: '#059669' };
+      return { subtitle: `🥽 ${getLocalizedExperimentTitle('conservation-of-mass', language, 'Conservation of Mass')} (3D VR Lab)`, color: '#059669' };
     }
     if (activeExperiment === 'titration') {
-      return { subtitle: 'Acid-Base Titration', color: '#2563eb' };
+      return { subtitle: getLocalizedExperimentTitle('titration', language, 'Acid-Base Titration'), color: '#2563eb' };
     }
     if (activeExperiment !== 'select') {
       const engineExp = getExperimentById(activeExperiment);
       if (engineExp) {
-        return { subtitle: engineExp.title, color: engineExp.themeColor };
+        return { subtitle: getLocalizedExperimentTitle(activeExperiment, language, engineExp.title), color: engineExp.themeColor };
       }
     }
-    return { subtitle: 'Interactive Chemistry Lab', color: '#2563eb' };
+    return { subtitle: t('brand.tagline', 'Interactive Chemistry Lab'), color: '#2563eb' };
   };
 
   const headerInfo = getHeaderInfo();
@@ -588,7 +592,7 @@ const AppContent: React.FC = () => {
               e.currentTarget.style.transform = 'translateX(0)';
             }}
           >
-            ← Back to Dashboard
+            {t('lab.backToDashboard', '← Back to Dashboard')}
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -647,6 +651,9 @@ const AppContent: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Language Selector */}
+          <LanguageSelector variant="pill" />
 
           {/* Theme toggle */}
           <button
@@ -865,9 +872,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
   );
 };
 

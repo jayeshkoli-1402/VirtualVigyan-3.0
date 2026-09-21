@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface LabSafetyModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface LabSafetyModalProps {
 }
 
 const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }) => {
+  const { t } = useLanguage();
   const [gogglesEquipped, setGogglesEquipped] = useState(true);
   const [maskEquipped, setMaskEquipped] = useState(true);
   const [glovesEquipped, setGlovesEquipped] = useState(true);
@@ -63,10 +65,10 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
           </div>
           <div>
             <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#9a3412', margin: 0 }}>
-              Mandatory Lab Safety Protocols
+              {t('safety.modalTitle')}
             </h2>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
-              Standard Chemical PPE & Hazard Briefing for MH9-CHEM-002
+              {t('safety.modalSubtitle')}
             </p>
           </div>
         </div>
@@ -86,14 +88,14 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
         >
           <span style={{ fontSize: '20px' }}>☠️</span>
           <div style={{ fontSize: '0.72rem', color: '#9f1239', lineHeight: 1.4 }}>
-            <strong>Hazard Warning:</strong> This experiment utilizes <strong>Barium Chloride (BaCl₂)</strong>, a heavy-metal toxic chemical compound (H301: Toxic if swallowed, H332: Harmful if inhaled). Strict PPE adherence is required before entering the laboratory.
+            {t('safety.hazardWarning')}
           </div>
         </div>
 
         {/* PPE Checklist */}
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-            Required Personal Protective Equipment (PPE):
+            {t('safety.requiredPPE')}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -118,8 +120,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥽 Safety Goggles</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Eye splash protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥽 {t('safety.goggles')}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{t('safety.gogglesDesc')}</div>
               </div>
             </label>
 
@@ -144,8 +146,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>😷 Protective Mask</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Aerosol/mist filter</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>😷 {t('safety.mask')}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{t('safety.maskDesc')}</div>
               </div>
             </label>
 
@@ -170,8 +172,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🧤 Chemical Gloves</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Skin barrier protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🧤 {t('safety.gloves')}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{t('safety.glovesDesc')}</div>
               </div>
             </label>
 
@@ -196,8 +198,8 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
                 style={{ width: 16, height: 16, accentColor: '#059669' }}
               />
               <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥼 Lab Coat</div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>Full body protection</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>🥼 {t('safety.labCoat')}</div>
+                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{t('safety.labCoatDesc')}</div>
               </div>
             </label>
           </div>
@@ -217,7 +219,7 @@ const LabSafetyModal: React.FC<LabSafetyModalProps> = ({ isOpen, onAcknowledge }
             boxShadow: allEquipped ? '0 4px 14px rgba(5, 150, 105, 0.35)' : 'none',
           }}
         >
-          {allEquipped ? 'Equip PPE & Enter Lab Bench →' : 'Equip all 4 PPE items to proceed'}
+          {allEquipped ? t('safety.enterBench') : t('safety.equipAll')}
         </button>
       </div>
     </div>

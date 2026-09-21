@@ -6,6 +6,7 @@ import {
   CONSERVATION_STEP_LABELS,
   getConservationStepInstruction,
 } from '../../engine/conservationState';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ConservationInstructionsProps {
   state: ConservationState;
@@ -22,8 +23,31 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t, tStep, tDynamic, language } = useLanguage();
   const currentStepIndex = CONSERVATION_STEP_ORDER.indexOf(state.step);
-  const currentInstruction = getConservationStepInstruction(state);
+  const stepData = tStep(
+    'conservation',
+    state.step,
+    CONSERVATION_STEP_LABELS[state.step],
+    getConservationStepInstruction(state)
+  );
+
+  let currentInstruction = stepData.instruction;
+  if (state.step === ConservationStep.SETUP_FLASK) {
+    if (!state.flaskPlaced) {
+      currentInstruction = language === 'hi'
+        ? 'टूलबॉक्स से शंक्वाकार फ्लास्क को लैब बेंच पर रखें।'
+        : language === 'mr'
+          ? 'टूलबॉक्समधून शंकूपात्र लॅब बेंचवर ठेवा.'
+          : 'Drag the Conical Flask from the toolbox onto the lab bench.';
+    } else if (!state.na2so4Poured) {
+      currentInstruction = language === 'hi'
+        ? '10 mL सोडियम सल्फेट विलयन डालने के लिए Na₂SO₄ बोतल को फ्लास्क पर ले जाएं।'
+        : language === 'mr'
+          ? '10 mL सोडियम सल्फेट द्रावण ओतण्यासाठी Na₂SO₄ बाटली फ्लास्कवर ओढा.'
+          : 'Drag the Na₂SO₄ bottle onto the flask to pour 10 mL of sodium sulfate solution.';
+    }
+  }
 
   // Observation-specific step buttons
   const showObserveButton = state.step === ConservationStep.OBSERVE && state.precipitateFormed;
@@ -51,7 +75,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
               color: 'var(--text-muted)',
             }}
           >
-            Instructions
+            {t('lab.instructions', 'Instructions')}
           </span>
         )}
         <button
@@ -93,7 +117,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 marginBottom: 6,
               }}
             >
-              Current Step
+              {t('lab.currentInstruction', 'Current Step')}
             </div>
             <p
               style={{
@@ -117,7 +141,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 }}
                 style={{ marginTop: 10, fontSize: '0.72rem', padding: '6px 14px', width: '100%' }}
               >
-                🔄 Invert Flask to Mix
+                {t('conservation.invertFlask', '🔄 Invert Flask to Mix')}
               </button>
             )}
             {state.isMixing && (
@@ -130,7 +154,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                   textAlign: 'center',
                 }}
               >
-                ⏳ Mixing in progress...
+                {t('conservation.mixingProgress', '⏳ Mixing in progress...')}
               </div>
             )}
             {showObserveButton && (
@@ -140,7 +164,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 onClick={() => dispatch({ type: 'FINISH_OBSERVE' })}
                 style={{ marginTop: 10, fontSize: '0.72rem', padding: '6px 14px', width: '100%' }}
               >
-                ✅ I've Observed the Precipitate → Continue
+                {t('conservation.observedPrecipitate', '✅ I\'ve Observed the Precipitate → Continue')}
               </button>
             )}
           </div>
@@ -160,7 +184,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 lineHeight: 1.5,
               }}
             >
-              ⚠️ {mistakeMessage}
+              ⚠️ {tDynamic(mistakeMessage)}
             </div>
           )}
 
@@ -175,7 +199,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
               marginBottom: 8,
             }}
           >
-            Progress
+            {t('common.step', 'Progress')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {CONSERVATION_STEP_ORDER.filter(
@@ -184,6 +208,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
               const stepIndex = CONSERVATION_STEP_ORDER.indexOf(step);
               const isCompleted = stepIndex < currentStepIndex;
               const isCurrent = stepIndex === currentStepIndex;
+              const stepTitle = tStep('conservation', step, CONSERVATION_STEP_LABELS[step], '').title;
 
               return (
                 <div
@@ -248,7 +273,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                       textDecoration: isCompleted ? 'line-through' : 'none',
                     }}
                   >
-                    {CONSERVATION_STEP_LABELS[step]}
+                    {stepTitle}
                   </span>
                 </div>
               );
@@ -275,7 +300,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 letterSpacing: '0.04em',
               }}
             >
-              Reaction
+              {t('conservation.reaction', 'Reaction')}
             </div>
             <p
               style={{
@@ -294,7 +319,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
                 marginTop: 4,
               }}
             >
-              Double Displacement (Metathesis)
+              {t('conservation.reactionType', 'Double Displacement (Metathesis)')}
             </p>
           </div>
         </>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface HowItWorksModalProps {
   isOpen: boolean;
@@ -12,31 +13,32 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
   onClose,
   onStartExploring,
 }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
 
   const steps = [
     {
       num: '1',
-      title: 'Select a Chemistry Experiment',
-      desc: 'Choose from Class 9 to FY B.Tech modules including volumetric titration and conservation of mass.',
+      title: t('howItWorks.step1Title', 'Select a Chemistry Experiment'),
+      desc: t('howItWorks.step1Desc', 'Choose from Class 9 to FY B.Tech modules including volumetric titration and conservation of mass.'),
       icon: '🧪',
     },
     {
       num: '2',
-      title: 'Interact with Lab Apparatus',
-      desc: 'Drag and drop burettes, conical flasks, pipettes, and reagents onto the digital bench.',
+      title: t('howItWorks.step2Title', 'Interact with Lab Apparatus'),
+      desc: t('howItWorks.step2Desc', 'Drag and drop burettes, conical flasks, pipettes, and reagents onto the digital bench.'),
       icon: '⚗️',
     },
     {
       num: '3',
-      title: 'Observe Reactions in Real-Time',
-      desc: 'Watch authentic color changes, precipitation, meniscus levels, and digital readings.',
+      title: t('howItWorks.step3Title', 'Observe Reactions in Real-Time'),
+      desc: t('howItWorks.step3Desc', 'Watch authentic color changes, precipitation, meniscus levels, and digital readings.'),
       icon: '👁️',
     },
     {
       num: '4',
-      title: 'Calculate & Get Evaluated',
-      desc: 'Record volume endpoints, enter stoichiometric calculations, and receive immediate step-by-step scoring feedback.',
+      title: t('howItWorks.step4Title', 'Calculate & Get Evaluated'),
+      desc: t('howItWorks.step4Desc', 'Record volume endpoints, enter stoichiometric calculations, and receive immediate step-by-step scoring feedback.'),
       icon: '📊',
     },
   ];
@@ -75,10 +77,10 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
             <VirtualVigyanLogo size={32} />
             <div>
               <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                How VirtualVigyan Works
+                {t('howItWorks.title', 'How VirtualVigyan Works')}
               </h3>
               <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                A 4-step walkthrough of your digital chemistry lab experience
+                {t('howItWorks.subtitle', 'A 4-step walkthrough of your digital chemistry lab experience')}
               </div>
             </div>
           </div>
@@ -158,7 +160,7 @@ export const HowItWorksModal: React.FC<HowItWorksModalProps> = ({
             boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)',
           }}
         >
-          Start Exploring Experiments →
+          {t('howItWorks.startBtn', 'Start Exploring Experiments →')}
         </button>
       </div>
     </div>

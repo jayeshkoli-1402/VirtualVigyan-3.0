@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import type { ConservationState, ConservationAction } from '../../engine/conservationState';
 import { computeScore, evaluateCalculation } from '../../engine/conservationValidation';
 import { calculateExpectedDeltaM, calculateExpectedDeviation, REACTION_EQUATION } from '../../engine/conservationRules';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ConservationResultsProps {
   state: ConservationState;
@@ -10,6 +11,7 @@ interface ConservationResultsProps {
 }
 
 const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispatch, onBackToSelector }) => {
+  const { t } = useLanguage();
   const m1 = state.initialMass ?? 0;
   const m2 = state.finalMass ?? 0;
   const expectedDeltaM = calculateExpectedDeltaM(m1, m2);
@@ -105,10 +107,10 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
             marginBottom: 4,
           }}
         >
-          {score >= 85 ? 'Excellent Work!' : score >= 60 ? 'Good Effort!' : 'Keep Practicing!'}
+          {score >= 85 ? t('conservation.excellentWork') : score >= 60 ? t('conservation.goodEffort') : t('conservation.keepPracticing')}
         </h2>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          Conservation of Mass Experiment Complete
+          {t('conservation.experimentComplete')}
         </p>
       </div>
 
@@ -122,7 +124,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
             marginBottom: 12,
           }}
         >
-          ⚖️ Mass Conservation Verification
+          {t('conservation.verificationTitle')}
         </h3>
 
         <div
@@ -134,11 +136,11 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           }}
         >
           <div style={{ textAlign: 'center', padding: '10px', background: '#f0fdf4', borderRadius: 8 }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#059669', marginBottom: 4 }}>M₁ (Initial)</div>
+            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#059669', marginBottom: 4 }}>{t('conservation.initialMass')}</div>
             <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{m1.toFixed(2)} g</div>
           </div>
           <div style={{ textAlign: 'center', padding: '10px', background: '#eff6ff', borderRadius: 8 }}>
-            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#2563eb', marginBottom: 4 }}>M₂ (Final)</div>
+            <div style={{ fontSize: '0.6rem', fontWeight: 700, color: '#2563eb', marginBottom: 4 }}>{t('conservation.finalMass')}</div>
             <div style={{ fontSize: '1rem', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{m2.toFixed(2)} g</div>
           </div>
           <div style={{ textAlign: 'center', padding: '10px', background: '#fefce8', borderRadius: 8 }}>
@@ -158,11 +160,9 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
             lineHeight: 1.5,
           }}
         >
-          {expectedDeltaM <= 0.02 ? (
-            <>✅ <strong>Mass is conserved!</strong> ΔM = {expectedDeltaM.toFixed(2)} g (within ±0.02 g tolerance). This confirms Lavoisier's Law of Conservation of Mass.</>
-          ) : (
-            <>⚠️ ΔM = {expectedDeltaM.toFixed(2)} g exceeds the expected tolerance. In practice, ensure the flask is fully sealed to prevent mass exchange.</>
-          )}
+          {expectedDeltaM <= 0.02
+            ? t('conservation.massConserved', { deltaM: expectedDeltaM.toFixed(2) })
+            : t('conservation.massNotConserved', { deltaM: expectedDeltaM.toFixed(2) })}
         </div>
       </div>
 
@@ -176,7 +176,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
             marginBottom: 10,
           }}
         >
-          🧮 Calculation Accuracy
+          {t('conservation.calcAccuracy')}
         </h3>
 
         <div
@@ -198,12 +198,20 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
               border: `1px solid ${getAccuracyColor(calcEval.accuracy)}30`,
             }}
           >
-            {calcEval.label}
+            {calcEval.accuracy === 'excellent'
+              ? t('conservation.calcAccExcellent')
+              : calcEval.accuracy === 'good'
+              ? t('conservation.calcAccGood')
+              : t('conservation.calcAccNeedsPractice')}
           </span>
         </div>
 
         <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          {calcEval.explanation}
+          {calcEval.accuracy === 'excellent'
+            ? t('conservation.calcExpExcellent', { deltaM: (state.studentDeltaM ?? 0).toFixed(2), expectedDeltaM: expectedDeltaM.toFixed(2) })
+            : calcEval.accuracy === 'good'
+            ? t('conservation.calcExpGood', { deltaM: (state.studentDeltaM ?? 0).toFixed(2), expectedDeltaM: expectedDeltaM.toFixed(2) })
+            : t('conservation.calcExpNeedsPractice', { deltaM: (state.studentDeltaM ?? 0).toFixed(2), expectedDeltaM: expectedDeltaM.toFixed(2) })}
         </p>
       </div>
 
@@ -217,25 +225,25 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
             marginBottom: 12,
           }}
         >
-          📊 Score Breakdown
+          {t('conservation.scoreBreakdown')}
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[
-            { label: 'Procedure Order', points: state.mistakes.length === 0 ? 20 : state.mistakes.length <= 2 ? 10 : 0, max: 20 },
-            { label: 'Flask Sealed', points: state.flaskSealed && state.initialMass !== null ? 15 : 0, max: 15 },
-            { label: 'M₁ Recorded', points: state.initialMass !== null ? 15 : 0, max: 15 },
-            { label: 'Mixing Done', points: state.reactantsMixed ? 10 : 0, max: 10 },
-            { label: 'M₂ Recorded', points: state.finalMass !== null ? 10 : 0, max: 10 },
+            { label: t('conservation.procedureOrder'), points: state.mistakes.length === 0 ? 20 : state.mistakes.length <= 2 ? 10 : 0, max: 20 },
+            { label: t('conservation.flaskSealed'), points: state.flaskSealed && state.initialMass !== null ? 15 : 0, max: 15 },
+            { label: t('conservation.m1Recorded'), points: state.initialMass !== null ? 15 : 0, max: 15 },
+            { label: t('conservation.mixingDone'), points: state.reactantsMixed ? 10 : 0, max: 10 },
+            { label: t('conservation.m2Recorded'), points: state.finalMass !== null ? 10 : 0, max: 10 },
             {
-              label: 'ΔM Calculation',
+              label: t('conservation.deltaMCalc'),
               points: state.studentDeltaM !== null
                 ? Math.abs(state.studentDeltaM - expectedDeltaM) <= 0.005 ? 15 : Math.abs(state.studentDeltaM - expectedDeltaM) <= 0.02 ? 8 : 0
                 : 0,
               max: 15,
             },
             {
-              label: 'Deviation %',
+              label: t('conservation.deviationPercent'),
               points: state.studentDeviationPercent !== null
                 ? Math.abs(state.studentDeviationPercent - expectedDeviation) <= 0.02 ? 15 : Math.abs(state.studentDeviationPercent - expectedDeviation) <= 0.1 ? 8 : 0
                 : 0,
@@ -273,7 +281,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
 
       {/* Chemical reaction reference */}
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
-        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>⚗️ Chemical Equation</h3>
+        <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 8 }}>⚗️ {t('conservation.chemicalEquation')}</h3>
         <p
           style={{
             fontSize: '0.9rem',
@@ -289,7 +297,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           {REACTION_EQUATION}
         </p>
         <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 8, textAlign: 'center' }}>
-          Double Displacement Reaction — White precipitate of BaSO₄ confirms the reaction occurred.
+          {t('conservation.equationDesc')}
         </p>
       </div>
 
@@ -301,7 +309,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           onClick={() => dispatch({ type: 'RESET' })}
           style={{ flex: 1, padding: '12px' }}
         >
-          🔄 Retry Experiment
+          🔄 {t('common.retry')}
         </button>
         <button
           id="btn-back-selector"
@@ -309,7 +317,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           onClick={onBackToSelector}
           style={{ flex: 1, padding: '12px' }}
         >
-          ← Back to Experiments
+          ← {t('common.back')}
         </button>
       </div>
     </div>

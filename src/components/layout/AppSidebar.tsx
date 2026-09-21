@@ -1,6 +1,7 @@
 import React from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useAuth } from '../../auth/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 export type NavItem =
   | 'home'
@@ -34,25 +35,26 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   onCloseMobile,
 }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
-    { id: 'home', label: 'Home', icon: '🏠' },
-    { id: 'experiments', label: 'Browse Experiments', icon: '🧪' },
-    { id: 'classes', label: 'My Classes', icon: '📚' },
-    { id: 'theory-notes', label: 'Theory & Notes', icon: '📖' },
-    { id: 'progress', label: 'Progress & Analytics', icon: '📊' },
-    { id: 'teacher', label: 'Teacher Portal', icon: '👨‍🏫' },
+    { id: 'home', label: t('nav.home', 'Home'), icon: '🏠' },
+    { id: 'experiments', label: t('nav.experiments', 'Browse Experiments'), icon: '🧪' },
+    { id: 'classes', label: t('nav.classes', 'My Classes'), icon: '📚' },
+    { id: 'theory-notes', label: t('nav.theoryNotes', 'Theory & Notes'), icon: '📖' },
+    { id: 'progress', label: t('nav.progress', 'Progress & Analytics'), icon: '📊' },
+    { id: 'teacher', label: t('nav.teacherPortal', 'Teacher Portal'), icon: '👨‍🏫' },
   ];
 
   const navLinks = user?.role === 'admin'
     ? [
         ...baseNavLinks,
-        { id: 'admin' as const, label: 'Admin Panel', icon: '🛡️' },
+        { id: 'admin' as const, label: t('nav.adminPanel', 'Admin Center'), icon: '🛡️' },
       ]
     : baseNavLinks;
 
   const secondaryNav = [
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
-    { id: 'about', label: 'About', icon: 'ℹ️' },
+    { id: 'settings', label: t('nav.settings', 'Settings'), icon: '⚙️' },
+    { id: 'about', label: t('nav.about', 'About'), icon: 'ℹ️' },
   ] as const;
 
   const handleNavClick = (tab: NavItem) => {
@@ -303,17 +305,17 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     color: '#ef4444',
                   }}
                 >
-                  Sign Out
+                  {t('nav.logout', 'Sign Out')}
                 </button>
               </div>
             </div>
           ) : (
             <div>
               <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 2 }}>
-                Student & Teacher Portal
+                {t('auth.portalTitle', 'Student & Teacher Portal')}
               </div>
               <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 8, lineHeight: 1.25 }}>
-                Sign in to save scores and manage lab cohorts.
+                {t('auth.sidebarSignInDesc', 'Sign in to save scores and manage lab cohorts.')}
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
@@ -336,7 +338,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
                   }}
                 >
-                  🎓 Student
+                  🎓 {t('nav.student', 'Student')}
                 </button>
                 <button
                   id="btn-sidebar-teacher-login"
@@ -358,7 +360,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
                     boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)',
                   }}
                 >
-                  👨‍🏫 Teacher
+                  👨‍🏫 {t('nav.teacher', 'Teacher')}
                 </button>
               </div>
             </div>
@@ -402,7 +404,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
               lineHeight: 1.3,
             }}
           >
-            Accessible Education for a Brighter Tomorrow
+            {t('brand.mission', 'Accessible Education for a Brighter Tomorrow')}
           </div>
         </div>
 
@@ -412,7 +414,7 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
             VirtualVigyan
           </div>
           <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', marginTop: 1 }}>
-            For Every Student, Everywhere
+            {t('about.tagline', 'v2.0 • For Every Student, Everywhere')}
           </div>
         </div>
       </div>

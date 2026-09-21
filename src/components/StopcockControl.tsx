@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import type { TitrationAction } from '../engine/titrationState';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface StopcockControlProps {
   enabled: boolean;
@@ -14,6 +15,7 @@ interface StopcockControlProps {
  * - Drag Cork: Smooth pointer dragging rotates tap dynamically.
  */
 const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen, dispatch }) => {
+  const { t } = useLanguage();
   const isPointerDownRef = useRef(false);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
   const hasMovedRef = useRef(false);
@@ -133,11 +135,11 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
 
   // Flow status label text
   const getFlowText = () => {
-    if (stopcockOpen === 0) return 'Tap Closed (0°)';
-    if (stopcockOpen <= 0.25) return `💧 Slow Drop (${Math.round(stopcockOpen * 100)}%)`;
-    if (stopcockOpen <= 0.60) return `💧 Fast Drop (${Math.round(stopcockOpen * 100)}%)`;
-    if (stopcockOpen <= 0.85) return `🌊 Rapid Flow (${Math.round(stopcockOpen * 100)}%)`;
-    return `🌊 Full Stream (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen === 0) return t('lab.tapClosed', 'Tap Closed (0°)');
+    if (stopcockOpen <= 0.25) return `${t('lab.slowDrop', '💧 Slow Drop')} (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.60) return `${t('lab.fastDrop', '💧 Fast Drop')} (${Math.round(stopcockOpen * 100)}%)`;
+    if (stopcockOpen <= 0.85) return `${t('lab.rapidFlow', '🌊 Rapid Flow')} (${Math.round(stopcockOpen * 100)}%)`;
+    return `${t('lab.fullStream', '🌊 Full Stream')} (${Math.round(stopcockOpen * 100)}%)`;
   };
 
   const buretteX = 140;
@@ -272,7 +274,7 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
             fontFamily="var(--font-sans)"
             fontWeight={700}
           >
-            ↻ Click Right to Open
+            {t('lab.clickRightToOpen', '↻ Click Right to Open')}
           </text>
           <text
             x={172}
@@ -281,7 +283,7 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
             fontSize="5"
             fontFamily="var(--font-sans)"
           >
-            Slow Drop (20%)
+            {t('lab.slowDrop', 'Slow Drop')} (20%)
           </text>
         </g>
       )}
@@ -330,7 +332,7 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
           fontFamily="var(--font-sans)"
           fontWeight={600}
         >
-          🔒 Tap Locked
+          {t('lab.tapLocked', '🔒 Tap Locked')}
         </text>
       )}
     </g>

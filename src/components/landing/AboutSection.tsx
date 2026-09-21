@@ -1,41 +1,43 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const AboutSection: React.FC = () => {
+  const { t } = useLanguage();
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const audiences = [
     {
       icon: '🎓',
-      title: 'Secondary & High School',
-      level: 'Classes 9 – 12',
-      desc: 'Master fundamental chemical reactions, volumetric analysis, and mass conservation before entering the physical laboratory.',
+      title: t('about.audienceSchoolTitle', 'Secondary & High School'),
+      level: t('about.audienceSchoolLevel', 'Classes 9 – 12'),
+      desc: t('about.audienceSchoolDesc', 'Master fundamental chemical reactions, volumetric analysis, and mass conservation before entering the physical laboratory.'),
     },
     {
       icon: '🔬',
-      title: 'Engineering Chemistry',
-      level: 'F.Y. B.Tech (DBATU & State)',
-      desc: 'Hands-on practice for Ostwald viscometry, pH-metric curves, conductometric titration, and water quality analysis.',
+      title: t('about.audienceEnggTitle', 'Engineering Chemistry'),
+      level: t('about.audienceEnggLevel', 'F.Y. B.Tech (DBATU & State)'),
+      desc: t('about.audienceEnggDesc', 'Hands-on practice for Ostwald viscometry, pH-metric curves, conductometric titration, and water quality analysis.'),
     },
     {
       icon: '👨‍🏫',
-      title: 'Educators & Institutions',
-      level: 'Teachers & Lab In-Charge',
-      desc: 'Demonstrate complex procedures visually, assign repeatable lab tasks, and monitor student procedural accuracy.',
+      title: t('about.audienceTeacherTitle', 'Educators & Institutions'),
+      level: t('about.audienceTeacherLevel', 'Teachers & Lab In-Charge'),
+      desc: t('about.audienceTeacherDesc', 'Demonstrate complex procedures visually, assign repeatable lab tasks, and monitor student procedural accuracy.'),
     },
   ];
 
   const faqs = [
     {
-      q: 'How do I perform an experiment in VirtualVigyan?',
-      a: 'Select any experiment from the showcase or dashboard. Use mouse or touch to position apparatus, add reagents, adjust stopcocks, and record readings. The real-time validation engine guides each step.',
+      q: t('about.faq1Q', 'How do I perform an experiment in VirtualVigyan?'),
+      a: t('about.faq1A', 'Select any experiment from the showcase or dashboard. Use mouse or touch to position apparatus, add reagents, adjust stopcocks, and record readings. The real-time validation engine guides each step.'),
     },
     {
-      q: 'Do I need special software, VR headsets, or plugins?',
-      a: 'No special hardware is required. VirtualVigyan runs entirely in any standard modern web browser on desktops, laptops, tablets, and smartphones with zero installations.',
+      q: t('about.faq2Q', 'Do I need special software, VR headsets, or plugins?'),
+      a: t('about.faq2A', 'No special hardware is required. VirtualVigyan runs entirely in any standard modern web browser on desktops, laptops, tablets, and smartphones with zero installations.'),
     },
     {
-      q: 'What happens when I make a procedural mistake?',
-      a: 'Unlike physical labs where mistakes waste reagents or pose safety risks, VirtualVigyan diagnoses the error instantly, explains why it occurred, and lets you retry immediately.',
+      q: t('about.faq3Q', 'What happens when I make a procedural mistake?'),
+      a: t('about.faq3A', 'Unlike physical labs where mistakes waste reagents or pose safety risks, VirtualVigyan diagnoses the error instantly, explains why it occurred, and lets you retry immediately.'),
     },
   ];
 
@@ -44,10 +46,10 @@ const AboutSection: React.FC = () => {
       <div className="ln-container">
         {/* ── About Block ── */}
         <div className="ln-section-header ln-reveal">
-          <span className="ln-section-label">About VirtualVigyan</span>
-          <h2 className="ln-section-heading">Purpose-Built for Authentic Practical Science</h2>
+          <span className="ln-section-label">{t('about.title', 'About VirtualVigyan')}</span>
+          <h2 className="ln-section-heading">{t('about.heading', 'Purpose-Built for Authentic Practical Science')}</h2>
           <p className="ln-section-desc">
-            VirtualVigyan is an interactive virtual chemistry laboratory created to bridge theoretical concepts and hands-on laboratory practice through safe, repeatable digital experimentation.
+            {t('about.description', 'VirtualVigyan is an interactive virtual chemistry laboratory created to bridge theoretical concepts and hands-on laboratory practice through safe, repeatable digital experimentation.')}
           </p>
         </div>
 
@@ -66,10 +68,10 @@ const AboutSection: React.FC = () => {
         {/* ── Help / FAQ Block ── */}
         <div id="help" className="ln-help-wrapper ln-reveal" style={{ marginTop: 64 }}>
           <div className="ln-section-header" style={{ marginBottom: 32 }}>
-            <span className="ln-section-label ln-section-label-green">Help & Instructions</span>
-            <h3 className="ln-section-heading" style={{ fontSize: '2rem' }}>Frequently Asked Questions</h3>
+            <span className="ln-section-label ln-section-label-green">{t('about.helpLabel', 'Help & Instructions')}</span>
+            <h3 className="ln-section-heading" style={{ fontSize: '2rem' }}>{t('about.faqHeading', 'Frequently Asked Questions')}</h3>
             <p className="ln-section-desc">
-              Quick answers to help you get started with the virtual workbench.
+              {t('about.faqSubheading', 'Quick answers to help you get started with the virtual workbench.')}
             </p>
           </div>
 

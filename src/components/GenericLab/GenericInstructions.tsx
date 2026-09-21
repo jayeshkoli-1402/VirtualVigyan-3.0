@@ -7,6 +7,8 @@
 import React from 'react';
 import type { ExperimentConfig, ExperimentState, ExperimentAction } from '../../engine/experimentConfig';
 import { evaluateCondition } from '../../engine/experimentRunner';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
 
 type GenericInstructionsProps = {
   config: ExperimentConfig;
@@ -25,6 +27,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t, language, tDynamic } = useLanguage();
   const currentStep = config.steps[state.currentStepIndex];
 
   // Get dynamic instruction text
@@ -82,7 +85,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
           textTransform: 'uppercase', letterSpacing: '0.05em',
         }}>
-          Instructions
+          {t('lab.instructions', 'Instructions')}
         </h2>
         <button
           onClick={onToggleCollapse}
@@ -97,31 +100,39 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
       </div>
 
       {/* Current instruction */}
-      <div style={{
-        padding: '12px 14px',
-        borderRadius: 'var(--radius-md)',
-        background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 148, 136, 0.06))',
-        border: '1.5px solid rgba(37, 99, 235, 0.22)',
-        boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
-      }}>
-        <div style={{
-          fontSize: '0.78rem',
-          fontWeight: 700,
-          color: '#1d4ed8',
-          letterSpacing: '0.02em',
-          marginBottom: 6,
-        }}>
-          {currentStep?.label ?? 'Step'}
-        </div>
-        <div style={{
-          fontSize: '0.8125rem',
-          lineHeight: 1.5,
-          color: 'var(--text-primary)',
-          fontWeight: 450,
-        }}>
-          {getInstruction()}
-        </div>
-      </div>
+      {(() => {
+        const localized = EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.steps[currentStep?.id];
+        const stepTitle = localized?.title || (currentStep?.label ? tDynamic(currentStep.label) : t('common.step', 'Step'));
+        const stepInstruction = localized?.instruction || tDynamic(getInstruction());
+
+        return (
+          <div style={{
+            padding: '12px 14px',
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(13, 148, 136, 0.06))',
+            border: '1.5px solid rgba(37, 99, 235, 0.22)',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.06)',
+          }}>
+            <div style={{
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: '#1d4ed8',
+              letterSpacing: '0.02em',
+              marginBottom: 6,
+            }}>
+              {stepTitle}
+            </div>
+            <div style={{
+              fontSize: '0.8125rem',
+              lineHeight: 1.5,
+              color: 'var(--text-primary)',
+              fontWeight: 450,
+            }}>
+              {stepInstruction}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Advance button */}
       {showAdvanceButton && (
@@ -142,8 +153,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
             gap: 8,
           }}
         >
-          <span>Continue to Next Step</span>
-          <span>→</span>
+          <span>{t('lab.advanceStep', 'Continue to Next Step →')}</span>
         </button>
       )}
 
@@ -154,7 +164,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8,
         }}>
-          Progress
+          {t('nav.progress', 'Progress')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {config.steps
@@ -183,7 +193,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
                   <span style={{ fontSize: '0.65rem', width: 14, textAlign: 'center' }}>
                     {isCompleted ? '✓' : isCurrent ? '●' : '○'}
                   </span>
-                  {step.label}
+                  {EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.steps[step.id]?.title || tDynamic(step.label)}
                 </div>
               );
             })}
@@ -202,7 +212,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           lineHeight: 1.4,
           animation: 'slideInUp 0.2s ease-out',
         }}>
-          ⚠️ {mistakeMessage}
+          ⚠️ {tDynamic(mistakeMessage)}
         </div>
       )}
 
@@ -229,7 +239,7 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
             marginBottom: 6,
           }}>
             <span>⚖️</span>
-            <span>{config.chemistry.reactionType || 'Governing Principle'}</span>
+            <span>{tDynamic(config.chemistry.reactionType || 'Governing Principle')}</span>
           </div>
           <div style={{
             fontSize: '0.76rem',
@@ -247,3 +257,4 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
 };
 
 export default GenericInstructions;
+

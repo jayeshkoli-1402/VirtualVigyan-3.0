@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { ConservationState, ConservationAction } from '../../engine/conservationState';
 import { ConservationStep, CONSERVATION_DROP_ZONES } from '../../engine/conservationState';
 import { getConservationFlaskColor, calculateLiveMass } from '../../engine/conservationRules';
+import { useLanguage } from '../../i18n/LanguageContext';
 import ConicalFlaskConservation from './ConicalFlaskConservation';
 import DigitalBalance from './DigitalBalance';
 import MolecularReactionChain from './MolecularReactionChain';
@@ -20,6 +21,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
   activeDropZone,
   onLaunchVR,
 }) => {
+  const { t, language } = useLanguage();
   // Zoom & Pan state
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [panX, setPanX] = useState<number>(0);
@@ -199,7 +201,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
         >
           <span>💡</span>
           <span>
-            <strong>Double-click</strong> flask to move on/off scale
+            {t('conservation.doubleClickTip', 'Double-click flask to move on/off scale')}
           </span>
         </div>
 
@@ -227,7 +229,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
               }}
             >
               <span>🥽</span>
-              <span>3D VR Lab</span>
+              <span>{t('conservation.vrLab', '3D VR Lab')}</span>
             </button>
           )}
 
@@ -384,7 +386,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
               <DropZoneOverlay
                 zoneId={CONSERVATION_DROP_ZONES.BENCH_ZONE}
                 x={45} y={280} width={90} height={110}
-                label="Conical Flask"
+                label={t('apparatus.flask', 'Conical Flask')}
                 isActive={activeDropZone === CONSERVATION_DROP_ZONES.BENCH_ZONE}
                 step={state.step}
                 targetStep={ConservationStep.SETUP_FLASK}
@@ -398,11 +400,11 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                 x={flaskPosX - 35} y={280} width={70} height={110}
                 label={
                   !state.na2so4Poured
-                    ? 'Na₂SO₄ Bottle'
+                    ? t('apparatus.na2so4Bottle', 'Na₂SO₄ Bottle')
                     : state.tubeFilled && !state.tubeSuspended
-                      ? 'Drop Tube Here'
+                      ? (language === 'hi' ? 'नली यहाँ डालें' : language === 'mr' ? 'नळी येथे टाका' : 'Drop Tube Here')
                       : !state.flaskSealed && state.tubeSuspended
-                        ? 'Rubber Cork'
+                        ? t('apparatus.rubberCork', 'Rubber Cork')
                         : ''
                 }
                 isActive={activeDropZone === CONSERVATION_DROP_ZONES.FLASK_ZONE || isDraggingTube}
@@ -436,7 +438,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                   <DropZoneOverlay
                     zoneId={CONSERVATION_DROP_ZONES.TUBE_STAND_ZONE}
                     x={10} y={300} width={40} height={90}
-                    label="Place Ignition Tube"
+                    label={language === 'hi' ? 'ज्वलन नली रखें' : language === 'mr' ? 'ज्वलन नळी ठेवा' : 'Place Ignition Tube'}
                     isActive={activeDropZone === CONSERVATION_DROP_ZONES.TUBE_STAND_ZONE}
                     step={state.step}
                     targetStep={ConservationStep.PLACE_TUBE_ON_STAND}

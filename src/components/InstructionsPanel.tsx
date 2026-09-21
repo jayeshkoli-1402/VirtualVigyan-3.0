@@ -1,6 +1,8 @@
 import React from 'react';
 import type { TitrationState, TitrationAction } from '../engine/titrationState';
 import { Step, STEP_ORDER, STEP_LABELS, getStepInstruction } from '../engine/titrationState';
+import { useLanguage } from '../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../i18n/experimentTranslations';
 
 interface InstructionsPanelProps {
   state: TitrationState;
@@ -17,7 +19,38 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
   isCollapsed = false,
   onToggleCollapse,
 }) => {
+  const { t, language, tDynamic } = useLanguage();
   const currentStepIndex = STEP_ORDER.indexOf(state.step);
+
+  const getLocalizedInstruction = (): string => {
+    const expTrans = EXPERIMENT_TRANSLATIONS['titration']?.[language];
+    if (expTrans?.steps[state.step]) {
+      const stepTrans = expTrans.steps[state.step];
+      if (state.step === Step.MEASURE_ACID && stepTrans.dynamicInstructions) {
+        if (!state.hclPlaced) {
+          return stepTrans.dynamicInstructions['place_hcl'];
+        }
+        if (!state.pipetteFilled) {
+          return stepTrans.dynamicInstructions['draw_acid'];
+        }
+        if (!state.acidMeasured) {
+          return stepTrans.dynamicInstructions['dispense_acid'];
+        }
+      }
+      return stepTrans.instruction;
+    }
+    return getStepInstruction(state);
+  };
+
+  const getLocalizedStepLabel = (step: Step): string => {
+    const expTrans = EXPERIMENT_TRANSLATIONS['titration']?.[language];
+    if (expTrans?.steps[step]) {
+      return expTrans.steps[step].title;
+    }
+    return STEP_LABELS[step];
+  };
+
+  const stepGuidance = EXPERIMENT_TRANSLATIONS['titration']?.[language]?.steps[state.step];
 
   return (
     <div
@@ -55,13 +88,13 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
               color: 'var(--text-muted)',
             }}
           >
-            Instructions
+            {t('lab.instructions', 'Instructions')}
           </h2>
         )}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            title={isCollapsed ? 'Expand Instructions' : 'Collapse Instructions'}
+            title={isCollapsed ? t('lab.expand', 'Expand') : t('lab.collapse', 'Collapse')}
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border)',
@@ -76,7 +109,7 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
               gap: 4,
             }}
           >
-            {isCollapsed ? '◀' : 'Collapse ▶'}
+            {isCollapsed ? '◀' : `${t('lab.collapse', 'Collapse')} ▶`}
           </button>
         )}
       </div>
@@ -102,17 +135,32 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
                 fontWeight: 700,
               }}
             >
-              Current Step
+              {t('lab.currentInstruction', 'Current Step')}
             </div>
             <p
               style={{
                 fontSize: '0.8rem',
                 color: 'var(--text-primary)',
                 lineHeight: 1.6,
+                margin: 0,
               }}
             >
-              {getStepInstruction(state)}
+              {getLocalizedInstruction()}
             </p>
+
+            {/* DO / DON'T guidance if available */}
+            {stepGuidance?.doGuidance && (
+              <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px dashed #bfdbfe', fontSize: '0.74rem' }}>
+                <span style={{ fontWeight: 700, color: '#16a34a' }}>✓ {t('lab.doGuidance', 'DO')}: </span>
+                <span style={{ color: 'var(--text-secondary)' }}>{stepGuidance.doGuidance}</span>
+              </div>
+            )}
+            {stepGuidance?.dontGuidance && (
+              <div style={{ marginTop: 4, fontSize: '0.74rem' }}>
+                <span style={{ fontWeight: 700, color: '#dc2626' }}>✕ {t('lab.dontGuidance', 'DON\'T')}: </span>
+                <span style={{ color: 'var(--text-secondary)' }}>{stepGuidance.dontGuidance}</span>
+              </div>
+            )}
           </div>
 
           {/* Action button for ENDPOINT_MARKED */}
@@ -123,7 +171,7 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
               onClick={() => dispatch({ type: 'PROCEED_TO_CALCULATION' })}
               style={{ width: '100%', padding: '10px 14px' }}
             >
-              Proceed to Calculation →
+              {t('lab.proceedCalculation', 'Proceed to Calculation →')}
             </button>
           )}
 
@@ -142,14 +190,23 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
                 style={{
                   fontSize: '0.65rem',
                   color: '#b45309',
-                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
                   marginBottom: 4,
+                  fontWeight: 700,
                 }}
               >
-                ⚠️ Notice
+                ⚠️ {t('lab.notice', 'Notice')}
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#92400e', lineHeight: 1.5 }}>
-                {mistakeMessage}
+              <p
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#92400e',
+                  lineHeight: 1.5,
+                  margin: 0,
+                }}
+              >
+                {tDynamic(mistakeMessage)}
               </p>
             </div>
           )}
@@ -163,10 +220,10 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
                 textTransform: 'uppercase',
                 letterSpacing: '0.06em',
                 marginBottom: 8,
-                fontWeight: 600,
+                fontWeight: 700,
               }}
             >
-              Progress Checklist
+              {t('common.step', 'Step')} Checklist
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               {STEP_ORDER.map((step, i) => {
@@ -230,11 +287,10 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
                           : isCurrent
                             ? '#1e40af'
                             : 'var(--text-secondary)',
-                        textDecoration: isCompleted ? 'none' : 'none',
                         opacity: isCompleted ? 0.9 : 1,
                       }}
                     >
-                      {STEP_LABELS[step]} {isCompleted && <span style={{ fontSize: '0.6rem', color: '#16a34a', marginLeft: 4 }}>✓ Complete</span>}
+                      {getLocalizedStepLabel(step)} {isCompleted && <span style={{ fontSize: '0.6rem', color: '#16a34a', marginLeft: 4 }}>✓</span>}
                     </span>
                   </div>
                 );

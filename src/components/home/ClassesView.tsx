@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
 
 interface ClassesViewProps {
   onBackToHome: () => void;
@@ -9,6 +11,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
   onBackToHome,
   onLaunchExperiment,
 }) => {
+  const { t, language } = useLanguage();
   const [activeClass, setActiveClass] = useState<'all' | 'class9' | 'class10' | 'class11' | 'btech'>('all');
 
   const classes = [
@@ -78,20 +81,20 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
             marginBottom: 8,
           }}
         >
-          ← Back to Dashboard
+          ← {t('common.backToDashboard', undefined, 'Back to Dashboard')}
         </button>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', margin: 0 }}>
-          Curriculum by Class & Academic Level
+          {t('views.classes.title', undefined, 'Curriculum by Class & Academic Level')}
         </h2>
         <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-          Aligned with DBATU Engineering Chemistry and NCERT / State Board Science syllabi.
+          {t('views.classes.subtitle', undefined, 'Aligned with DBATU Engineering Chemistry and NCERT / State Board Science syllabi.')}
         </p>
       </div>
 
       {/* Class Level Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
         {[
-          { id: 'all', label: 'All Levels' },
+          { id: 'all', label: t('common.filterAll', undefined, 'All Levels') },
           { id: 'btech', label: 'F.Y. B.Tech (DBATU)' },
           { id: 'class11', label: 'Class 11' },
           { id: 'class10', label: 'Class 10' },
@@ -160,39 +163,42 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
 
             {/* Experiment List Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-              {c.experiments.map((exp) => (
-                <div
-                  key={exp.id}
-                  onClick={() => onLaunchExperiment(exp.id)}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '12px 14px',
-                    borderRadius: 10,
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#2563eb';
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                  }}
-                >
-                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.3 }}>
-                    {exp.title}
+              {c.experiments.map((exp) => {
+                const localizedTitle = EXPERIMENT_TRANSLATIONS[exp.id]?.[language]?.title || exp.title;
+                return (
+                  <div
+                    key={exp.id}
+                    onClick={() => onLaunchExperiment(exp.id)}
+                    style={{
+                      cursor: 'pointer',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#2563eb';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                    }}
+                  >
+                    <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8, lineHeight: 1.3 }}>
+                      {localizedTitle}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      <span>⏱️ {exp.time}</span>
+                      <span style={{ color: '#2563eb', fontWeight: 600 }}>{t('common.startExperiment', undefined, 'Start Lab')} →</span>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    <span>⏱️ {exp.time}</span>
-                    <span style={{ color: '#2563eb', fontWeight: 600 }}>Start Lab →</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

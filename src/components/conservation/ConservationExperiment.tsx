@@ -29,6 +29,7 @@ import LabSafetyModal from './LabSafetyModal';
 import ChemicalHazardWarningToast from './ChemicalHazardWarningToast';
 import type { HazardWarningData } from './ChemicalHazardWarningToast';
 import ConservationVRLab from './vr/ConservationVRLab';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ConservationExperimentProps {
   onBackToSelector: () => void;
@@ -36,6 +37,7 @@ interface ConservationExperimentProps {
 }
 
 const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackToSelector, initialVRMode = false }) => {
+  const { t } = useLanguage();
   const [isVRMode, setIsVRMode] = useState<boolean>(initialVRMode);
   const [state, dispatch] = useReducer(conservationReducer, conservationInitialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
@@ -78,15 +80,15 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
   useEffect(() => {
     if (state.step === ConservationStep.FILL_TUBE && !state.tubeFilled) {
       setHazardWarning({
-        title: 'Toxic Chemical Handling Alert',
+        title: t('safety.hazardToastTitle'),
         chemical: 'Barium Chloride (BaCl₂ 5% w/v)',
         hazardClass: 'Class 6.1 Toxic (H301, H332)',
         icon: '☠️',
-        description: 'Barium ions are toxic heavy-metal poisons. Ingestion or direct dermal contact causes severe physiological distress.',
-        precaution: 'Ensure safety goggles and nitrile gloves are worn. Dispense carefully with zero spillage.',
+        description: t('safety.hazardToastDesc'),
+        precaution: t('safety.hazardToastPrecaution'),
       });
     }
-  }, [state.step, state.tubeFilled]);
+  }, [state.step, state.tubeFilled, t]);
 
   // Auto-start experiment
   useEffect(() => {
@@ -103,15 +105,15 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
     // Contextual chemical warning on dragging BaCl2
     if (event.active.id === CONSERVATION_DRAG_ITEMS.BACL2_BOTTLE) {
       setHazardWarning({
-        title: 'Toxic Chemical Handling Alert',
+        title: t('safety.hazardToastTitle'),
         chemical: 'Barium Chloride (BaCl₂ 5% w/v)',
         hazardClass: 'Class 6.1 Toxic (H301, H332)',
         icon: '☠️',
-        description: 'Barium ions are toxic heavy-metal poisons. Ingestion or direct dermal contact causes severe physiological distress.',
-        precaution: 'Ensure safety goggles and nitrile gloves are worn. Dispense carefully with zero spillage.',
+        description: t('safety.hazardToastDesc'),
+        precaution: t('safety.hazardToastPrecaution'),
       });
     }
-  }, []);
+  }, [t]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     setActiveDropZone(event.over ? (event.over.id as string) : null);
@@ -203,12 +205,12 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
   // Drag overlay label
   const getDragLabel = (id: string) => {
     const labels: Record<string, { icon: string; label: string }> = {
-      [CONSERVATION_DRAG_ITEMS.FLASK]: { icon: '⚗️', label: 'Conical Flask' },
-      [CONSERVATION_DRAG_ITEMS.IGNITION_TUBE]: { icon: '🧫', label: 'Ignition Tube' },
-      [CONSERVATION_DRAG_ITEMS.NA2SO4_BOTTLE]: { icon: '🧴', label: 'Na₂SO₄ Solution' },
-      [CONSERVATION_DRAG_ITEMS.BACL2_BOTTLE]: { icon: '🧴', label: 'BaCl₂ Solution' },
-      [CONSERVATION_DRAG_ITEMS.RUBBER_CORK]: { icon: '🔌', label: 'Rubber Cork' },
-      [CONSERVATION_DRAG_ITEMS.MEASURING_CYLINDER]: { icon: '📏', label: 'Measuring Cylinder' },
+      [CONSERVATION_DRAG_ITEMS.FLASK]: { icon: '⚗️', label: t('conservation.itemConicalFlask') },
+      [CONSERVATION_DRAG_ITEMS.IGNITION_TUBE]: { icon: '🧫', label: t('conservation.itemIgnitionTube') },
+      [CONSERVATION_DRAG_ITEMS.NA2SO4_BOTTLE]: { icon: '🧴', label: t('conservation.itemNa2so4') },
+      [CONSERVATION_DRAG_ITEMS.BACL2_BOTTLE]: { icon: '🧴', label: t('conservation.itemBacl2') },
+      [CONSERVATION_DRAG_ITEMS.RUBBER_CORK]: { icon: '🔌', label: t('conservation.itemRubberCork') },
+      [CONSERVATION_DRAG_ITEMS.MEASURING_CYLINDER]: { icon: '📏', label: t('conservation.itemMeasuringCylinder') },
     };
     return labels[id] || { icon: '📦', label: id };
   };

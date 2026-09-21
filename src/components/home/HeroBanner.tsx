@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface HeroBannerProps {
   onStartExploring: () => void;
@@ -9,6 +10,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onStartExploring,
   onViewHowItWorks,
 }) => {
+  const { t } = useLanguage();
   return (
     <div
       style={{
@@ -84,7 +86,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             color: '#ffffff',
           }}
         >
-          Perform. Observe. Learn.
+          {t('banner.heroHeading', 'Perform. Observe. Learn.')}
         </h1>
         <p
           style={{
@@ -95,7 +97,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             fontWeight: 400,
           }}
         >
-          VirtualVigyan lets you perform chemistry experiments on your device. No lab, no limitations.
+          {t('banner.heroDesc', 'VirtualVigyan lets you perform chemistry experiments on your device. No lab, no limitations.')}
         </p>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -128,7 +130,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             }}
           >
             <span style={{ fontSize: '0.85rem' }}>▶</span>
-            <span>Start Exploring</span>
+            <span>{t('banner.startExploring', 'Start Exploring')}</span>
           </button>
 
           {/* Secondary Glass / Outline Button */}
@@ -159,7 +161,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
             }}
           >
-            View How It Works
+            {t('banner.viewHowItWorks', 'View How It Works')}
           </button>
         </div>
       </div>
@@ -244,13 +246,13 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
         {/* Far Right Text & Green Accent Line */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
           <div style={{ fontSize: '1rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.3 }}>
-            Same
+            {t('banner.same', 'Same')}
           </div>
           <div style={{ fontSize: '1rem', fontWeight: 600, color: '#ffffff', lineHeight: 1.3 }}>
-            Experiments.
+            {t('banner.experiments', 'Experiments.')}
           </div>
           <div style={{ fontSize: '1rem', fontWeight: 600, color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.3, marginBottom: 12 }}>
-            More Access.
+            {t('banner.moreAccess', 'More Access.')}
           </div>
           {/* Green Horizontal Bar */}
           <div

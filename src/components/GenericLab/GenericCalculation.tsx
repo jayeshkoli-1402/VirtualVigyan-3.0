@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import type { ExperimentConfig, ExperimentState, ExperimentAction } from '../../engine/experimentConfig';
 import { validateCalculation } from '../../engine/scoringEngine';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type GenericCalculationProps = {
   config: ExperimentConfig;
@@ -19,6 +20,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
   state,
   dispatch,
 }) => {
+  const { t, tDynamic } = useLanguage();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [results, setResults] = useState<ReturnType<typeof validateCalculation> | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -57,10 +59,10 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)',
           marginBottom: 6,
         }}>
-          {calcConfig.title}
+          {tDynamic(calcConfig.title)}
         </h2>
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          {calcConfig.instruction}
+          {tDynamic(calcConfig.instruction)}
         </p>
 
         {/* Real Mathematical Fraction Typography for Formulas */}
@@ -84,7 +86,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                     color: 'var(--accent-blue, #2563eb)',
                     marginBottom: 10,
                   }}>
-                    {form.label}
+                    {tDynamic(form.label)}
                   </div>
                 )}
                 <div style={{
@@ -162,7 +164,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8,
         }}>
-          Recorded Values
+          {t('calc.recordedValues', 'Recorded Values')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {Object.entries(state.variables)
@@ -176,10 +178,10 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                   borderBottom: '1px solid var(--border)',
                 }}>
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    {formatVariableName(key)}
+                    {tDynamic(formatVariableName(key))}
                   </span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: isMasked ? 'var(--text-muted)' : 'inherit' }}>
-                    {isMasked ? '— (Recorded by student)' : typeof value === 'number' ? value.toFixed(2) : value}
+                    {isMasked ? t('calc.recordedByStudent', '— (Recorded by student)') : typeof value === 'number' ? value.toFixed(2) : value}
                   </span>
                 </div>
               );
@@ -193,7 +195,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12,
         }}>
-          Your Calculation
+          {t('calc.yourCalculation', 'Your Calculation')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {calcConfig.fields.map(field => {
@@ -204,13 +206,13 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                   display: 'block', fontSize: '0.78rem', fontWeight: 500,
                   color: 'var(--text-primary)', marginBottom: 4,
                 }}>
-                  {field.label}
+                  {tDynamic(field.label)}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <input
                     type="number"
                     step="any"
-                    placeholder={field.placeholder ?? 'Enter value...'}
+                    placeholder={field.placeholder ? tDynamic(field.placeholder) : t('calc.enterValue', 'Enter value...')}
                     value={answers[field.id] ?? ''}
                     onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
                     disabled={submitted}
@@ -246,11 +248,11 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                     border: '1px solid var(--border, rgba(148, 163, 184, 0.25))',
                   }}>
                     <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {field.helperText}
+                      {tDynamic(field.helperText)}
                     </div>
                     {field.helperExample && (
                       <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: 2 }}>
-                        {field.helperExample}
+                        {tDynamic(field.helperExample)}
                       </div>
                     )}
                   </div>
@@ -274,13 +276,13 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                           <span>✓</span>
                           <span>
                             {field.expectedRangeLabel
-                              ? 'Correct — within acceptable experimental range'
-                              : `Correct! (${result.expectedValue.toFixed(4)} ${field.unit})`}
+                              ? t('calc.correctRange', 'Correct — within acceptable experimental range')
+                              : `${t('common.correct', 'Correct!')} (${result.expectedValue.toFixed(4)} ${field.unit})`}
                           </span>
                         </div>
                         {field.expectedRangeLabel && (
                           <div style={{ fontSize: '0.74rem', marginTop: 3, color: '#047857' }}>
-                            Expected range: <strong>{field.expectedRangeLabel}</strong>
+                            {t('calc.expectedRange', 'Expected range')}: <strong>{field.expectedRangeLabel}</strong>
                           </div>
                         )}
                       </div>
@@ -290,13 +292,13 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                           <span>✗</span>
                           <span>
                             {field.expectedRangeLabel
-                              ? 'Outside acceptable experimental range'
-                              : `Incorrect (You entered: ${answers[field.id] || '0'} ${field.unit} — Expected: ${result.expectedValue.toFixed(4)} ${field.unit})`}
+                              ? t('calc.outsideRange', 'Outside acceptable experimental range')
+                              : `${t('common.incorrect', 'Incorrect')} (${answers[field.id] || '0'} ${field.unit} — ${t('calc.expectedRange', 'Expected')}: ${result.expectedValue.toFixed(4)} ${field.unit})`}
                           </span>
                         </div>
                         {field.expectedRangeLabel && (
                           <div style={{ fontSize: '0.74rem', color: '#b91c1c', marginBottom: 6 }}>
-                            You entered: <strong>{answers[field.id] || '0'} {field.unit}</strong> — Expected range: <strong>{field.expectedRangeLabel}</strong>
+                            {t('calc.yourCalculation', 'You entered')}: <strong>{answers[field.id] || '0'} {field.unit}</strong> — {t('calc.expectedRange', 'Expected range')}: <strong>{field.expectedRangeLabel}</strong>
                           </div>
                         )}
                         <div style={{
@@ -310,7 +312,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                           whiteSpace: 'pre-line',
                         }}>
                           <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
-                            Worked Solution:
+                            {t('calc.workedSolution', 'Worked Solution')}:
                           </div>
                           {result.workedFormula}
                         </div>
@@ -347,12 +349,12 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
               fontWeight: 700,
               color: results.every(r => r.correct) ? '#065f46' : '#991b1b',
             }}>
-              {results.every(r => r.correct) ? 'Calculations Verified Correct!' : 'Calculation Check Completed'}
+              {results.every(r => r.correct) ? t('calc.verifiedCorrect', 'Calculations Verified Correct!') : t('calc.checkCompleted', 'Calculation Check Completed')}
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
               {results.every(r => r.correct)
-                ? 'Great job! Full marks awarded for the calculation section.'
-                : 'Review the correct solutions above before viewing your final score.'}
+                ? t('calc.greatJob', 'Great job! Full marks awarded for the calculation section.')
+                : t('calc.reviewSolutions', 'Review the correct solutions above before viewing your final score.')}
             </div>
           </div>
         </div>
@@ -364,9 +366,9 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           id="btn-submit-calculation"
           className="btn-primary"
           onClick={handleSubmit}
-          style={{ width: '100%', padding: '12px 20px', fontSize: '0.85rem', fontWeight: 700 }}
+          style={{ width: '100%', padding: '12px 20px', fontSize: '0.85rem' }}
         >
-          Submit Calculation & Verify
+          {t('calc.submitAnswers', 'Check Answers & Verify Steps')}
         </button>
       ) : (
         <button
@@ -382,7 +384,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
             boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
           }}
         >
-          View Final Score & Results →
+          {t('calc.viewFinalScore', 'View Final Score & Results')} →
         </button>
       )}
 

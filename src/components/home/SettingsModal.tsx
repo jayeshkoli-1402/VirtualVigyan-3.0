@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   theme,
   onToggleTheme,
 }) => {
+  const { t } = useLanguage();
   const [soundEffects, setSoundEffects] = useState(true);
   const [animations, setAnimations] = useState(true);
   const [haptics, setHaptics] = useState(true);
@@ -53,7 +56,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <VirtualVigyanLogo size={28} />
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              Lab Environment Settings
+              {t('settings.title', 'Lab Environment Settings')}
             </h3>
           </div>
           <button
@@ -70,15 +73,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Language selection setting */}
+          <div>
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {t('settings.languageTitle', 'Interface Language')}
+              </div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                {t('settings.languageDesc', 'Select your preferred language. All lab instructions and controls will update immediately.')}
+              </div>
+            </div>
+            <LanguageSelector variant="buttons" />
+          </div>
+
           {/* Theme setting */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Visual Interface Theme
+                {t('settings.themeTitle', 'Visual Interface Theme')}
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                Toggle between high-clarity Light mode and Dark room mode.
+                {t('settings.themeDesc', 'Toggle between high-clarity Light mode and Dark room mode.')}
               </div>
             </div>
             <button
@@ -95,7 +111,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 color: 'var(--text-primary)',
               }}
             >
-              {theme === 'light' ? '☀️ Light' : '🌙 Dark'}
+              {theme === 'light' ? `☀️ ${t('common.lightMode', 'Light')}` : `🌙 ${t('common.darkMode', 'Dark')}`}
             </button>
           </div>
 
@@ -103,10 +119,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Apparatus Sound Effects
+                {t('settings.soundEffects', 'Apparatus Sound Effects')}
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                Pouring liquid sounds, gas pop, and cork clicks.
+                {t('settings.soundEffectsDesc', 'Pouring liquid sounds, gas pop, and cork clicks.')}
               </div>
             </div>
             <input
@@ -121,10 +137,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Fluid Dynamics Animations
+                {t('settings.animations', 'Fluid Dynamics Animations')}
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                Smooth meniscus rise, liquid vortex, and droplet trails.
+                {t('settings.animationsDesc', 'Realistic liquid meniscus, droplet physics, and bubbling visuals.')}
               </div>
             </div>
             <input
@@ -139,10 +155,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Snap & Drop Assistance
+                {t('settings.haptics', 'Interactive Tactile Haptics')}
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                Haptic magnetic alignment onto retort stands & balances.
+                {t('settings.hapticsDesc', 'Tactile confirmation when snapping glassware into place.')}
               </div>
             </div>
             <input
@@ -171,7 +187,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             boxSizing: 'border-box',
           }}
         >
-          Save Preferences
+          {t('common.save', 'Save Preferences')}
         </button>
       </div>
     </div>

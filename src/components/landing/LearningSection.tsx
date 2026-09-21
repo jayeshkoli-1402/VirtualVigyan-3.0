@@ -1,43 +1,5 @@
 import React from 'react';
-
-const nodes = [
-  {
-    title: 'Student Action',
-    desc: 'Add reagent / adjust control',
-    type: '',
-    icon: '🧪',
-  },
-  {
-    title: 'Validation',
-    desc: 'Engine checks step',
-    type: '',
-    icon: '⚡',
-  },
-  {
-    title: 'Wrong?',
-    desc: 'Overshot / wrong order',
-    type: 'warn',
-    icon: '⚠️',
-  },
-  {
-    title: 'Feedback',
-    desc: 'Instant diagnosis',
-    type: '',
-    icon: '💬',
-  },
-  {
-    title: 'Retry',
-    desc: 'Reset with zero hazard',
-    type: '',
-    icon: '🔄',
-  },
-  {
-    title: 'Continue',
-    desc: 'Master accuracy',
-    type: 'ok',
-    icon: '✅',
-  },
-];
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const ArrowSvg = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -47,14 +9,55 @@ const ArrowSvg = () => (
 );
 
 const LearningSection: React.FC = () => {
+  const { t } = useLanguage();
+
+  const nodes = [
+    {
+      title: t('common.actions', 'Student Action'),
+      desc: t('landing.how.step3.desc', 'Add reagent / adjust control'),
+      type: '',
+      icon: '🧪',
+    },
+    {
+      title: t('landing.preview.feature3.title', 'Validation'),
+      desc: t('landing.trust.accuracySub', 'Engine checks step'),
+      type: '',
+      icon: '⚡',
+    },
+    {
+      title: t('landing.learning.mistakeTitle', 'Mistake Detected'),
+      desc: t('landing.learning.mistakeDesc', 'Overshot / wrong order'),
+      type: 'warn',
+      icon: '⚠️',
+    },
+    {
+      title: t('landing.learning.feedbackTitle', 'Pedagogical Guidance'),
+      desc: t('landing.learning.feedbackDesc', 'Instant diagnosis'),
+      type: '',
+      icon: '💬',
+    },
+    {
+      title: t('landing.learning.retryTitle', 'Safe Retry'),
+      desc: t('landing.learning.retryDesc', 'Reset with zero hazard'),
+      type: '',
+      icon: '🔄',
+    },
+    {
+      title: t('common.continue', 'Continue'),
+      desc: t('landing.how.step6.desc', 'Master accuracy'),
+      type: 'ok',
+      icon: '✅',
+    },
+  ];
+
   return (
     <section id="feedback" className="ln-section">
       <div className="ln-container">
         <div className="ln-section-header ln-reveal">
-          <span className="ln-section-label ln-section-label-amber">Signature Feature</span>
-          <h2 className="ln-section-heading">Make Mistakes. Understand Them. Try Again.</h2>
+          <span className="ln-section-label ln-section-label-amber">{t('landing.trust.feedback', 'Signature Feature')}</span>
+          <h2 className="ln-section-heading">{t('landing.learning.heading', 'Learn Through Mistakes, Without Danger')}</h2>
           <p className="ln-section-desc">
-            In physical labs, errors waste chemicals. In VirtualVigyan, every mistake becomes an immediate learning opportunity.
+            {t('landing.learning.subheading', 'Traditional labs penalize mistakes with broken glassware or chemical hazards. VirtualVigyan transforms errors into learning milestones.')}
           </p>
         </div>
 

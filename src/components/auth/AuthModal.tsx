@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../auth/AuthContext';
 import type { UserRole } from '../../auth/types';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onRoleRedirect,
   initialTab = 'login',
 }) => {
+  const { t } = useLanguage();
   const { login, register, firestoreLocked } = useAuth();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(initialTab);
 
@@ -151,7 +153,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   letterSpacing: '-0.02em',
                 }}
               >
-                VirtualVigyan Portal
+                {t('auth.portalTitle', undefined, 'VirtualVigyan Portal')}
               </h2>
               <p
                 style={{
@@ -161,7 +163,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   fontWeight: 600,
                 }}
               >
-                Tactile Interactive Chemistry Lab
+                {t('auth.portalSubtitle', undefined, 'Tactile Interactive Chemistry Lab')}
               </p>
             </div>
           </div>
@@ -221,7 +223,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     : 'none',
               }}
             >
-              🔑 Sign In
+              {t('auth.signInTab', undefined, '🔑 Sign In')}
             </button>
             <button
               type="button"
@@ -247,7 +249,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     : 'none',
               }}
             >
-              ✨ Create Account
+              {t('auth.createAccountTab', undefined, '✨ Create Account')}
             </button>
           </div>
         </div>
@@ -337,12 +339,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Email Address or Username
+                  {t('auth.emailOrUser', 'Email Address or Username')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. admin, student@virtualvigyan.in"
+                  placeholder={t('auth.identifierPlaceholder', 'e.g. admin, student@virtualvigyan.in')}
                   value={loginIdentifier}
                   onChange={(e) => setLoginIdentifier(e.target.value)}
                   className="clay-input"
@@ -365,7 +367,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Password
+                  {t('auth.password', 'Password')}
                 </label>
                 <input
                   type="password"
@@ -399,7 +401,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                   cursor: isSubmitting ? 'wait' : 'pointer',
                 }}
               >
-                <span>{isSubmitting ? 'Authenticating with Firebase...' : 'Sign In to VirtualVigyan'}</span>
+                <span>{isSubmitting ? t('auth.authenticating', 'Authenticating with Firebase...') : t('auth.loginBtn', 'Sign In to Laboratory')}</span>
                 <span>→</span>
               </button>
             </form>
@@ -419,7 +421,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-primary)',
                   }}
                 >
-                  Choose Your Role:
+                  {t('auth.chooseRole', 'Choose Your Role:')}
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div
@@ -447,10 +449,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <span style={{ fontSize: 28 }}>🎓</span>
                     <div>
                       <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        Student
+                        {t('auth.student', 'Student')}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#059669', fontWeight: 600 }}>
-                        Simulate & Learn
+                        {t('auth.simulateLearn', 'Simulate & Learn')}
                       </div>
                     </div>
                   </div>
@@ -480,10 +482,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     <span style={{ fontSize: 28 }}>👨‍🏫</span>
                     <div>
                       <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        Teacher
+                        {t('auth.teacher', 'Teacher')}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: 600 }}>
-                        Assign & Monitor
+                        {t('auth.assignMonitor', 'Assign & Monitor')}
                       </div>
                     </div>
                   </div>
@@ -501,12 +503,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Full Name
+                  {t('auth.fullName', 'Full Name')}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder={regRole === 'student' ? 'e.g. Ananya Sharma' : 'e.g. Dr. K. Raman'}
+                  placeholder={regRole === 'student' ? t('auth.nameStudentEx', 'e.g. Ananya Sharma') : t('auth.nameTeacherEx', 'e.g. Dr. K. Raman')}
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
                   className="clay-input"
@@ -530,7 +532,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Email Address
+                  {t('auth.email', 'Email Address')}
                 </label>
                 <input
                   type="email"
@@ -561,7 +563,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      Class / Standard
+                      {t('auth.grade', 'Class / Standard')}
                     </label>
                     <select
                       value={regGrade}
@@ -593,11 +595,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      School / College
+                      {t('auth.school', 'School / College')}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Model High School"
+                      placeholder={t('auth.schoolEx', 'e.g. Model High School')}
                       value={regSchool}
                       onChange={(e) => setRegSchool(e.target.value)}
                       className="clay-input"
@@ -625,11 +627,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      Department
+                      {t('auth.department', 'Department')}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Applied Chemistry"
+                      placeholder={t('auth.deptEx', 'e.g. Applied Chemistry')}
                       value={regDepartment}
                       onChange={(e) => setRegDepartment(e.target.value)}
                       className="clay-input"
@@ -652,11 +654,11 @@ const AuthModal: React.FC<AuthModalProps> = ({
                         color: 'var(--text-secondary)',
                       }}
                     >
-                      Institution Name
+                      {t('auth.institution', 'Institution Name')}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. DBATU Lonere"
+                      placeholder={t('auth.instEx', 'e.g. DBATU Lonere')}
                       value={regInstitution}
                       onChange={(e) => setRegInstitution(e.target.value)}
                       className="clay-input"
@@ -682,7 +684,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                     color: 'var(--text-secondary)',
                   }}
                 >
-                  Create Password (min. 6 chars)
+                  {t('auth.createPassword', 'Create Password (min. 6 chars)')}
                 </label>
                 <input
                   type="password"
@@ -718,10 +720,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
               >
                 <span>
                   {isSubmitting
-                    ? 'Creating Account...'
+                    ? t('auth.creatingAccount', 'Creating Account...')
                     : regRole === 'student'
-                      ? '🎓 Register as Student'
-                      : '👨‍🏫 Register as Teacher'}
+                      ? t('auth.regAsStudent', '🎓 Register as Student')
+                      : t('auth.regAsTeacher', '👨‍🏫 Register as Teacher')}
                 </span>
                 <span>→</span>
               </button>

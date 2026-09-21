@@ -1,5 +1,6 @@
 import React from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface HeroSectionProps {
   onStartExperiment: () => void;
@@ -7,6 +8,8 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ onStartExperiment, onExploreExperiments }) => {
+  const { t } = useLanguage();
+
   return (
     <section id="hero" className="ln-hero-wrapper">
       <div className="ln-container">
@@ -68,35 +71,34 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onStartExperiment, onExploreE
           <div className="ln-hero-content">
             <div className="ln-hero-eyebrow">
               <VirtualVigyanLogo size={20} />
-              <span>Interactive Virtual Chemistry Laboratory</span>
+              <span>{t('brand.tagline', 'Interactive Virtual Chemistry Laboratory')}</span>
             </div>
 
             <h1 className="ln-hero-title">
-              Practice Chemistry.<br />
-              Experience the Laboratory.
+              {t('landing.hero.title', 'Practice Chemistry. Experience the Laboratory.')}
             </h1>
 
             <p className="ln-hero-desc">
-              Perform interactive chemistry experiments, practice laboratory procedures, and learn safely through a virtual laboratory designed for repeatable hands-on learning.
+              {t('landing.hero.description', 'An interactive virtual chemistry laboratory engineered for Indian schools and engineering colleges. Practice real curriculum-aligned experiments with immediate feedback, zero physical hazard, and low-bandwidth accessibility.')}
             </p>
 
             <div className="ln-hero-buttons">
               <button onClick={onStartExperiment} className="ln-btn ln-btn-primary" style={{ padding: '14px 30px', fontSize: '0.95rem' }}>
-                <span>▶</span> Start Experiment
+                <span>▶</span> {t('landing.hero.ctaStart', 'Start Experiment')}
               </button>
               <button onClick={onExploreExperiments} className="ln-btn ln-btn-hero-outline" style={{ padding: '14px 26px', fontSize: '0.95rem' }}>
-                Explore Experiments
+                {t('landing.hero.ctaExplore', 'Explore Experiments')}
               </button>
             </div>
 
             <div className="ln-hero-meta">
-              <span>Interactive</span>
+              <span>{t('landing.hero.badgeInteractive', 'Interactive')}</span>
               <span className="ln-hero-meta-dot" />
-              <span>Safe</span>
+              <span>{t('landing.hero.badgeSafe', 'Safe')}</span>
               <span className="ln-hero-meta-dot" />
-              <span>Repeatable</span>
+              <span>{t('landing.hero.badgeCurriculum', 'Repeatable')}</span>
               <span className="ln-hero-meta-dot" />
-              <span>Educational</span>
+              <span>{t('landing.hero.badgeBilingual', 'Educational')}</span>
             </div>
           </div>
 

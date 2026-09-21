@@ -13,6 +13,7 @@ import { evaluateCondition } from '../../engine/experimentRunner';
 import { FluidDynamicsLayer } from './FluidDynamicsLayer';
 import { ChemicalInspectorModal } from './ChemicalInspectorModal';
 import { createEmptyMixture } from '../../engine/stoichiometrySolver';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 type GenericBenchProps = {
   config: ExperimentConfig;
@@ -27,6 +28,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
   dispatch,
   activeDropZone,
 }) => {
+  const { t, tDynamic } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
   const [isStirring, setIsStirring] = React.useState(false);
   const [stopcockOpen, setStopcockOpen] = React.useState(0);
@@ -297,10 +299,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           </div>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Reaction Active • Vigorous Effervescence
+              {tDynamic('Reaction Active • Vigorous Effervescence')}
             </div>
             <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-              H₂ gas bubbles are rapidly evolving. Zinc dissolves forming ZnSO₄ solution.
+              {tDynamic('H₂ gas bubbles are rapidly evolving. Zinc dissolves forming ZnSO₄ solution.')}
             </div>
           </div>
           {config.steps[state.currentStepIndex]?.advanceMode === 'button' && (
@@ -318,7 +320,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
               }}
             >
-              Continue →
+              {t('common.continue')} →
             </button>
           )}
         </div>
@@ -347,10 +349,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <div style={{ fontSize: 20 }}>💥</div>
           <div>
             <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              POP Sound Observed • H₂ Gas Confirmed!
+              {tDynamic('POP Sound Observed • H₂ Gas Confirmed!')}
             </div>
             <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-              Hydrogen burns rapidly with a characteristic pop sound.
+              {tDynamic('Hydrogen burns rapidly with a characteristic pop sound.')}
             </div>
           </div>
           <button
@@ -368,7 +370,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
             }}
           >
-            Proceed to Questions →
+            {t('bench.proceedToQuestions')}
           </button>
         </div>
       )}
@@ -406,14 +408,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             </div>
             <div>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isCleanedAndDry ? '#059669' : hasChromic ? '#ea580c' : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {isCleanedAndDry ? 'Viscometer Cleaned & Dried' : hasChromic ? 'Chromic Acid Wash' : 'Ready For Acetone Rinse'}
+                {isCleanedAndDry ? tDynamic('Viscometer Cleaned & Dried') : hasChromic ? tDynamic('Chromic Acid Wash') : tDynamic('Ready For Acetone Rinse')}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
                 {isCleanedAndDry
-                  ? 'Viscometer is thoroughly cleaned, dry, and ready for test liquid introduction.'
+                  ? tDynamic('Viscometer is thoroughly cleaned, dry, and ready for test liquid introduction.')
                   : hasChromic
-                    ? 'Viscometer washed with chromic acid. Click below to drain it into the waste jar.'
-                    : 'Chromic acid drained! Now pour Acetone into the broad limb to rinse and dry completely.'}
+                    ? tDynamic('Viscometer washed with chromic acid. Click below to drain it into the waste jar.')
+                    : tDynamic('Chromic acid drained! Now pour Acetone into the broad limb to rinse and dry completely.')}
               </div>
             </div>
 
@@ -433,7 +435,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(234, 88, 12, 0.35)',
                 }}
               >
-                🚰 Drain Chromic Acid to Waste
+                {t('bench.drainChromic')}
               </button>
             )}
           </div>
@@ -548,10 +550,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             </div>
             <div>
               <div style={{ fontSize: '0.72rem', fontWeight: 800, color: isTiming ? '#059669' : '#0284c7', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                {isTiming ? 'Capillary Flow Active • Stopwatch Running' : 'Viscometer Flow Measurement'}
+                {isTiming ? tDynamic('Capillary Flow Active • Stopwatch Running') : tDynamic('Viscometer Flow Measurement')}
               </div>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
-                {statusText}
+                {tDynamic(statusText)}
               </div>
             </div>
 
@@ -571,7 +573,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                 }}
               >
-                🚰 Drain & Clear Liquid A
+                {t('bench.drainLiquidA')}
               </button>
             )}
 
@@ -589,7 +591,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                 }}
               >
-                ▶ Start Timing
+                {t('bench.startTiming')}
               </button>
             )}
 
@@ -607,7 +609,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(220, 38, 38, 0.35)',
                 }}
               >
-                ■ Stop Timing
+                {t('bench.stopTiming')}
               </button>
             )}
 
@@ -625,7 +627,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                 }}
               >
-                ▶ Resume Dropping
+                ▶ {t('bench.resumeDropping', 'Resume Dropping')}
               </button>
             )}
 
@@ -649,7 +651,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   fontWeight: 600,
                 }}
               >
-                ↺ Restart from Mark C
+                ↺ {t('bench.restartMarkC', 'Restart from Mark C')}
               </button>
             )}
 
@@ -670,7 +672,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   boxShadow: '0 4px 12px rgba(5, 150, 105, 0.3)',
                 }}
               >
-                {isSample ? 'Continue to Water Reference →' : 'Continue to Calculations →'}
+                {isSample ? t('bench.continueWaterRef', 'Continue to Water Reference →') : t('bench.continueCalcs', 'Continue to Calculations →')}
               </button>
             )}
           </div>
@@ -843,7 +845,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                     pointerEvents: 'none',
                   }}
                 >
-                  {apparatusConfig.label}
+                  {tDynamic(apparatusConfig.label)}
                 </span>
 
                 {isVessel && (
@@ -853,7 +855,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                       e.stopPropagation();
                       dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: apparatusId } });
                     }}
-                    title={`Inspect chemical reactions & stoichiometry inside ${apparatusConfig.label}`}
+                    title={`${t('bench.inspect', 'Inspect')} ${tDynamic(apparatusConfig.label)}`}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -871,7 +873,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                     }}
                   >
                     <span>🧪</span>
-                    <span>Inspect</span>
+                    <span>{t('bench.inspect', 'Inspect')}</span>
                   </button>
                 )}
               </div>
@@ -922,7 +924,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             }}
           >
             <span style={{ fontSize: '0.85rem' }}>💡</span>
-            <span>Start shaking / swirling the flask before titration.</span>
+            <span>{t('bench.preTitrationSwirl')}</span>
           </div>
         )}
 
@@ -949,7 +951,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           }}
         >
           <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
-          <span>{isSwirling ? 'Swirling (ON)' : 'Shake / Swirl'}</span>
+          <span>{isSwirling ? t('bench.swirlingOn') : `${t('lab.shake')} / ${t('lab.swirling')}`}</span>
         </button>
 
         {/* Magnetic Stirrer Toggle */}
@@ -980,7 +982,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           }}
         >
           <span style={{ fontSize: '0.85rem' }}>🧲</span>
-          <span>{isStirring ? 'Stirrer (RUN)' : 'Stirrer Plate'}</span>
+          <span>{isStirring ? t('bench.stirrerRun') : t('bench.stirrerPlate')}</span>
         </button>
 
         {/* Burette Titration Controls (Only for experiments featuring a burette) */}
@@ -1015,7 +1017,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               }}
             >
               <span style={{ fontSize: '0.85rem' }}>💧</span>
-              <span>+1 Drop (0.05 mL)</span>
+              <span>{t('bench.singleDrop')}</span>
             </button>
 
             {/* Burette Cork / Stopcock Quick Step Tap Button */}
@@ -1056,12 +1058,12 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               <span style={{ fontSize: '0.85rem' }}>🚰</span>
               <span>
                 {stopcockOpen === 0
-                  ? 'Cork: Closed'
+                  ? t('lab.tapClosed')
                   : stopcockOpen <= 0.20
-                  ? 'Fine Drip (15%)'
+                  ? `${t('lab.slowDrop')} (15%)`
                   : stopcockOpen <= 0.45
-                  ? 'Slow Drops (35%)'
-                  : `Flow: ${Math.round(stopcockOpen * 100)}%`}
+                  ? `${t('lab.fastDrop')} (35%)`
+                  : `${t('lab.rapidFlow')}: ${Math.round(stopcockOpen * 100)}%`}
               </span>
             </button>
           </>
@@ -1092,7 +1094,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           }}
         >
           <span style={{ fontSize: '0.85rem' }}>🧪</span>
-          <span>Inspect {primaryVesselLabel.length > 18 ? 'Reaction' : primaryVesselLabel}</span>
+          <span>{t('bench.inspect')} {primaryVesselLabel.length > 18 ? tDynamic('Reaction') : tDynamic(primaryVesselLabel)}</span>
         </button>
       </div>
 
@@ -1112,7 +1114,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           boxShadow: 'var(--shadow-card)',
           zIndex: 20,
         }}>
-          Vol: {(state.variables['volumeAdded'] ?? 0).toFixed(1)} mL
+          {t('common.volume', 'Vol')}: {(state.variables['volumeAdded'] ?? 0).toFixed(1)} mL
         </div>
       )}
 
@@ -1140,7 +1142,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             fontSize: '0.8rem',
           }}
         >
-          ✓ Mark Endpoint
+          ✓ {t('lab.markEndpoint')}
         </button>
       )}
 
@@ -1179,6 +1181,7 @@ type DropZoneProps = {
 };
 
 const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
+  const { tDynamic } = useLanguage();
   const hasItem = Object.values(state.placedApparatus).includes(zone.id);
 
   const { setNodeRef, isOver } = useDroppable({ id: zone.id });
@@ -1243,7 +1246,7 @@ const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
               letterSpacing: '0.02em',
             }}
           >
-            📍 {zone.label}
+            📍 {tDynamic(zone.label)}
           </span>
         </div>
       )}
@@ -1261,6 +1264,7 @@ type StopcockUIProps = {
 };
 
 const StopcockUI: React.FC<StopcockUIProps> = ({ state, dispatch }) => {
+  const { t } = useLanguage();
   const stopcockOpen = state.variables['stopcockOpen'] ?? 0;
   const rotation = stopcockOpen * 90;
 
@@ -1296,7 +1300,7 @@ const StopcockUI: React.FC<StopcockUIProps> = ({ state, dispatch }) => {
       onPointerLeave={handlePointerUp}
     >
       <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
-        Stopcock:
+        {t('lab.stopcock')}
       </span>
       <svg width="24" height="24" viewBox="0 0 30 30">
         <g transform={`rotate(${rotation}, 15, 15)`}>

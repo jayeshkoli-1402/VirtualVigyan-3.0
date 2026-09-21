@@ -1,10 +1,12 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface Props {
   onStartExperiment: () => void;
 }
 
 const FinalCTA: React.FC<Props> = ({ onStartExperiment }) => {
+  const { t } = useLanguage();
   return (
     <section className="ln-cta-section">
       <div className="ln-cta-bg" aria-hidden="true">
@@ -59,17 +61,17 @@ const FinalCTA: React.FC<Props> = ({ onStartExperiment }) => {
       </div>
 
       <div className="ln-container ln-cta-content ln-reveal">
-        <span className="ln-section-label" style={{ marginBottom: 18 }}>Get Started</span>
-        <h2 className="ln-section-heading">Ready to Enter the Virtual Laboratory?</h2>
+        <span className="ln-section-label" style={{ marginBottom: 18 }}>{t('common.startExperiment', 'Get Started')}</span>
+        <h2 className="ln-section-heading">{t('landing.cta.heading', 'Ready to Enter the Virtual Laboratory?')}</h2>
         <p className="ln-section-desc" style={{ margin: '0 auto 40px' }}>
-          Start exploring chemistry experiments in an interactive digital laboratory.
+          {t('landing.cta.subheading', 'Start exploring chemistry experiments in an interactive digital laboratory.')}
         </p>
         <button
           onClick={onStartExperiment}
           className="ln-btn ln-btn-primary"
           style={{ padding: '15px 36px', fontSize: '1rem' }}
         >
-          Start Experiment →
+          {t('landing.cta.button', 'Start Experiment')} →
         </button>
       </div>
     </section>

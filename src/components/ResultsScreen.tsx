@@ -2,6 +2,7 @@ import React from 'react';
 import type { TitrationState, TitrationAction } from '../engine/titrationState';
 import { evaluateEndpoint } from '../engine/validation';
 import { EQUIVALENCE_VOLUME_ML } from '../engine/chemistryRules';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ResultsScreenProps {
   state: TitrationState;
@@ -9,6 +10,7 @@ interface ResultsScreenProps {
 }
 
 const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
+  const { t, tDynamic } = useLanguage();
   const endpointEval = evaluateEndpoint(state.endpointMarkedAt ?? 0);
 
   // Score breakdown
@@ -26,10 +28,10 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
   };
 
   const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Outstanding!';
-    if (score >= 70) return 'Great Work!';
-    if (score >= 50) return 'Good Effort';
-    return 'Keep Practicing';
+    if (score >= 90) return t('results.gradeExcellent', undefined, 'Outstanding!');
+    if (score >= 70) return t('results.gradeGood', undefined, 'Great Work!');
+    if (score >= 50) return t('results.gradeSatisfactory', undefined, 'Good Effort');
+    return t('results.gradeNeedsPractice', undefined, 'Keep Practicing');
   };
 
   const scoreColor = getScoreColor(totalScore);
@@ -96,44 +98,44 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
           {getScoreLabel(totalScore)}
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          Acid-Base Titration Performance Evaluation
+          {tDynamic('Acid-Base Titration Performance Evaluation')}
         </p>
       </div>
 
       {/* Score breakdown */}
       <div className="glass-card" style={{ padding: '20px', marginBottom: 16 }}>
         <h3 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: 14, color: 'var(--text-secondary)' }}>
-          Score Breakdown
+          {t('results.rubricBreakdown', undefined, 'Score Breakdown')}
         </h3>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <ScoreRow
-            label="Endpoint Precision"
-            sublabel={endpointEval.label}
+            label={tDynamic('Endpoint Precision')}
+            sublabel={tDynamic(endpointEval.label)}
             score={endpointScore}
             maxScore={40}
             color={endpointEval.accuracy === 'excellent' ? '#16a34a' : endpointEval.accuracy === 'good' ? '#0284c7' : '#d97706'}
           />
 
           <ScoreRow
-            label="Concentration Calculation"
-            sublabel={state.calculationCorrect ? 'Correct' : 'Incorrect'}
+            label={tDynamic('Concentration Calculation')}
+            sublabel={state.calculationCorrect ? t('common.correct', 'Correct') : t('common.incorrect', 'Incorrect')}
             score={calculationScore}
             maxScore={40}
             color={state.calculationCorrect ? '#16a34a' : '#dc2626'}
           />
 
           <ScoreRow
-            label="Indicator Added"
-            sublabel="Before titration"
+            label={tDynamic('Indicator Added')}
+            sublabel={tDynamic('Before titration')}
             score={indicatorScore}
             maxScore={10}
             color="#16a34a"
           />
 
           <ScoreRow
-            label="No Overshoot"
-            sublabel={overshootScore > 0 ? 'Stopped in range' : 'Overshot endpoint'}
+            label={tDynamic('No Overshoot')}
+            sublabel={overshootScore > 0 ? tDynamic('Stopped in range') : tDynamic('Overshot endpoint')}
             score={overshootScore}
             maxScore={10}
             color={overshootScore > 0 ? '#16a34a' : '#dc2626'}
@@ -188,7 +190,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
         onClick={() => dispatch({ type: 'RESET' })}
         style={{ width: '100%', padding: '12px' }}
       >
-        🔄 Perform Experiment Again
+        🔄 {t('results.tryAgain', undefined, 'Perform Experiment Again')}
       </button>
     </div>
   );

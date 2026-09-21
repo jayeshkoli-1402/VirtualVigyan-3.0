@@ -9,11 +9,15 @@ interface ConservationToolboxProps {
   onToggleCollapse: () => void;
 }
 
+import { useLanguage } from '../../i18n/LanguageContext';
+
 type ToolItem = {
   id: string;
   icon: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  defaultLabel: string;
+  descKey: string;
+  defaultDesc: string;
   hazard?: string;
   enabledAt: ConservationStep[];
   hiddenWhen: (state: ConservationState) => boolean;
@@ -23,8 +27,10 @@ const toolItems: ToolItem[] = [
   {
     id: CONSERVATION_DRAG_ITEMS.FLASK,
     icon: '⚗️',
-    label: 'Conical Flask',
-    description: '100 mL Borosilicate',
+    labelKey: 'apparatus.flask',
+    defaultLabel: 'Conical Flask',
+    descKey: 'desc.flask',
+    defaultDesc: '100 mL Borosilicate',
     enabledAt: [
       ConservationStep.SETUP_FLASK,
       ConservationStep.WEIGH_INITIAL,
@@ -37,24 +43,30 @@ const toolItems: ToolItem[] = [
   {
     id: CONSERVATION_DRAG_ITEMS.NA2SO4_BOTTLE,
     icon: '🧴',
-    label: 'Na₂SO₄ Solution',
-    description: '5% w/v, 10 mL',
+    labelKey: 'apparatus.na2so4Bottle',
+    defaultLabel: 'Na₂SO₄ Solution',
+    descKey: 'desc.na2so4',
+    defaultDesc: '5% w/v, 10 mL',
     enabledAt: [ConservationStep.SETUP_FLASK],
     hiddenWhen: (s) => s.na2so4Poured,
   },
   {
     id: CONSERVATION_DRAG_ITEMS.IGNITION_TUBE,
     icon: '🧫',
-    label: 'Ignition Tube',
-    description: '10×75 mm Borosilicate with thread',
+    labelKey: 'apparatus.ignitionTube',
+    defaultLabel: 'Ignition Tube',
+    descKey: 'desc.ignitionTube',
+    defaultDesc: '10×75 mm Borosilicate with thread',
     enabledAt: [ConservationStep.PLACE_TUBE_ON_STAND],
     hiddenWhen: (s) => s.tubePlacedOnStand || s.tubeSuspended,
   },
   {
     id: CONSERVATION_DRAG_ITEMS.BACL2_BOTTLE,
     icon: '🧴',
-    label: 'BaCl₂ Solution',
-    description: '5% w/v, 10 mL',
+    labelKey: 'apparatus.bacl2Bottle',
+    defaultLabel: 'BaCl₂ Solution',
+    descKey: 'desc.bacl2',
+    defaultDesc: '5% w/v, 10 mL',
     hazard: '⚠️ Toxic',
     enabledAt: [ConservationStep.FILL_TUBE],
     hiddenWhen: (s) => s.tubeFilled,
@@ -62,16 +74,20 @@ const toolItems: ToolItem[] = [
   {
     id: CONSERVATION_DRAG_ITEMS.RUBBER_CORK,
     icon: '🔌',
-    label: 'Rubber Cork',
-    description: 'Airtight solid cork',
+    labelKey: 'apparatus.rubberCork',
+    defaultLabel: 'Rubber Cork',
+    descKey: 'desc.rubberCork',
+    defaultDesc: 'Airtight solid cork',
     enabledAt: [ConservationStep.SEAL_FLASK],
     hiddenWhen: (s) => s.flaskSealed,
   },
   {
     id: CONSERVATION_DRAG_ITEMS.MEASURING_CYLINDER,
     icon: '📏',
-    label: 'Measuring Cylinder',
-    description: '10 mL graduated',
+    labelKey: 'apparatus.measuringCylinder',
+    defaultLabel: 'Measuring Cylinder',
+    descKey: 'desc.measuringCylinder',
+    defaultDesc: '10 mL graduated',
     enabledAt: [ConservationStep.SETUP_FLASK],
     hiddenWhen: () => false,
   },
@@ -83,12 +99,28 @@ const DraggableItem: React.FC<{
   isHidden: boolean;
   isCollapsed: boolean;
 }> = ({ item, isEnabled, isHidden, isCollapsed }) => {
+  const { t, language } = useLanguage();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: item.id,
     disabled: !isEnabled,
   });
 
   if (isHidden) return null;
+
+  const localizedLabel = t(item.labelKey, item.defaultLabel);
+  const localizedDesc = language === 'hi'
+    ? (item.id === CONSERVATION_DRAG_ITEMS.IGNITION_TUBE ? '10×75 mm धागे सहित' :
+       item.id === CONSERVATION_DRAG_ITEMS.RUBBER_CORK ? 'वायुरोधी ठोस कॉर्क' :
+       item.id === CONSERVATION_DRAG_ITEMS.MEASURING_CYLINDER ? '10 mL अंशांकित' : item.defaultDesc)
+    : language === 'mr'
+      ? (item.id === CONSERVATION_DRAG_ITEMS.IGNITION_TUBE ? '10×75 mm दोऱ्यासह' :
+         item.id === CONSERVATION_DRAG_ITEMS.RUBBER_CORK ? 'हवाबंद रबरी बुच' :
+         item.id === CONSERVATION_DRAG_ITEMS.MEASURING_CYLINDER ? '10 mL अंशांकित' : item.defaultDesc)
+      : item.defaultDesc;
+
+  const localizedHazard = item.hazard
+    ? (language === 'hi' ? '⚠️ विषैला' : language === 'mr' ? '⚠️ विषारी' : item.hazard)
+    : undefined;
 
   return (
     <div
@@ -122,7 +154,7 @@ const DraggableItem: React.FC<{
               lineHeight: 1.3,
             }}
           >
-            {item.label}
+            {localizedLabel}
           </div>
           <div
             style={{
@@ -131,9 +163,9 @@ const DraggableItem: React.FC<{
               lineHeight: 1.3,
             }}
           >
-            {item.description}
+            {localizedDesc}
           </div>
-          {item.hazard && (
+          {localizedHazard && (
             <div
               style={{
                 fontSize: '0.55rem',
@@ -142,7 +174,7 @@ const DraggableItem: React.FC<{
                 marginTop: 2,
               }}
             >
-              {item.hazard}
+              {localizedHazard}
             </div>
           )}
         </div>
@@ -156,6 +188,7 @@ const ConservationToolbox: React.FC<ConservationToolboxProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useLanguage();
   return (
     <div style={{ padding: isCollapsed ? '8px 4px' : '10px', height: '100%', overflow: 'auto' }}>
       {/* Collapse toggle */}
@@ -178,11 +211,12 @@ const ConservationToolbox: React.FC<ConservationToolboxProps> = ({
               color: 'var(--text-muted)',
             }}
           >
-            Apparatus
+            {t('lab.toolbox', 'Apparatus')}
           </span>
         )}
         <button
           onClick={onToggleCollapse}
+          title={isCollapsed ? t('common.expand', 'Expand') : t('common.collapse', 'Collapse')}
           style={{
             all: 'unset',
             cursor: 'pointer',
@@ -227,7 +261,7 @@ const ConservationToolbox: React.FC<ConservationToolboxProps> = ({
             lineHeight: 1.4,
           }}
         >
-          <strong>⚠️ Safety:</strong> BaCl₂ is toxic. Handle with care. Ensure flask is sealed before mixing.
+          {t('conservation.safetyReminder', '⚠️ Safety: BaCl₂ is toxic. Handle with care. Ensure flask is sealed before mixing.')}
         </div>
       )}
     </div>

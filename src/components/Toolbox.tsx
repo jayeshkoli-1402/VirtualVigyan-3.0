@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import type { TitrationState } from '../engine/titrationState';
 import { Step, DRAG_ITEMS } from '../engine/titrationState';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface ToolboxProps {
   state: TitrationState;
@@ -12,7 +13,8 @@ interface ToolboxProps {
 
 type ToolItem = {
   id: string;
-  label: string;
+  labelKey: string;
+  defaultLabel: string;
   icon: string;
   activeInSteps: Step[];
   placedKey?: keyof TitrationState;
@@ -21,46 +23,53 @@ type ToolItem = {
 const TOOLS: ToolItem[] = [
   {
     id: DRAG_ITEMS.BURETTE,
-    label: 'Burette',
+    labelKey: 'apparatus.burette',
+    defaultLabel: 'Burette',
     icon: '🧪',
     activeInSteps: [Step.SETUP_STAND],
     placedKey: 'buretteMounted',
   },
   {
     id: DRAG_ITEMS.FLASK,
-    label: 'Conical Flask',
+    labelKey: 'apparatus.flask',
+    defaultLabel: 'Conical Flask',
     icon: '⚗️',
     activeInSteps: [Step.SETUP_STAND],
     placedKey: 'flaskPlaced',
   },
   {
     id: DRAG_ITEMS.HCL_BOTTLE,
-    label: 'HCl Stock',
+    labelKey: 'apparatus.hclBottle',
+    defaultLabel: 'HCl Stock',
     icon: '🧴',
     activeInSteps: [Step.MEASURE_ACID],
     placedKey: 'hclPlaced',
   },
   {
     id: DRAG_ITEMS.PIPETTE,
-    label: 'Pipette',
+    labelKey: 'apparatus.pipette',
+    defaultLabel: 'Pipette',
     icon: '💉',
     activeInSteps: [Step.MEASURE_ACID],
   },
   {
     id: DRAG_ITEMS.NAOH_BOTTLE,
-    label: 'NaOH Reagent',
+    labelKey: 'apparatus.naohBottle',
+    defaultLabel: 'NaOH Reagent',
     icon: '🫧',
     activeInSteps: [Step.FILL_BURETTE],
   },
   {
     id: DRAG_ITEMS.INDICATOR,
-    label: 'Phenolphthalein',
+    labelKey: 'apparatus.indicator',
+    defaultLabel: 'Phenolphthalein',
     icon: '💧',
     activeInSteps: [Step.ADD_INDICATOR],
   },
 ];
 
 const Toolbox: React.FC<ToolboxProps> = ({ state, isCollapsed = false, onToggleCollapse }) => {
+  const { t } = useLanguage();
   return (
     <div
       id="toolbox-panel"
@@ -96,13 +105,13 @@ const Toolbox: React.FC<ToolboxProps> = ({ state, isCollapsed = false, onToggleC
               color: 'var(--text-muted)',
             }}
           >
-            Apparatus
+            {t('lab.toolbox', 'Apparatus')}
           </h2>
         )}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            title={isCollapsed ? 'Expand Toolbox' : 'Collapse Toolbox'}
+            title={isCollapsed ? t('common.expand', 'Expand') : t('common.collapse', 'Collapse')}
             style={{
               all: 'unset',
               cursor: 'pointer',
@@ -119,7 +128,7 @@ const Toolbox: React.FC<ToolboxProps> = ({ state, isCollapsed = false, onToggleC
               transition: 'all 0.15s ease',
             }}
           >
-            {isCollapsed ? '→' : '← Hide'}
+            {isCollapsed ? '→' : `← ${t('common.hide', 'Hide')}`}
           </button>
         )}
       </div>
@@ -195,13 +204,16 @@ const DraggableToolCard: React.FC<{
     width: isCollapsed ? '38px' : '100%',
   };
 
+  const { t } = useLanguage();
+  const label = t(tool.labelKey, tool.defaultLabel);
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...listeners}
       {...attributes}
-      title={`${tool.label}${isUsed ? ' (Placed)' : isActive ? ' (Ready)' : ''}`}
+      title={`${label}${isUsed ? ` (${t('common.placed', 'Placed')})` : ''}`}
     >
       <span style={{ fontSize: isCollapsed ? 20 : 18 }}>{tool.icon}</span>
       {!isCollapsed && (
@@ -213,11 +225,11 @@ const DraggableToolCard: React.FC<{
               color: isActive ? 'var(--accent)' : 'var(--text-primary)',
             }}
           >
-            {tool.label}
+            {label}
           </div>
           {isUsed && (
             <div style={{ fontSize: '0.6875rem', color: 'var(--accent-green)', fontWeight: 500 }}>
-              ✓ Placed
+              ✓ {t('common.placed', 'Placed')}
             </div>
           )}
         </div>

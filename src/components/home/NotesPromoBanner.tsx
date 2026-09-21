@@ -1,10 +1,13 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface NotesPromoBannerProps {
   onGoToNotes: () => void;
 }
 
 export const NotesPromoBanner: React.FC<NotesPromoBannerProps> = ({ onGoToNotes }) => {
+  const { t } = useLanguage();
+
   return (
     <div
       style={{
@@ -48,7 +51,7 @@ export const NotesPromoBanner: React.FC<NotesPromoBannerProps> = ({ onGoToNotes 
               lineHeight: 1.3,
             }}
           >
-            Looking for theory, formulas or practical writeups?
+            {t('notesPromo.title', 'Looking for theory, formulas or practical writeups?')}
           </div>
           <div
             style={{
@@ -57,7 +60,7 @@ export const NotesPromoBanner: React.FC<NotesPromoBannerProps> = ({ onGoToNotes 
               marginTop: 2,
             }}
           >
-            Check out our Notes section for study material, viva questions and more.
+            {t('notesPromo.desc', 'Check out our Notes section for study material, viva questions and more.')}
           </div>
         </div>
       </div>
@@ -90,9 +93,10 @@ export const NotesPromoBanner: React.FC<NotesPromoBannerProps> = ({ onGoToNotes 
           e.currentTarget.style.transform = 'translateX(0)';
         }}
       >
-        <span>Go to Notes</span>
+        <span>{t('notesPromo.btn', 'Go to Notes')}</span>
         <span>→</span>
       </button>
     </div>
   );
 };
+

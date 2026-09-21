@@ -3,6 +3,8 @@ import { HeroBanner } from './home/HeroBanner';
 import { NotesPromoBanner } from './home/NotesPromoBanner';
 import { ExperimentThumbnail } from './home/ExperimentCardThumbnails';
 import { useAuth } from '../auth/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../i18n/experimentTranslations';
 
 export interface ExperimentItem {
   id: string;
@@ -170,9 +172,20 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   showHeroBanner = false,
 }) => {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [selectedClass, setSelectedClass] = useState<string>('All');
-  const [sortOption, setSortOption] = useState<'latest' | 'difficulty-asc' | 'difficulty-desc' | 'alpha'>('latest');
+  const [sortOption, setSortOption] = useState<'latest' | 'difficulty-asc' | 'difficulty-desc' | 'alphabetical'>('latest');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+
+  const getPillLabel = (cls: string): string => {
+    if (cls === 'All') return t('landing.showcase.all', 'All');
+    if (cls === 'F.Y. B.Tech (DBATU)') return t('landing.showcase.dbatu', 'F.Y. B.Tech (DBATU)');
+    if (cls === 'Class 12') return t('landing.showcase.class12', 'Class 12');
+    if (cls === 'Class 11') return t('landing.showcase.class11', 'Class 11');
+    if (cls === 'Class 10') return t('landing.showcase.class10', 'Class 10');
+    if (cls === 'Class 9') return t('landing.showcase.class9', 'Class 9');
+    return cls;
+  };
 
   // Filter & sort experiments
   const filteredExperiments = useMemo(() => {
@@ -196,7 +209,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
     // Sort options
     return [...list].sort((a, b) => {
-      if (sortOption === 'alpha') return a.title.localeCompare(b.title);
+      if (sortOption === 'alphabetical') return a.title.localeCompare(b.title);
       if (sortOption === 'difficulty-asc') {
         const diffWeight = { Easy: 1, Medium: 2, Hard: 3 };
         return diffWeight[a.difficulty] - diffWeight[b.difficulty];
@@ -266,7 +279,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                 letterSpacing: '-0.025em',
               }}
             >
-              Browse Experiments
+              {t('nav.experiments', 'Browse Experiments')}
             </h1>
             <span
               style={{
@@ -278,7 +291,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                 borderRadius: 9999,
               }}
             >
-              {ALL_EXPERIMENTS.length} Total Practicals
+              {ALL_EXPERIMENTS.length} {t('experiments.totalPracticals', 'Total Practicals')}
             </span>
           </div>
           <p
@@ -288,7 +301,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
               margin: 0,
             }}
           >
-            Explore all 12 curriculum-aligned interactive chemistry practicals with real-time procedural checks and grading.
+            {t('experiments.exploreSubtitle', 'Explore all 12 curriculum-aligned interactive chemistry practicals with real-time procedural checks and grading.')}
           </p>
         </div>
       )}
@@ -328,10 +341,10 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
             </div>
             <div>
               <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                Administrator Superuser Active ({user.name})
+                {t('auth.adminActive', 'Administrator Superuser Active')} ({user.name})
               </div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                Full lab access granted across all {ALL_EXPERIMENTS.length} curriculum simulations with moderator telemetry & editor privileges.
+                {t('auth.adminAccessDesc', 'Full lab access granted across all 12 curriculum simulations with moderator telemetry & editor privileges.')}
               </div>
             </div>
           </div>
@@ -347,7 +360,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
               textTransform: 'uppercase',
             }}
           >
-            All Labs Unlocked
+            {t('auth.allLabsUnlocked', 'All Labs Unlocked')}
           </span>
         </div>
       )}
@@ -375,7 +388,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
             letterSpacing: '-0.02em',
           }}
         >
-          Browse Experiments
+          {t('nav.experiments', 'Browse Experiments')}
         </h2>
 
         {/* Right side: Filter Pills & Sort Dropdown */}
@@ -411,7 +424,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  {cls}
+                  {getPillLabel(cls)}
                 </button>
               );
             })}
@@ -439,14 +452,13 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
               }}
             >
               <span>
-                Sort by:{' '}
                 {sortOption === 'latest'
-                  ? 'Latest'
+                  ? t('common.filterAll', 'Latest')
                   : sortOption === 'difficulty-asc'
-                    ? 'Easiest'
+                    ? t('experiments.easiestFirst', 'Easiest First')
                     : sortOption === 'difficulty-desc'
-                      ? 'Hardest'
-                      : 'A–Z'}
+                      ? t('experiments.hardestFirst', 'Hardest First')
+                      : t('experiments.alphabetical', 'Alphabetical')}
               </span>
               <span style={{ fontSize: '0.65rem' }}>˅</span>
             </button>
@@ -467,10 +479,10 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                 }}
               >
                 {[
-                  { id: 'latest', label: 'Latest' },
-                  { id: 'difficulty-asc', label: 'Easiest First' },
-                  { id: 'difficulty-desc', label: 'Hardest First' },
-                  { id: 'alpha', label: 'Alphabetical' },
+                  { id: 'latest', label: t('common.filterAll', 'Latest') },
+                  { id: 'difficulty-asc', label: t('experiments.easiestFirst', 'Easiest First') },
+                  { id: 'difficulty-desc', label: t('experiments.hardestFirst', 'Hardest First') },
+                  { id: 'alphabetical', label: t('experiments.alphabetical', 'Alphabetical') },
                 ].map((opt) => (
                   <button
                     key={opt.id}
@@ -513,10 +525,10 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
         >
           <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔍</div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px' }}>
-            No experiments found
+            {t('experiments.noExperimentsFound', 'No experiments found')}
           </h3>
           <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>
-            No practicals matched "{externalSearchQuery}" in {selectedClass}.
+            {t('experiments.noMatch', 'No practicals matched your search query.')}
           </p>
           <button
             onClick={() => setSelectedClass('All')}
@@ -531,7 +543,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
               fontWeight: 600,
             }}
           >
-            Show All Experiments
+            {t('experiments.showAll', 'Show All Experiments')}
           </button>
         </div>
       ) : (
@@ -544,6 +556,14 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
         >
           {filteredExperiments.map((item) => {
             const badge = getDifficultyBadge(item.difficulty);
+            const expTrans = EXPERIMENT_TRANSLATIONS[item.id]?.[language];
+            const cardTitle = expTrans?.title || item.title;
+            const cardDesc = expTrans?.description || item.description;
+            const difficultyText = item.difficulty === 'Easy'
+              ? t('common.easy', 'Easy')
+              : item.difficulty === 'Medium'
+                ? t('common.medium', 'Medium')
+                : t('common.hard', 'Hard');
 
             return (
               <div
@@ -614,7 +634,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                           display: 'inline-block',
                         }}
                       >
-                        {item.difficulty}
+                        {difficultyText}
                       </span>
                     </div>
 
@@ -629,7 +649,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                         lineHeight: 1.35,
                       }}
                     >
-                      {item.title}
+                      {cardTitle}
                     </h3>
 
                     {/* Description */}
@@ -638,14 +658,14 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                         fontSize: '0.78rem',
                         color: 'var(--text-muted)',
                         margin: 0,
-                        lineHeight: 1.5,
+                        lineHeight: 1.45,
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                       }}
                     >
-                      {item.description}
+                      {cardDesc}
                     </p>
                   </div>
 

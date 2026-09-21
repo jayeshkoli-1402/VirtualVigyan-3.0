@@ -4,6 +4,7 @@ import {
   validateDeltaM,
   validateDeviationPercent,
 } from '../../engine/conservationRules';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ConservationCalculationProps {
   m1: number;
@@ -12,6 +13,7 @@ interface ConservationCalculationProps {
 }
 
 const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m2, dispatch }) => {
+  const { t, language } = useLanguage();
   const [deltaMInput, setDeltaMInput] = useState('');
   const [deviationInput, setDeviationInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -75,10 +77,10 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
             marginBottom: 4,
           }}
         >
-          Calculate Mass Difference
+          {t('conservation.calcTitle', 'Calculate Mass Difference')}
         </h2>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          Use your recorded masses to verify the Law of Conservation of Mass.
+          {t('conservation.calcSubtitle', 'Use your recorded masses to verify the Law of Conservation of Mass.')}
         </p>
       </div>
 
@@ -97,7 +99,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
       >
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#059669', marginBottom: 4, textTransform: 'uppercase' }}>
-            Initial Mass (M₁)
+            {t('conservation.initialMass', 'Initial Mass (M₁)')}
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
             {m1.toFixed(2)} g
@@ -105,7 +107,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
         </div>
         <div>
           <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#2563eb', marginBottom: 4, textTransform: 'uppercase' }}>
-            Final Mass (M₂)
+            {t('conservation.finalMass', 'Final Mass (M₂)')}
           </div>
           <div style={{ fontSize: '1.1rem', fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
             {m2.toFixed(2)} g
@@ -124,7 +126,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
         }}
       >
         <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
-          Formulas:
+          {t('conservation.formulas', 'Formulas:')}
         </div>
         <div style={{ fontSize: '0.78rem', fontFamily: 'var(--font-mono)', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
           ΔM = |M₂ - M₁|<br />
@@ -139,7 +141,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
             htmlFor="delta-m-input"
             style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}
           >
-            ΔM (mass difference in grams)
+            {t('conservation.deltaMLabel', 'ΔM (mass difference in grams)')}
           </label>
           <input
             id="delta-m-input"
@@ -190,7 +192,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
             htmlFor="deviation-input"
             style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: 6 }}
           >
-            Deviation % (percentage mass deviation)
+            {t('conservation.deviationLabel', 'Deviation % (percentage mass deviation)')}
           </label>
           <input
             id="deviation-input"
@@ -246,7 +248,7 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
           disabled={!deltaMInput || !deviationInput}
           style={{ width: '100%', padding: '12px 20px' }}
         >
-          Submit Calculation
+          {t('conservation.submitCalc', 'Submit Calculation')}
         </button>
       )}
 
@@ -268,9 +270,9 @@ const ConservationCalculation: React.FC<ConservationCalculationProps> = ({ m1, m
           }}
         >
           {deltaMResult?.correct && deviationResult?.correct ? (
-            <>✅ Both calculations correct! Mass is conserved. Proceeding to results...</>
+            <>{language === 'hi' ? '✅ दोनों गणनाएं सही हैं! द्रव्यमान संरक्षित है। परिणाम की ओर बढ़ रहे हैं...' : language === 'mr' ? '✅ दोन्ही गणने बरोबर आहेत! वस्तुमान संरक्षित आहे. निकालाकडे जात आहोत...' : '✅ Both calculations correct! Mass is conserved. Proceeding to results...'}</>
           ) : (
-            <>⚠️ Some calculations need correction. See the worked formulas above. Proceeding to results...</>
+            <>{language === 'hi' ? '⚠️ कुछ गणनाओं में सुधार की आवश्यकता है। ऊपर दिए गए सूत्र देखें। परिणाम की ओर बढ़ रहे हैं...' : language === 'mr' ? '⚠️ काही गणनेत सुधारणा आवश्यक आहे. वरील सोडवलेली सूत्रे पहा. निकालाकडे जात आहोत...' : '⚠️ Some calculations need correction. See the worked formulas above. Proceeding to results...'}</>
           )}
         </div>
       )}

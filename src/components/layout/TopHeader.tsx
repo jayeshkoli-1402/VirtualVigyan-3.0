@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../auth/AuthContext';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 
 interface TopHeaderProps {
   searchQuery: string;
@@ -25,6 +27,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   isMobile = false,
 }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -42,8 +45,10 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   }, []);
 
   // Display name & initials
-  const displayName = user ? user.name : 'Guest';
-  const displayRole = user ? (user.role.charAt(0).toUpperCase() + user.role.slice(1)) : 'Sign In';
+  const displayName = user ? user.name : t('nav.guest', 'Guest');
+  const displayRole = user
+    ? (user.role === 'teacher' ? t('nav.teacher', 'Teacher') : user.role === 'admin' ? t('nav.admin', 'Admin') : t('nav.student', 'Student'))
+    : t('nav.login', 'Sign In');
   const initials = user
     ? user.name
         .split(' ')
@@ -117,7 +122,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search experiments (e.g. titration, pH, salt analysis...)"
+            placeholder={t('common.searchPlaceholder', 'Search experiments (e.g. titration, pH, salt analysis...)')}
             style={{
               width: '100%',
               padding: '9px 70px 9px 38px',
@@ -163,8 +168,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Right Side: Theme Toggle & Profile Info ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {/* ── Right Side: Language, Theme Toggle & Profile Info ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {/* Language Selector */}
+        <LanguageSelector variant="pill" />
+
         {/* Theme Dropdown / Toggle Button */}
         <div style={{ position: 'relative' }}>
           <button
@@ -371,7 +379,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 }}
               >
                 <span>🎓</span>
-                <span>Sign In</span>
+                <span>{t('nav.login', 'Sign In')}</span>
               </button>
 
               <button
@@ -394,7 +402,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 }}
               >
                 <span>👨‍🏫</span>
-                <span>Teacher</span>
+                <span>{t('nav.teacher', 'Teacher')}</span>
               </button>
             </div>
           )}
@@ -448,7 +456,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                     }}
                   >
                     <span>🛡️</span>
-                    <span>Admin Command Center</span>
+                    <span>{t('layout.adminCenter', 'Admin Command Center')}</span>
                   </button>
                 )}
                 <button
@@ -471,7 +479,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   }}
                 >
                   <span>🔐</span>
-                  <span>Auth Page / Switch Account</span>
+                  <span>{t('layout.switchAccount', 'Auth Page / Switch Account')}</span>
                 </button>
               </div>
 
@@ -496,7 +504,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                   boxSizing: 'border-box',
                 }}
               >
-                Sign Out
+                {t('common.signOut', 'Sign Out')}
               </button>
             </div>
           )}

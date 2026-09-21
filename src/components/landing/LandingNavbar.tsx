@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { LanguageSelector } from '../common/LanguageSelector';
 
 interface LandingNavbarProps {
   theme: 'light' | 'dark';
@@ -13,6 +15,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
   onToggleTheme,
   onStartExperiment,
 }) => {
+  const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -40,12 +43,12 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
   };
 
   const links = [
-    { label: 'Home', id: 'hero' },
-    { label: 'Experiments', id: 'experiments' },
-    { label: 'How It Works', id: 'how-it-works' },
-    { label: 'For Students', id: 'student-role' },
-    { label: 'For Teachers', id: 'teacher-role' },
-    { label: 'About', id: 'about' },
+    { label: t('landing.nav.home', 'Home'), id: 'hero' },
+    { label: t('landing.nav.experiments', 'Experiments'), id: 'experiments' },
+    { label: t('landing.nav.howItWorks', 'How It Works'), id: 'how-it-works' },
+    { label: t('landing.nav.forStudents', 'For Students'), id: 'student-role' },
+    { label: t('landing.nav.forTeachers', 'For Teachers'), id: 'teacher-role' },
+    { label: t('landing.nav.about', 'About'), id: 'about' },
   ];
 
   return (
@@ -80,6 +83,9 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
 
         {/* Right Actions */}
         <div className="ln-navbar-actions">
+          {/* Language Selector */}
+          <LanguageSelector variant="pill" />
+
           <button
             className="ln-theme-toggle"
             onClick={onToggleTheme}
@@ -90,7 +96,7 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
           </button>
 
           <button onClick={onStartExperiment} className="ln-btn ln-btn-primary ln-btn-sm">
-            Start Experiment
+            {t('landing.nav.startExperiment', 'Start Experiment')}
           </button>
 
           <button
@@ -116,9 +122,10 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             {link.label}
           </a>
         ))}
-        <div className="ln-mobile-actions">
-          <button onClick={() => { setMobileOpen(false); onStartExperiment(); }} className="ln-btn ln-btn-primary" style={{ flex: 1 }}>
-            Start Experiment
+        <div className="ln-mobile-actions" style={{ flexDirection: 'column', gap: 10 }}>
+          <LanguageSelector variant="buttons" style={{ width: '100%', marginBottom: 4 }} />
+          <button onClick={() => { setMobileOpen(false); onStartExperiment(); }} className="ln-btn ln-btn-primary" style={{ width: '100%' }}>
+            {t('landing.nav.startExperiment', 'Start Experiment')}
           </button>
         </div>
       </div>

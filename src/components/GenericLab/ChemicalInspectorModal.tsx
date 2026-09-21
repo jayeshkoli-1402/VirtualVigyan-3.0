@@ -19,6 +19,7 @@
 import React, { useState } from 'react';
 import type { VesselMixture, ChemicalAddition } from '../../engine/stoichiometrySolver';
 import { CHEMICAL_DATABASE } from '../../engine/chemicalDatabase';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ChemicalInspectorModalProps {
   mixture: VesselMixture;
@@ -33,6 +34,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
   onClose,
   onAddChemical,
 }) => {
+  const { t, tDynamic } = useLanguage();
   const [selectedSubstance, setSelectedSubstance] = useState('hcl');
   const [volumeMl, setVolumeMl] = useState(10);
   const [molarity, setMolarity] = useState(0.1);
@@ -163,10 +165,10 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
             </div>
             <div>
               <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
-                Chemical & Stoichiometry Engine
+                {tDynamic('Chemical & Stoichiometry Engine')}
               </h2>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #64748b)' }}>
-                Live Reaction Diagnostics for <strong style={{ color: '#2563eb' }}>{vesselLabel}</strong>
+                {tDynamic('Live Reaction Diagnostics for')} <strong style={{ color: '#2563eb' }}>{tDynamic(vesselLabel)}</strong>
               </div>
             </div>
           </div>
@@ -183,7 +185,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
               borderRadius: '8px',
               lineHeight: 1,
             }}
-            title="Close Inspector"
+            title={t('common.close', 'Close')}
           >
             ✕
           </button>
@@ -202,7 +204,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
         >
           {/* Volume */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Total Volume</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Total Volume')}</div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: mixture.volumeMl > 0 ? '#0284c7' : '#94a3b8' }}>
               {mixture.volumeMl === 0 ? '0.0' : mixture.volumeMl.toFixed(mixture.volumeMl % 0.1 !== 0 ? 2 : 1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>mL</span>
             </div>
@@ -210,7 +212,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
 
           {/* Temperature */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Temperature</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Temperature')}</div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: mixture.temperatureC > 35 ? '#ea580c' : '#059669' }}>
               {mixture.temperatureC.toFixed(1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>°C</span>
               {mixture.temperatureC > 25.5 && (
@@ -223,7 +225,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
 
           {/* pH */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>pH Value</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('pH Value')}</div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: getPhColor(mixture.pH), display: 'flex', alignItems: 'center', gap: 6 }}>
               {mixture.pH.toFixed(2)}
               <span
@@ -236,14 +238,14 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
                   fontWeight: 700,
                 }}
               >
-                {mixture.pH < 6.5 ? 'Acidic' : mixture.pH > 7.5 ? 'Alkaline' : 'Neutral'}
+                {mixture.pH < 6.5 ? tDynamic('Acidic') : mixture.pH > 7.5 ? tDynamic('Alkaline') : tDynamic('Neutral')}
               </span>
             </div>
           </div>
 
           {/* Precipitate Mass */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Precipitate</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Precipitate')}</div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, color: precipitateList.length > 0 ? '#d97706' : '#64748b' }}>
               {precipitateList.reduce((acc, p) => acc + p.grams, 0).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>g</span>
             </div>
@@ -251,9 +253,9 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
 
           {/* Effervescence */}
           <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>Gas Evolution</div>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Gas Evolution')}</div>
             <div style={{ fontSize: '1.0rem', fontWeight: 700, color: mixture.effervescenceRate > 0 ? '#3b82f6' : '#94a3b8' }}>
-              {mixture.effervescenceRate > 0 ? `🫧 ${mixture.effervescenceGas ?? 'Gas'}` : 'None'}
+              {mixture.effervescenceRate > 0 ? `🫧 ${tDynamic(mixture.effervescenceGas ?? 'Gas')}` : tDynamic('None')}
             </div>
           </div>
         </div>
@@ -261,10 +263,10 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
         {/* ── Active Hazard Alerts ── */}
         {mixture.activeHazards.length > 0 && (
           <div style={{ padding: '8px 24px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderBottom: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#dc2626' }}>⚠️ Lab Hazards Detected:</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#dc2626' }}>⚠️ {tDynamic('Lab Hazards Detected')}:</span>
             {mixture.activeHazards.map((haz, i) => (
               <span key={i} style={{ fontSize: '0.72rem', backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
-                {haz}
+                {tDynamic(haz)}
               </span>
             ))}
           </div>
@@ -286,7 +288,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
               fontSize: '0.88rem',
             }}
           >
-            📊 Chemical Composition ({dissolvedSpeciesList.length + precipitateList.length})
+            📊 {tDynamic('Chemical Composition')} ({dissolvedSpeciesList.length + precipitateList.length})
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -302,7 +304,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
               fontSize: '0.88rem',
             }}
           >
-            📜 Reaction Events & Explanations ({mixture.recentEvents.length})
+            📜 {tDynamic('Reaction Events & Explanations')} ({mixture.recentEvents.length})
           </button>
           <button
             onClick={() => setActiveTab('test')}
@@ -318,7 +320,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
               fontSize: '0.88rem',
             }}
           >
-            ⚗️ Add Any Chemical Reagent (Playground)
+            ⚗️ {tDynamic('Add Any Chemical Reagent (Playground)')}
           </button>
         </div>
 

@@ -1,10 +1,13 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 const TrustBar: React.FC = () => {
+  const { t } = useLanguage();
+
   const items = [
     {
-      title: 'Interactive Experiments',
-      desc: 'Realistic glassware & reagents',
+      title: t('landing.trust.experiments', 'Interactive Experiments'),
+      desc: t('landing.trust.experimentsSub', 'Realistic glassware & reagents'),
       color: 'blue' as const,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -15,8 +18,8 @@ const TrustBar: React.FC = () => {
       ),
     },
     {
-      title: 'Action Validation',
-      desc: 'Real-time procedural checks',
+      title: t('landing.trust.accuracy', 'Action Validation'),
+      desc: t('landing.trust.accuracySub', 'Real-time procedural checks'),
       color: 'green' as const,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -26,8 +29,8 @@ const TrustBar: React.FC = () => {
       ),
     },
     {
-      title: 'Feedback & Retry',
-      desc: 'Learn from every mistake',
+      title: t('landing.trust.feedback', 'Feedback & Retry'),
+      desc: t('landing.trust.feedbackSub', 'Learn from every mistake'),
       color: 'amber' as const,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -37,8 +40,8 @@ const TrustBar: React.FC = () => {
       ),
     },
     {
-      title: 'Progress Tracking',
-      desc: 'Accuracy & completion metrics',
+      title: t('landing.trust.zeroInstall', 'Progress Tracking'),
+      desc: t('landing.trust.zeroInstallSub', 'Accuracy & completion metrics'),
       color: 'purple' as const,
       icon: (
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

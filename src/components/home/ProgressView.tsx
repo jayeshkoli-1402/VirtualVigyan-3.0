@@ -1,4 +1,6 @@
 import React from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
+import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
 
 interface ProgressViewProps {
   onBackToHome: () => void;
@@ -9,6 +11,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
   onBackToHome,
   onLaunchExperiment,
 }) => {
+  const { t, language } = useLanguage();
 
   const completedLabs = [
     {
@@ -45,11 +48,33 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
     },
   ];
 
+  const getGradeText = (grade: string) => {
+    if (grade === 'Outstanding') return t('progress.gradeOutstanding', 'Outstanding');
+    if (grade === 'Very Good') return t('progress.gradeVeryGood', 'Very Good');
+    return t('progress.gradeGood', 'Good');
+  };
+
   const badges = [
-    { icon: '🎯', title: 'Titration Master', desc: 'Accurate endpoint within ±0.1 mL' },
-    { icon: '⚖️', title: 'Mass Preserver', desc: 'Verified conservation within 0.05%' },
-    { icon: '🥽', title: 'Safety Champion', desc: '100% PPE compliance score' },
-    { icon: '⚡', title: 'Electro Chemist', desc: 'Completed Conductometry with zero error' },
+    {
+      icon: '🎯',
+      title: t('progress.badgeTitrationMaster', 'Titration Master'),
+      desc: t('progress.badgeTitrationMasterDesc', 'Accurate endpoint within ±0.1 mL'),
+    },
+    {
+      icon: '⚖️',
+      title: t('progress.badgeMassPreserver', 'Mass Preserver'),
+      desc: t('progress.badgeMassPreserverDesc', 'Verified conservation within 0.05%'),
+    },
+    {
+      icon: '🥽',
+      title: t('progress.badgeSafetyChampion', 'Safety Champion'),
+      desc: t('progress.badgeSafetyChampionDesc', '100% PPE compliance score'),
+    },
+    {
+      icon: '⚡',
+      title: t('progress.badgeElectroChemist', 'Electro Chemist'),
+      desc: t('progress.badgeElectroChemistDesc', 'Completed Conductometry with zero error'),
+    },
   ];
 
   return (
@@ -70,23 +95,43 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             marginBottom: 8,
           }}
         >
-          ← Back to Dashboard
+          ← {t('common.backToDashboard', undefined, 'Back to Dashboard')}
         </button>
         <h2 style={{ fontSize: '1.6rem', fontWeight: 800, fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', margin: 0 }}>
-          My Laboratory Progress & Analytics
+          {t('views.progress.title', undefined, 'My Laboratory Progress & Analytics')}
         </h2>
         <p style={{ fontSize: '0.84rem', color: 'var(--text-muted)', margin: '4px 0 0' }}>
-          Real-time performance tracking across all engineering and senior secondary chemistry practicals.
+          {t('views.progress.subtitle', undefined, 'Real-time performance tracking across all engineering and senior secondary chemistry practicals.')}
         </p>
       </div>
 
       {/* Metrics Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
         {[
-          { label: 'Practicals Completed', value: '4 / 11', sub: '36% Course Progress', color: '#2563eb' },
-          { label: 'Average Accuracy', value: '89.8%', sub: '+4.2% from last week', color: '#10b981' },
-          { label: 'Total Lab Hours', value: '6.4 hrs', sub: 'Interactive time on bench', color: '#8b5cf6' },
-          { label: 'Earned Badges', value: '4 Badges', sub: 'Top 10% of class cohort', color: '#f59e0b' },
+          {
+            label: t('progress.practicalsCompleted', 'Practicals Completed'),
+            value: '4 / 11',
+            sub: t('progress.courseProgress', { percent: 36 }, '36% Course Progress'),
+            color: '#2563eb',
+          },
+          {
+            label: t('progress.avgAccuracy', 'Average Accuracy'),
+            value: '89.8%',
+            sub: t('progress.fromLastWeek', '+4.2% from last week'),
+            color: '#10b981',
+          },
+          {
+            label: t('progress.totalLabHours', 'Total Lab Hours'),
+            value: language === 'hi' ? '6.4 घंटे' : language === 'mr' ? '६.४ तास' : '6.4 hrs',
+            sub: t('progress.benchTime', 'Interactive time on bench'),
+            color: '#8b5cf6',
+          },
+          {
+            label: t('progress.earnedBadges', 'Earned Badges'),
+            value: language === 'hi' ? '4 बैज' : language === 'mr' ? '४ पदके' : '4 Badges',
+            sub: t('progress.topCohort', 'Top 10% of class cohort'),
+            color: '#f59e0b',
+          },
         ].map((m, i) => (
           <div
             key={i}
@@ -124,57 +169,60 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           }}
         >
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px' }}>
-            Completed Practicals Record
+            {t('progress.completedRecord', 'Completed Practicals Record')}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {completedLabs.map((lab) => (
-              <div
-                key={lab.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderRadius: 10,
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {lab.title}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    Verified on {lab.date} • Rating: <strong style={{ color: lab.color }}>{lab.grade}</strong>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: lab.color }}>
-                      {lab.score}%
+            {completedLabs.map((lab) => {
+              const expTitle = EXPERIMENT_TRANSLATIONS[lab.id]?.[language]?.title || lab.title;
+              return (
+                <div
+                  key={lab.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderRadius: 10,
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {expTitle}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {t('progress.verifiedOn', { date: lab.date }, `Verified on ${lab.date}`)} • {t('progress.rating', 'Rating:')} <strong style={{ color: lab.color }}>{getGradeText(lab.grade)}</strong>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onLaunchExperiment(lab.id)}
-                    style={{
-                      all: 'unset',
-                      cursor: 'pointer',
-                      fontSize: '0.75rem',
-                      color: '#2563eb',
-                      fontWeight: 600,
-                      padding: '4px 10px',
-                      borderRadius: 6,
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    Redo →
-                  </button>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '1.1rem', fontWeight: 800, color: lab.color }}>
+                        {lab.score}%
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => onLaunchExperiment(lab.id)}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                        color: '#2563eb',
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      {t('progress.redo', 'Redo →')}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -189,7 +237,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           }}
         >
           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px' }}>
-            Earned Accreditations
+            {t('progress.earnedAccreditations', 'Earned Accreditations')}
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -237,3 +285,4 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
     </div>
   );
 };
+

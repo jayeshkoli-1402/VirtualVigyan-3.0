@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore';
 
 // VirtualVigyan Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAa0ZyBQK_Yl4RYuWVFBV7irbTOisfrNK4',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'virtual-vigyan.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'virtual-vigyan',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'virtual-vigyan.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '485959492647',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:485959492647:web:323914fd05696831f25a02',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyABmdEtjq3RCSusy_yIXGN_jN1voBW3M6c',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'virtualvigyan.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'virtualvigyan',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'virtualvigyan.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '25318847855',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:25318847855:web:0d21dcff293e9250e6a49a',
 };
 
 // Initialize Firebase App instance

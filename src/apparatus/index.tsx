@@ -3248,7 +3248,7 @@ const Stopwatch: React.FC<ApparatusProps> = ({
   label = 'Digital Stopwatch',
   highlighted = false,
   width = 110,
-  height = 120,
+  height = 136,
   variables = {},
   flags = {},
   extraProps = {},
@@ -3261,7 +3261,7 @@ const Stopwatch: React.FC<ApparatusProps> = ({
   const onToggle = extraProps.onToggleStopwatch as (() => void) | undefined;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 110 120" fill="none">
+    <svg width={width} height={height} viewBox="0 0 110 136" fill="none">
       {/* Top buttons */}
       <rect x="49" y="6" width="12" height="10" rx="2" fill="#475569" stroke="#334155" strokeWidth="1.5" />
       <rect x="22" y="14" width="10" height="8" rx="2" fill="#64748b" transform="rotate(-30 27 18)" />
@@ -3317,11 +3317,32 @@ const Stopwatch: React.FC<ApparatusProps> = ({
         {isRunning ? 'RUNNING' : 'STOPPED'}
       </text>
 
-      {/* Label */}
+      {/* Label Badge: Docked cleanly below the dial casing with high-contrast pill background */}
       {label && (
-        <text x="55" y="117" textAnchor="middle" fontSize="8.5" fontWeight="600" fill="#475569">
-          {label}
-        </text>
+        <g transform="translate(55, 125)">
+          <rect
+            x={-Math.min(52, Math.max(34, (label.length * 3.2) + 8))}
+            y="-7.5"
+            width={Math.min(104, Math.max(68, (label.length * 6.4) + 16))}
+            height="15"
+            rx="5"
+            fill="var(--bg-card, rgba(255, 255, 255, 0.96))"
+            stroke="var(--border, rgba(203, 213, 225, 0.85))"
+            strokeWidth="1"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="0"
+            y="3.5"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="var(--text-secondary, #334155)"
+            letterSpacing="0.02em"
+          >
+            {label}
+          </text>
+        </g>
       )}
     </svg>
   );
@@ -3419,11 +3440,32 @@ const PHMeter: React.FC<ApparatusProps> = ({
         <circle cx="3.5" cy="30.5" r="1.5" fill="#ffffff" opacity="0.6" />
       </g>
 
-      {/* Label */}
+      {/* Label Badge */}
       {label && (
-        <text x="80" y="136" textAnchor="middle" fontSize="10" fontWeight="700" fill="#334155" letterSpacing="0.02em">
-          {label}
-        </text>
+        <g transform="translate(80, 133)">
+          <rect
+            x={-Math.min(70, Math.max(40, (label.length * 3.4) + 8))}
+            y="-7.5"
+            width={Math.min(140, Math.max(80, (label.length * 6.8) + 16))}
+            height="15"
+            rx="5"
+            fill="var(--bg-card, rgba(255, 255, 255, 0.96))"
+            stroke="var(--border, rgba(203, 213, 225, 0.85))"
+            strokeWidth="1"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="0"
+            y="3.5"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="var(--text-secondary, #334155)"
+            letterSpacing="0.02em"
+          >
+            {label}
+          </text>
+        </g>
       )}
     </svg>
   );
@@ -3515,11 +3557,32 @@ const ConductivityBridge: React.FC<ApparatusProps> = ({
         <line x1="5" y1="2" x2="5" y2="20" stroke="#475569" strokeWidth="0.8" />
       </g>
 
-      {/* Label */}
+      {/* Label Badge */}
       {label && (
-        <text x="80" y="136" textAnchor="middle" fontSize="10" fontWeight="700" fill="#334155" letterSpacing="0.02em">
-          {label}
-        </text>
+        <g transform="translate(80, 133)">
+          <rect
+            x={-Math.min(70, Math.max(40, (label.length * 3.4) + 8))}
+            y="-7.5"
+            width={Math.min(140, Math.max(80, (label.length * 6.8) + 16))}
+            height="15"
+            rx="5"
+            fill="var(--bg-card, rgba(255, 255, 255, 0.96))"
+            stroke="var(--border, rgba(203, 213, 225, 0.85))"
+            strokeWidth="1"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
+          />
+          <text
+            x="0"
+            y="3.5"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="700"
+            fill="var(--text-secondary, #334155)"
+            letterSpacing="0.02em"
+          >
+            {label}
+          </text>
+        </g>
       )}
     </svg>
   );

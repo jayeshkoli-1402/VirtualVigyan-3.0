@@ -83,6 +83,20 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     config.steps.some(s => s.id === 'titrating' || s.id.includes('titrat'))
   );
 
+  // Swirlable vessel presence (Conical flask, reaction flask, test tube, beaker, or active titration)
+  const hasSwirlableApparatus = Boolean(
+    hasBurette ||
+    config.apparatus.some(a => ['ConicalFlask', 'Flask', 'TestTube', 'Beaker'].includes(a.component)) ||
+    Object.keys(state.placedApparatus).some(id => ['flask', 'beaker', 'tube'].some(k => id.toLowerCase().includes(k)))
+  );
+
+  // Magnetic stirrer presence (Stirrer plate in apparatus, bench background, or placed items)
+  const hasMagneticStirrer = Boolean(
+    config.apparatus.some(a => a.component === 'MagneticStirrer') ||
+    config.bench.backgroundElements?.some(b => b.component === 'MagneticStirrer') ||
+    Object.keys(state.placedApparatus).some(id => id.toLowerCase().includes('stirrer'))
+  );
+
   const isBuretteFilled = Boolean(
     hasBurette && (
       state.flags.buretteFilled === true ||
@@ -387,20 +401,20 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <div
             style={{
               position: 'absolute',
-              bottom: 10,
+              top: 14,
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 30,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
               border: `1.5px solid ${isCleanedAndDry ? '#10b981' : hasChromic ? '#ea580c' : '#0284c7'}`,
               borderRadius: 'var(--radius-lg)',
               padding: '8px 16px',
-              boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
               animation: 'fadeIn 0.3s ease-out',
-              maxWidth: '94%',
+              maxWidth: '92%',
             }}
           >
             <div style={{ fontSize: 18 }}>
@@ -517,20 +531,20 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <div
             style={{
               position: 'absolute',
-              bottom: 10,
+              top: 14,
               left: '50%',
               transform: 'translateX(-50%)',
               zIndex: 30,
-              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 249, 255, 0.97))',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.98))',
               border: `1.5px solid ${isTiming ? '#059669' : isCompleted ? '#10b981' : currentTime > 0 ? '#f59e0b' : '#0284c7'}`,
               borderRadius: 'var(--radius-lg)',
               padding: '8px 16px',
-              boxShadow: '0 -4px 20px -4px rgba(2, 132, 199, 0.2), 0 4px 10px -4px rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
               display: 'flex',
               alignItems: 'center',
               gap: 12,
               animation: 'fadeIn 0.3s ease-out',
-              maxWidth: '94%',
+              maxWidth: '92%',
             }}
           >
             <div
@@ -928,62 +942,66 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           </div>
         )}
 
-        {/* Shake / Swirl Flask button */}
-        <button
-          type="button"
-          id="btn-generic-shake-flask"
-          onClick={() => setIsSwirling(prev => !prev)}
-          title="Continuously shake & swirl the conical flask for thorough mixing"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '5px 10px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.72rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            border: isSwirling ? '1px solid var(--primary)' : '1px solid var(--border)',
-            background: isSwirling ? 'var(--primary)' : 'var(--bg-secondary)',
-            color: isSwirling ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: isSwirling ? '0 2px 8px rgba(79, 70, 229, 0.35)' : 'none',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
-          <span>{isSwirling ? t('bench.swirlingOn') : `${t('lab.shake')} / ${t('lab.swirling')}`}</span>
-        </button>
+        {/* Shake / Swirl Flask button (Only for experiments with swirlable glassware or active titrations) */}
+        {hasSwirlableApparatus && (
+          <button
+            type="button"
+            id="btn-generic-shake-flask"
+            onClick={() => setIsSwirling(prev => !prev)}
+            title="Continuously shake & swirl the conical flask for thorough mixing"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: isSwirling ? '1px solid var(--primary)' : '1px solid var(--border)',
+              background: isSwirling ? 'var(--primary)' : 'var(--bg-secondary)',
+              color: isSwirling ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: isSwirling ? '0 2px 8px rgba(79, 70, 229, 0.35)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{ fontSize: '0.85rem', display: 'inline-block', animation: isSwirling ? 'spinBarRapid 1s linear infinite' : 'none' }}>🔄</span>
+            <span>{isSwirling ? t('bench.swirlingOn') : `${t('lab.shake')} / ${t('lab.swirling')}`}</span>
+          </button>
+        )}
 
-        {/* Magnetic Stirrer Toggle */}
-        <button
-          type="button"
-          id="btn-generic-toggle-stirrer"
-          onClick={() => {
-            const next = !isStirring;
-            setIsStirring(next);
-            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'magnetic-stirrer' } });
-            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stir-solution' } });
-          }}
-          title="Turn magnetic stirrer motor ON or OFF"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '5px 10px',
-            borderRadius: 'var(--radius-md)',
-            fontSize: '0.72rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            border: isStirring ? '1px solid #0284c7' : '1px solid var(--border)',
-            background: isStirring ? '#0284c7' : 'var(--bg-secondary)',
-            color: isStirring ? '#ffffff' : 'var(--text-secondary)',
-            boxShadow: isStirring ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <span style={{ fontSize: '0.85rem' }}>🧲</span>
-          <span>{isStirring ? t('bench.stirrerRun') : t('bench.stirrerPlate')}</span>
-        </button>
+        {/* Magnetic Stirrer Toggle (Only for experiments with a magnetic stirrer plate) */}
+        {hasMagneticStirrer && (
+          <button
+            type="button"
+            id="btn-generic-toggle-stirrer"
+            onClick={() => {
+              const next = !isStirring;
+              setIsStirring(next);
+              dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'magnetic-stirrer' } });
+              dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'stir-solution' } });
+            }}
+            title="Turn magnetic stirrer motor ON or OFF"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: isStirring ? '1px solid #0284c7' : '1px solid var(--border)',
+              background: isStirring ? '#0284c7' : 'var(--bg-secondary)',
+              color: isStirring ? '#ffffff' : 'var(--text-secondary)',
+              boxShadow: isStirring ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span style={{ fontSize: '0.85rem' }}>🧲</span>
+            <span>{isStirring ? t('bench.stirrerRun') : t('bench.stirrerPlate')}</span>
+          </button>
+        )}
 
         {/* Burette Titration Controls (Only for experiments featuring a burette) */}
         {hasBurette && (
@@ -1127,7 +1145,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         />
       )}
 
-      {/* Mark Endpoint button (when in a step that needs it) */}
+      {/* Mark Endpoint button (Docked cleanly above the action bar during titration step) */}
       {config.steps[state.currentStepIndex]?.id === 'titrating' && (
         <button
           id="btn-mark-endpoint"
@@ -1135,11 +1153,13 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           onClick={() => dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'mark-endpoint' } })}
           style={{
             position: 'absolute',
-            bottom: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 20,
+            bottom: 58,
+            left: 12,
+            zIndex: 36,
             fontSize: '0.8rem',
+            padding: '7px 14px',
+            background: 'linear-gradient(135deg, #059669, #047857)',
+            boxShadow: '0 4px 14px rgba(5, 150, 105, 0.4)',
           }}
         >
           ✓ {t('lab.markEndpoint')}

@@ -11,9 +11,10 @@ import { JoinLabModal } from './JoinLabModal';
 
 interface MyClassesViewProps {
   onLaunchPrivateExperiment: (experimentId: string, lab: PrivateLab, attemptNumber: number) => void;
+  onOpenTeacherPortal?: () => void;
 }
 
-export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExperiment }) => {
+export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExperiment, onOpenTeacherPortal }) => {
   const { user } = useAuth();
   const [enrolledLabs, setEnrolledLabs] = useState<PrivateLab[]>([]);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
@@ -52,6 +53,54 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
         boxSizing: 'border-box',
       }}
     >
+      {/* Teacher Guidance Alert */}
+      {user?.role === 'teacher' && (
+        <div
+          style={{
+            padding: '16px 20px',
+            borderRadius: 14,
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(5, 150, 105, 0.06))',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 24 }}>👨‍🏫</span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#059669' }}>
+                You are logged in as a Teacher!
+              </div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                To create private classroom labs, assign experiments, and view live student submissions, visit your Teacher Portal.
+              </div>
+            </div>
+          </div>
+          {onOpenTeacherPortal && (
+            <button
+              onClick={onOpenTeacherPortal}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                padding: '8px 18px',
+                borderRadius: 10,
+                background: '#059669',
+                color: '#ffffff',
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)',
+              }}
+            >
+              Open Teacher Portal ➔
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Top Banner & Header */}
       <div
         className="clay-card"

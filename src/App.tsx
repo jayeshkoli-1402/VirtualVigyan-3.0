@@ -564,6 +564,10 @@ const AppContent: React.FC = () => {
             ) : activeTab === 'classes' ? (
               <MyClassesView
                 onLaunchPrivateExperiment={handleLaunchPrivateExperiment}
+                onOpenTeacherPortal={() => {
+                  setActiveTab('teacher');
+                  setActiveExperiment('teacher');
+                }}
               />
             ) : activeTab === 'theory-notes' ? (
               <TheoryNotesView

@@ -43,7 +43,10 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
   const baseNavLinks: Array<{ id: NavItem; label: string; icon: string }> = [
     { id: 'home', label: t('nav.home', 'Home'), icon: '🏠' },
     { id: 'experiments', label: t('nav.experiments', 'Browse Experiments'), icon: '🧪' },
-    { id: 'classes', label: t('nav.classes', 'My Classes'), icon: '📚' },
+    // "My Classes" is exclusively for students enrolled in classes/batches; teachers manage classes via Teacher Portal
+    ...(user?.role !== 'teacher'
+      ? [{ id: 'classes' as NavItem, label: t('nav.classes', 'My Classes'), icon: '📚' }]
+      : []),
     { id: 'theory-notes', label: t('nav.theoryNotes', 'Theory & Notes'), icon: '📖' },
     { id: 'progress', label: t('nav.progress', 'Progress & Analytics'), icon: '📊' },
   ];

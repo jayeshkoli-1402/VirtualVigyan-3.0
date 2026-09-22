@@ -146,6 +146,14 @@ const AppContent: React.FC = () => {
     sessionStorage.setItem('vv_activeTab', activeTab);
   }, [activeTab]);
 
+  // Ensure teachers are never kept on the student-only 'classes' tab
+  useEffect(() => {
+    if (user?.role === 'teacher' && activeTab === 'classes') {
+      setActiveTab('teacher');
+      setActiveExperiment('teacher');
+    }
+  }, [user?.role, activeTab]);
+
   // Automatically open pre-lab Safety Briefing when entering an experiment
   useEffect(() => {
     const isActualExperiment =

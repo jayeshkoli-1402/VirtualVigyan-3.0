@@ -43,7 +43,16 @@ const GenericResults: React.FC<GenericResultsProps> = ({
   }, [config, state, scoreResult, user, language, t, tDynamic]);
 
   useEffect(() => {
-    if (user && !recordedRef.current) {
+    const effectiveUser = user || (() => {
+      try {
+        const raw = localStorage.getItem('vv_active_user') || localStorage.getItem('vv_user');
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (effectiveUser && !recordedRef.current) {
       recordedRef.current = true;
       const startTime = (window as any)._vv_lab_start_time || Date.now() - 120000;
       const elapsedSeconds = Math.max(15, Math.round((Date.now() - startTime) / 1000));
@@ -51,10 +60,10 @@ const GenericResults: React.FC<GenericResultsProps> = ({
       if (privateLabContext) {
         recordPrivateLabSubmission({
           labId: privateLabContext.lab.id,
-          studentId: user.id,
-          studentName: user.name || 'Student',
-          studentEmail: user.email,
-          avatar: user.avatar || '🎓',
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
           experimentId: config.id,
           experimentTitle: config.title,
           score: scoreResult.totalScore,
@@ -66,10 +75,10 @@ const GenericResults: React.FC<GenericResultsProps> = ({
         });
       } else {
         recordStudentPerformance({
-          studentId: user.id,
-          studentName: user.name || 'Student',
-          studentEmail: user.email,
-          avatar: user.avatar || '🎓',
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
           experimentId: config.id,
           experimentTitle: config.title,
           type: 'practice',

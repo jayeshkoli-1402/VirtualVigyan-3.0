@@ -15,6 +15,7 @@ import {
   getPrivateLabFromFirestoreByCode,
   getAllPrivateLabsFromFirestore,
   enrollStudentInFirestoreLab,
+  addSubmissionToFirestoreLab,
   deletePrivateLabFromFirestore,
 } from '../firebase/firestoreService';
 
@@ -131,38 +132,71 @@ export function getAllPrivateLabs(): PrivateLab[] {
 }
 
 /**
- * Sync private labs with Firestore cloud database
+ * Sync private labs with Firestore cloud database (two-way merge, never drops teacher labs)
  */
 export async function syncPrivateLabsWithCloud(): Promise<PrivateLab[]> {
   try {
     const remoteLabs = await getAllPrivateLabsFromFirestore();
+    const localLabs = getAllPrivateLabs();
+    const map = new Map<string, PrivateLab>();
+
+    // 1. Initialize map with local labs
+    localLabs.forEach((l) => map.set(l.id, l));
+
+    // 2. Merge remote labs from cloud
     if (remoteLabs && remoteLabs.length > 0) {
-      const localLabs = getAllPrivateLabs();
-      const map = new Map<string, PrivateLab>();
-      // Preserve local labs
-      localLabs.forEach((l) => map.set(l.id, l));
-      // Merge cloud labs
       remoteLabs.forEach((rl) => {
         const existing = map.get(rl.id);
         if (existing) {
-          // Merge enrolled students and submissions
+          // Merge enrolled students (union by lowercase email)
           const enrolledMap = new Map<string, PrivateLabEnrolledStudent>();
           (existing.enrolledStudents || []).forEach((s) => enrolledMap.set(s.studentEmail.toLowerCase(), s));
           (rl.enrolledStudents || []).forEach((s) => enrolledMap.set(s.studentEmail.toLowerCase(), s));
 
+          // Merge submissions (union by submission ID or composite student attempt key)
+          const subMap = new Map<string, PrivateLabSubmission>();
+          (existing.submissions || []).forEach((s) => {
+            const key = s.id || `${s.studentEmail.toLowerCase()}_${s.experimentId}_${s.attemptNumber}`;
+            subMap.set(key, s);
+          });
+          (rl.submissions || []).forEach((s) => {
+            const key = s.id || `${s.studentEmail.toLowerCase()}_${s.experimentId}_${s.attemptNumber}`;
+            subMap.set(key, s);
+          });
+
+          // Sort submissions newest first
+          const mergedSubmissions = Array.from(subMap.values()).sort(
+            (a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
+          );
+
           map.set(rl.id, {
-            ...rl,
             ...existing,
+            ...rl,
+            status: rl.status || existing.status,
+            dueDate: rl.dueDate || existing.dueDate,
             enrolledStudents: Array.from(enrolledMap.values()),
+            submissions: mergedSubmissions,
           });
         } else {
           map.set(rl.id, rl);
         }
       });
-      const merged = Array.from(map.values());
-      savePrivateLabs(merged);
-      return merged;
     }
+
+    const merged = Array.from(map.values());
+    savePrivateLabs(merged);
+
+    // 3. Two-way safety push: Ensure any local teacher-created lab is backed up to Firestore
+    const remoteIdSet = new Set((remoteLabs || []).map((l) => l.id));
+    for (const localLab of localLabs) {
+      if (!remoteIdSet.has(localLab.id) && !localLab.id.startsWith('lab_seed_')) {
+        savePrivateLabToFirestore(localLab).catch((err) => {
+          console.warn('[PrivateLab] Cloud backup notice for local lab:', err);
+        });
+      }
+    }
+
+    return merged;
   } catch (e) {
     console.warn('[PrivateLab] Cloud sync warning:', e);
   }
@@ -222,6 +256,7 @@ export function generateLabCode(prefix = 'CHEM'): string {
 
 /**
  * Create a new private lab (persists locally and to Firestore cloud)
+ * If no due date is provided, defaults to a 5-day deadline.
  */
 export function createPrivateLab(
   params: Omit<PrivateLab, 'id' | 'code' | 'createdAt' | 'enrolledStudents' | 'submissions'> & {
@@ -232,11 +267,16 @@ export function createPrivateLab(
   const id = `lab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   const code = (params.customCode?.trim().toUpperCase() || generateLabCode()).replace(/\s+/g, '-');
 
+  // Default to 5-day deadline if teacher does not set one
+  const fiveDaysLater = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const dueDate = params.dueDate?.trim() || fiveDaysLater;
+
   const newLab: PrivateLab = {
     ...params,
     id,
     code,
     status: params.status || 'active',
+    dueDate,
     createdAt: new Date().toISOString(),
     enrolledStudents: [],
     submissions: [],
@@ -489,7 +529,6 @@ export function recordPrivateLabSubmission(
 ): PrivateLabSubmission | null {
   const labs = getAllPrivateLabs();
   const lab = labs.find((l) => l.id === submissionData.labId);
-  if (!lab) return null;
 
   const percentage = Math.round(
     (submissionData.score / (submissionData.maxScore || 100)) * 100
@@ -502,17 +541,31 @@ export function recordPrivateLabSubmission(
     completedAt: new Date().toISOString(),
   };
 
+  let updatedLab: PrivateLab | undefined;
   const updatedLabs = labs.map((l) => {
     if (l.id === submissionData.labId) {
-      return {
+      updatedLab = {
         ...l,
-        submissions: [...l.submissions, submission],
+        submissions: [submission, ...(l.submissions || [])],
       };
+      return updatedLab;
     }
     return l;
   });
 
-  savePrivateLabs(updatedLabs);
+  if (updatedLab) {
+    savePrivateLabs(updatedLabs);
+  }
+
+  // Push submission directly to Firestore cloud database
+  addSubmissionToFirestoreLab(submissionData.labId, submission).catch((err) => {
+    console.warn('[PrivateLab] Cloud submission push warning:', err);
+  });
+
+  // Ensure full lab document is synced to Firestore
+  if (updatedLab) {
+    savePrivateLabToFirestore(updatedLab).catch(() => {});
+  }
 
   // Synchronously record to unified student history
   try {
@@ -524,9 +577,9 @@ export function recordPrivateLabSubmission(
       experimentId: submission.experimentId,
       experimentTitle: submission.experimentTitle,
       type: 'private_lab',
-      labId: lab.id,
-      labTitle: lab.title,
-      labCode: lab.code,
+      labId: submissionData.labId,
+      labTitle: lab?.title || 'Classroom Lab',
+      labCode: lab?.code || '',
       score: submission.score,
       maxScore: submission.maxScore,
       attemptNumber: submission.attemptNumber,

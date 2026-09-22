@@ -80,15 +80,26 @@ export async function getUserProfile(userId: string): Promise<User | null> {
   }
 }
 
-// Remove undefined values to prevent Firestore 'Unsupported field value: undefined' errors
-function sanitizeForFirestore(obj: Record<string, any>): Record<string, any> {
-  const clean: Record<string, any> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    if (value !== undefined) {
-      clean[key] = value;
-    }
+// Deeply remove undefined values to prevent Firestore 'Unsupported field value: undefined' errors
+function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as unknown as T;
   }
-  return clean;
+  if (Array.isArray(data)) {
+    return data
+      .filter((item) => item !== undefined)
+      .map((item) => sanitizeForFirestore(item)) as unknown as T;
+  }
+  if (typeof data === 'object' && !(data instanceof Date)) {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data as Record<string, any>)) {
+      if (value !== undefined) {
+        clean[key] = sanitizeForFirestore(value);
+      }
+    }
+    return clean as T;
+  }
+  return data;
 }
 
 /**
@@ -186,7 +197,7 @@ export async function deleteUserFromFirestore(
 
 // ── Private Lab Firestore Persistence ──
 
-import type { PrivateLab, PrivateLabEnrolledStudent } from '../types/privateLab';
+import type { PrivateLab, PrivateLabEnrolledStudent, PrivateLabSubmission } from '../types/privateLab';
 
 /**
  * Save or update a private lab document in Firestore
@@ -280,6 +291,45 @@ export async function enrollStudentInFirestoreLab(
     return { success: false, error: 'Lab not found in cloud database' };
   } catch (err: unknown) {
     const error = err as { code?: string; message?: string };
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Append or update student submission in Firestore private lab
+ */
+export async function addSubmissionToFirestoreLab(
+  labId: string,
+  submission: PrivateLabSubmission
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const labDocRef = doc(db, 'private_labs', labId);
+    const snap = await withTimeout(getDoc(labDocRef), 3000, null as any);
+    if (snap && snap.exists && snap.exists()) {
+      const data = snap.data() as PrivateLab;
+      const submissions = Array.isArray(data.submissions) ? [...data.submissions] : [];
+      const existingIdx = submissions.findIndex(
+        (s) => s.id === submission.id || (
+          s.studentEmail?.toLowerCase() === submission.studentEmail?.toLowerCase() &&
+          s.experimentId === submission.experimentId &&
+          s.attemptNumber === submission.attemptNumber
+        )
+      );
+
+      if (existingIdx >= 0) {
+        submissions[existingIdx] = submission;
+      } else {
+        submissions.unshift(submission);
+      }
+
+      const sanitizedSubmissions = sanitizeForFirestore(submissions);
+      await withTimeout(updateDoc(labDocRef, { submissions: sanitizedSubmissions }), 3000, undefined);
+      return { success: true };
+    }
+    return { success: false, error: 'Lab not found in cloud database' };
+  } catch (err: unknown) {
+    const error = err as { code?: string; message?: string };
+    console.warn('[Firestore] Error saving submission to cloud:', error);
     return { success: false, error: error.message };
   }
 }

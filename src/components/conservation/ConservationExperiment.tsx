@@ -31,12 +31,19 @@ import type { HazardWarningData } from './ChemicalHazardWarningToast';
 import ConservationVRLab from './vr/ConservationVRLab';
 import { useLanguage } from '../../i18n/LanguageContext';
 
+import type { PrivateLabContext } from '../../types/privateLab';
+
 interface ConservationExperimentProps {
   onBackToSelector: () => void;
   initialVRMode?: boolean;
+  privateLabContext?: PrivateLabContext;
 }
 
-const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackToSelector, initialVRMode = false }) => {
+const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
+  onBackToSelector,
+  initialVRMode = false,
+  privateLabContext,
+}) => {
   const { t } = useLanguage();
   const [isVRMode, setIsVRMode] = useState<boolean>(initialVRMode);
   const [state, dispatch] = useReducer(conservationReducer, conservationInitialState);
@@ -259,6 +266,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({ onBackT
               state={state}
               dispatch={dispatch}
               onBackToSelector={onBackToSelector}
+              privateLabContext={privateLabContext}
             />
           </div>
         )}

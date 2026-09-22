@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { TitrationState, TitrationAction } from '../engine/titrationState';
 import { evaluateEndpoint } from '../engine/validation';
 import { EQUIVALENCE_VOLUME_ML } from '../engine/chemistryRules';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAuth } from '../auth/AuthContext';
+import { recordPrivateLabSubmission } from '../services/privateLabService';
+import { recordStudentPerformance } from '../services/studentHistoryService';
+import type { PrivateLabContext } from '../types/privateLab';
 
 interface ResultsScreenProps {
   state: TitrationState;
   dispatch: React.Dispatch<TitrationAction>;
+  privateLabContext?: PrivateLabContext;
 }
 
-const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
+const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch, privateLabContext }) => {
   const { t, tDynamic } = useLanguage();
+  const { user } = useAuth();
+  const recordedRef = useRef(false);
   const endpointEval = evaluateEndpoint(state.endpointMarkedAt ?? 0);
 
   // Score breakdown
@@ -35,6 +42,66 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch }) => {
   };
 
   const scoreColor = getScoreColor(totalScore);
+
+  useEffect(() => {
+    const effectiveUser = user || (() => {
+      try {
+        const raw = localStorage.getItem('vv_active_user') || localStorage.getItem('vv_user');
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (effectiveUser && !recordedRef.current) {
+      recordedRef.current = true;
+      const mistakes: string[] = [];
+      if ((state.endpointMarkedAt ?? 0) > 27) {
+        mistakes.push('Overshot equivalence endpoint');
+      }
+      if (!state.calculationCorrect) {
+        mistakes.push('Molarity calculation discrepancy');
+      }
+
+      if (privateLabContext) {
+        recordPrivateLabSubmission({
+          labId: privateLabContext.lab.id,
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
+          experimentId: 'titration',
+          experimentTitle: 'Acid-Base Titration',
+          score: totalScore,
+          maxScore: 100,
+          attemptNumber: privateLabContext.attemptNumber || 1,
+          timeSpentSeconds: 150,
+          mistakes,
+          calculationAnswers: state.studentConcentration
+            ? { studentConcentration: state.studentConcentration }
+            : undefined,
+        });
+      } else {
+        recordStudentPerformance({
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
+          experimentId: 'titration',
+          experimentTitle: 'Acid-Base Titration',
+          type: 'practice',
+          score: totalScore,
+          maxScore: 100,
+          attemptNumber: 1,
+          timeSpentSeconds: 150,
+          mistakes,
+          calculationAnswers: state.studentConcentration
+            ? { studentConcentration: state.studentConcentration }
+            : undefined,
+        });
+      }
+    }
+  }, [user, privateLabContext, totalScore, state]);
 
   return (
     <div className="animate-slide-in-up" style={{ maxWidth: 480, margin: '0 auto' }}>

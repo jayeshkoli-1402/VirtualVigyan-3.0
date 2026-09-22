@@ -107,7 +107,14 @@ const AppContent: React.FC = () => {
   const [howItWorksModalOpen, setHowItWorksModalOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [joinLabModalOpen, setJoinLabModalOpen] = useState(false);
-  const [activePrivateLabContext, setActivePrivateLabContext] = useState<PrivateLabContext | null>(null);
+  const [activePrivateLabContext, setActivePrivateLabContext] = useState<PrivateLabContext | null>(() => {
+    try {
+      const stored = sessionStorage.getItem('vv_active_private_lab_context');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const [state, dispatch] = useReducer(titrationReducer, initialState);
   const [mistakeMessage, setMistakeMessage] = useState<string | null>(null);
@@ -145,6 +152,14 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     sessionStorage.setItem('vv_activeTab', activeTab);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activePrivateLabContext) {
+      sessionStorage.setItem('vv_active_private_lab_context', JSON.stringify(activePrivateLabContext));
+    } else {
+      sessionStorage.removeItem('vv_active_private_lab_context');
+    }
+  }, [activePrivateLabContext]);
 
   // Ensure teachers are never kept on the student-only 'classes' tab
   useEffect(() => {
@@ -324,6 +339,7 @@ const AppContent: React.FC = () => {
   const handleBackToSelector = () => {
     setActiveExperiment('select');
     setActivePrivateLabContext(null);
+    sessionStorage.removeItem('vv_active_private_lab_context');
     dispatch({ type: 'RESET' });
   };
 
@@ -850,12 +866,19 @@ const AppContent: React.FC = () => {
 
         {/* Conservation Experiment (2D Lab) */}
         {activeExperiment === 'conservation' && (
-          <ConservationExperiment onBackToSelector={handleBackToSelector} />
+          <ConservationExperiment
+            onBackToSelector={handleBackToSelector}
+            privateLabContext={activePrivateLabContext || undefined}
+          />
         )}
 
         {/* Conservation Experiment (3D VR Mode) */}
         {activeExperiment === 'conservation-vr' && (
-          <ConservationExperiment initialVRMode={true} onBackToSelector={handleBackToSelector} />
+          <ConservationExperiment
+            initialVRMode={true}
+            onBackToSelector={handleBackToSelector}
+            privateLabContext={activePrivateLabContext || undefined}
+          />
         )}
 
         {/* Titration Experiment */}
@@ -878,7 +901,11 @@ const AppContent: React.FC = () => {
             {/* RESULTS screen */}
             {state.step === Step.RESULTS && (
               <div style={{ flex: 1, padding: 20 }}>
-                <ResultsScreen state={state} dispatch={dispatch} />
+                <ResultsScreen
+                  state={state}
+                  dispatch={dispatch}
+                  privateLabContext={activePrivateLabContext || undefined}
+                />
               </div>
             )}
 

@@ -1,17 +1,24 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ConservationState, ConservationAction } from '../../engine/conservationState';
 import { computeScore, evaluateCalculation } from '../../engine/conservationValidation';
 import { calculateExpectedDeltaM, calculateExpectedDeviation, REACTION_EQUATION } from '../../engine/conservationRules';
 import { useLanguage } from '../../i18n/LanguageContext';
+import { useAuth } from '../../auth/AuthContext';
+import { recordPrivateLabSubmission } from '../../services/privateLabService';
+import { recordStudentPerformance } from '../../services/studentHistoryService';
+import type { PrivateLabContext } from '../../types/privateLab';
 
 interface ConservationResultsProps {
   state: ConservationState;
   dispatch: React.Dispatch<ConservationAction>;
   onBackToSelector: () => void;
+  privateLabContext?: PrivateLabContext;
 }
 
-const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispatch, onBackToSelector }) => {
+const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispatch, onBackToSelector, privateLabContext }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const recordedRef = useRef(false);
   const m1 = state.initialMass ?? 0;
   const m2 = state.finalMass ?? 0;
   const expectedDeltaM = calculateExpectedDeltaM(m1, m2);
@@ -32,6 +39,65 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
       dispatch({ type: 'COMPUTE_SCORE', payload: { score: computeScore(state) } });
     }
   }, [state, dispatch]);
+
+  useEffect(() => {
+    const effectiveUser = user || (() => {
+      try {
+        const raw = localStorage.getItem('vv_active_user') || localStorage.getItem('vv_user');
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })();
+
+    if (effectiveUser && !recordedRef.current) {
+      recordedRef.current = true;
+      const mistakes: string[] = [];
+      if (Math.abs(expectedDeviation) > 2) {
+        mistakes.push('Mass balance deviation recorded');
+      }
+
+      if (privateLabContext) {
+        recordPrivateLabSubmission({
+          labId: privateLabContext.lab.id,
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
+          experimentId: 'conservation',
+          experimentTitle: 'Law of Conservation of Mass',
+          score,
+          maxScore: 100,
+          attemptNumber: privateLabContext.attemptNumber || 1,
+          timeSpentSeconds: 160,
+          mistakes,
+          calculationAnswers: {
+            deltaM: state.studentDeltaM ?? 0,
+            deviationPercent: state.studentDeviationPercent ?? 0,
+          },
+        });
+      } else {
+        recordStudentPerformance({
+          studentId: effectiveUser.id,
+          studentName: effectiveUser.name || 'Student',
+          studentEmail: effectiveUser.email,
+          avatar: effectiveUser.avatar || '🎓',
+          experimentId: 'conservation',
+          experimentTitle: 'Law of Conservation of Mass',
+          type: 'practice',
+          score,
+          maxScore: 100,
+          attemptNumber: 1,
+          timeSpentSeconds: 160,
+          mistakes,
+          calculationAnswers: {
+            deltaM: state.studentDeltaM ?? 0,
+            deviationPercent: state.studentDeviationPercent ?? 0,
+          },
+        });
+      }
+    }
+  }, [user, privateLabContext, score, state, expectedDeviation]);
 
   const getScoreColor = (s: number) => {
     if (s >= 85) return '#059669';

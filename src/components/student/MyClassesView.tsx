@@ -31,6 +31,18 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
     syncPrivateLabsWithCloud().then(() => {
       refreshLabs();
     });
+
+    const handleUpdate = () => {
+      refreshLabs();
+    };
+
+    window.addEventListener('vv_privatelabs_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    return () => {
+      window.removeEventListener('vv_privatelabs_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, [user]);
 
   const allExperiments = getAllExperiments();
@@ -263,6 +275,21 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
                       >
                         {lab.status === 'active' ? '● Active Session' : 'Submissions Closed'}
                       </span>
+                      {lab.dueDate && (
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            background: 'rgba(217, 119, 6, 0.12)',
+                            color: '#d97706',
+                            border: '1px solid rgba(217, 119, 6, 0.25)',
+                          }}
+                        >
+                          📅 Due: {lab.dueDate}
+                        </span>
+                      )}
                     </div>
 
                     <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 4 }}>

@@ -38,7 +38,8 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [strictSafety, setStrictSafety] = useState(true);
   const [customCode, setCustomCode] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const getFiveDaysLater = () => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const [dueDate, setDueDate] = useState(() => getFiveDaysLater());
   const [formError, setFormError] = useState<string | null>(null);
 
   const experiments = getAllExperiments();
@@ -69,8 +70,10 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
     window.addEventListener('vv_privatelabs_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
 
-    // Continuous real-time auto-sync (every 2.5s) so teacher never has to refresh tab
-    const interval = setInterval(loadLabs, 2500);
+    // Continuous real-time auto-sync (every 3.5s) to pull remote student submissions live
+    const interval = setInterval(() => {
+      syncPrivateLabsWithCloud().then(loadLabs);
+    }, 3500);
 
     return () => {
       window.removeEventListener('vv_privatelabs_updated', handleUpdate);
@@ -111,6 +114,10 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
       return;
     }
 
+    // Default to 5-day deadline if teacher does not set one
+    const fiveDaysLater = getFiveDaysLater();
+    const finalDueDate = dueDate.trim() || fiveDaysLater;
+
     createPrivateLab({
       title: title.trim(),
       targetClass,
@@ -129,7 +136,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
         strictSafety,
       },
       status: 'active',
-      dueDate: dueDate || undefined,
+      dueDate: finalDueDate,
       customCode: customCode.trim() || undefined,
     });
 
@@ -145,6 +152,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
     setTimeLimitMinutes(30);
     setMaxAttempts(1);
     setCustomCode('');
+    setDueDate(getFiveDaysLater());
     setFormError(null);
   };
 
@@ -259,19 +267,36 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                 <div>
                   {/* Top Bar with Class Badge and Status Toggle */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <span
-                      style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 800,
-                        textTransform: 'uppercase',
-                        padding: '3px 8px',
-                        borderRadius: 6,
-                        background: 'rgba(2, 132, 199, 0.12)',
-                        color: '#0284c7',
-                      }}
-                    >
-                      {lab.targetClass || 'Chemistry Batch'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          background: 'rgba(2, 132, 199, 0.12)',
+                          color: '#0284c7',
+                        }}
+                      >
+                        {lab.targetClass || 'Chemistry Batch'}
+                      </span>
+                      {lab.dueDate && (
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            background: 'rgba(217, 119, 6, 0.12)',
+                            color: '#d97706',
+                            border: '1px solid rgba(217, 119, 6, 0.25)',
+                          }}
+                        >
+                          📅 Due: {lab.dueDate}
+                        </span>
+                      )}
+                    </div>
 
                     <button
                       onClick={() => handleToggleStatus(lab.id)}
@@ -608,6 +633,9 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: 6 }}>
                     Submission Due Date:
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: 4 }}>
+                      (Assumes 5 days if blank)
+                    </span>
                   </label>
                   <input
                     type="date"
@@ -871,6 +899,11 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                 </div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 4 }}>
                   {detailsLab.targetClass} • {detailsLab.enrolledStudents.length} Students Enrolled • {detailsLab.submissions.length} Submissions
+                  {detailsLab.dueDate && (
+                    <span style={{ marginLeft: 8, color: '#d97706', fontWeight: 700 }}>
+                      • 📅 Due: {detailsLab.dueDate}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Assigned:</span>

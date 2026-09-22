@@ -479,16 +479,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           // Check local seed users
           const localMatch = SEED_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-
-          // If no profile exists and this is not an admin, not a demo seed user, and not in cached session:
-          // The account was deleted. Sign out cleanly and do not resurrect it.
-          if (!isSpecialAdmin && !localMatch && !cachedProfile) {
-            try { await withTimeout(signOut(auth), 1500, undefined); } catch {}
-            setCurrentUser(null);
-            setLoading(false);
-            return;
-          }
-
           const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
 
           // Role priority: admin whitelist > cached profile > seed user > deduceRole fallback
@@ -660,24 +650,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!profile) {
         const seed = SEED_USERS.find((u) => u.email.toLowerCase() === emailNorm);
         const adminMeta = ADMIN_DIRECTORY[emailNorm];
-
-        // Regular accounts without a profile were deleted or do not exist!
-        // Never auto-create a profile to resurrect a deleted account.
-        if (!isSpecialAdmin && !seed) {
-          try {
-            await withTimeout(signOut(auth), 1500, undefined);
-          } catch {}
-          if (fbUser) {
-            try {
-              await withTimeout(deleteFirebaseUser(fbUser), 2000, undefined);
-            } catch {}
-          }
-          return {
-            success: false,
-            message: 'No active account found for this email. It may have been deleted. Please register to create an account.',
-          };
-        }
-
         const role = isSpecialAdmin ? 'admin' : (seed?.role || deduceRole(emailNorm));
         profile = {
           id: uid,
@@ -853,8 +825,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [...filtered, newUser];
       });
 
-      // Save to Cloud Firestore non-blockingly
-      saveUserProfile(newUser).catch((e) => console.warn('[Firestore] Non-blocking registration save:', e));
+      // Save to Cloud Firestore
+      try {
+        await withTimeout(saveUserProfile(newUser), 3000, { success: false });
+      } catch (e) {
+        console.warn('[Firestore] Non-blocking registration save:', e);
+      }
 
       return {
         success: true,

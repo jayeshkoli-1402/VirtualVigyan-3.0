@@ -734,6 +734,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const error = err as { code?: string; message?: string };
+      console.warn('[Auth] Login failed for:', emailNorm, 'Code:', error.code, 'Message:', error.message, 'Project:', auth.app.options.projectId);
       const message = getFirebaseFriendlyErrorMessage(error.code, error.message);
 
       return {

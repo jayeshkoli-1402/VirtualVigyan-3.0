@@ -776,6 +776,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
 
   const [localOpen, setLocalOpen] = React.useState(0);
   const [emptyWarning, setEmptyWarning] = React.useState(false);
+  const [isDraggingValve, setIsDraggingValve] = React.useState(false);
   const isPointerDownRef = React.useRef(false);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const hasMovedRef = React.useRef(false);
@@ -832,6 +833,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       return;
     }
     isPointerDownRef.current = true;
+    setIsDraggingValve(true);
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     startOpenRef.current = stopcockOpen;
@@ -859,6 +861,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
   const handlePointerUp = React.useCallback((e: React.PointerEvent) => {
     if (!isPointerDownRef.current) return;
     isPointerDownRef.current = false;
+    setIsDraggingValve(false);
     try {
       if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
         (e.currentTarget as Element).releasePointerCapture(e.pointerId);
@@ -1057,7 +1060,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
         {/* Rotatable Cork Key / Handle */}
         <g
           transform={`rotate(${tapAngle}, ${buretteX}, ${buretteBottom + 16})`}
-          style={{ transition: isPointerDownRef.current ? 'none' : 'transform 0.18s ease-out' }}
+          style={{ transition: isDraggingValve ? 'none' : 'transform 0.18s ease-out' }}
         >
           {/* Central plug */}
           <circle cx={buretteX} cy={buretteBottom + 16} r={3} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />
@@ -1689,6 +1692,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
 
   const [localOpen, setLocalOpen] = React.useState(0);
   const [emptyWarning, setEmptyWarning] = React.useState(false);
+  const [isDraggingValve, setIsDraggingValve] = React.useState(false);
   const isPointerDownRef = React.useRef(false);
   const dragStartRef = React.useRef({ x: 0, y: 0 });
   const hasMovedRef = React.useRef(false);
@@ -1745,6 +1749,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       return;
     }
     isPointerDownRef.current = true;
+    setIsDraggingValve(true);
     hasMovedRef.current = false;
     dragStartRef.current = { x: e.clientX, y: e.clientY };
     startOpenRef.current = stopcockOpen;
@@ -1772,6 +1777,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
   const handlePointerUp = React.useCallback((e: React.PointerEvent) => {
     if (!isPointerDownRef.current) return;
     isPointerDownRef.current = false;
+    setIsDraggingValve(false);
     try {
       if ((e.currentTarget as Element).hasPointerCapture?.(e.pointerId)) {
         (e.currentTarget as Element).releasePointerCapture(e.pointerId);
@@ -1988,7 +1994,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
         {/* Rotatable Cork Key Handle */}
         <g
           transform={`rotate(${tapAngle}, ${buretteX}, ${tubeBottom + 19})`}
-          style={{ transition: isPointerDownRef.current ? 'none' : 'transform 0.18s ease-out' }}
+          style={{ transition: isDraggingValve ? 'none' : 'transform 0.18s ease-out' }}
         >
           {/* Central plug */}
           <circle cx={buretteX} cy={tubeBottom + 19} r={3.2} fill="#1e293b" stroke="#475569" strokeWidth={0.8} />

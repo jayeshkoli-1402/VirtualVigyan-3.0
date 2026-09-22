@@ -7,9 +7,9 @@ export const DROP_SIZE_ML = 0.1;
 export const BURETTE_MAX_ML = 50;
 
 // ── Color thresholds ──
-const COLOR_CHANGE_START_ML = 22.5;   // 90% of equivalence
-const ENDPOINT_ML = 25;                // exact equivalence
-const OVERSHOOT_ML = 26;               // deep magenta beyond this
+export const COLOR_CHANGE_START_ML = 22.5;   // 90% of equivalence
+export const ENDPOINT_ML = 25;                // exact equivalence
+export const OVERSHOOT_ML = 26;               // deep magenta beyond this
 
 /**
  * Returns the CSS color string for the flask liquid based on how much
@@ -53,8 +53,9 @@ export function getFlaskColor(volumeAdded: number, hasIndicator: boolean): strin
 export function getColorDescription(volumeAdded: number, hasIndicator: boolean): string {
   if (!hasIndicator) return 'Colorless solution (no indicator)';
   if (volumeAdded < COLOR_CHANGE_START_ML) return 'Colorless acidic solution';
-  if (volumeAdded <= ENDPOINT_ML) return 'Faint pink appearing';
-  if (volumeAdded <= OVERSHOOT_ML) return 'Pale persistent pink (Endpoint)';
+  if (volumeAdded < ENDPOINT_ML - 0.2) return 'Faint transient pink appearing';
+  if (volumeAdded <= ENDPOINT_ML + 0.1) return 'Pale persistent pink (Endpoint)';
+  if (volumeAdded <= OVERSHOOT_ML) return 'Pink deepening to magenta (Overshot)';
   return 'Deep magenta (Overshot)';
 }
 

@@ -278,28 +278,17 @@ const AppContent: React.FC = () => {
     [state.pipetteFilled, dispatch]
   );
 
-  // ── Mark Endpoint validation (intercept from LabBench) ──
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target.id === 'btn-mark-endpoint') {
-        e.preventDefault();
-        e.stopPropagation();
-        const result = canMarkEndpoint(state.volumeAdded);
-        if (!result.allowed) {
-          setMistakeMessage(result.message);
-          // Undo the dispatch from LabBench (we dispatch here instead)
-          return;
-        }
-        if (result.message) {
-          setMistakeMessage(result.message);
-        }
-        dispatch({ type: 'MARK_ENDPOINT' });
-      }
-    };
-    // Capture phase to intercept before LabBench's onClick
-    document.addEventListener('click', handler, true);
-    return () => document.removeEventListener('click', handler, true);
+  // ── Mark Endpoint validation ──
+  const handleMarkEndpoint = useCallback(() => {
+    const result = canMarkEndpoint(state.volumeAdded);
+    if (!result.allowed) {
+      setMistakeMessage(result.message);
+      return;
+    }
+    if (result.message) {
+      setMistakeMessage(result.message);
+    }
+    dispatch({ type: 'MARK_ENDPOINT' });
   }, [state.volumeAdded, dispatch]);
 
   const handleLaunchPrivateExperiment = (experimentId: string, lab: PrivateLab, attemptNumber: number) => {
@@ -928,6 +917,7 @@ const AppContent: React.FC = () => {
                     state={state}
                     dispatch={dispatch}
                     activeDropZone={activeDropZone}
+                    onMarkEndpoint={handleMarkEndpoint}
                   />
                 </div>
 

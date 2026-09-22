@@ -120,8 +120,6 @@ function generateSimulatedMasses(): { m1: number; m2: number } {
   };
 }
 
-const defaultMasses = generateSimulatedMasses();
-
 export const conservationInitialState: ConservationState = {
   step: ConservationStep.SELECT,
   flaskPlaced: false,
@@ -144,8 +142,8 @@ export const conservationInitialState: ConservationState = {
   isFillingTube: false,
   isMixing: false,
   mistakes: [],
-  simulatedM1: defaultMasses.m1,
-  simulatedM2: defaultMasses.m2,
+  simulatedM1: 125.40,
+  simulatedM2: 125.40,
 };
 
 // ── Draggable item IDs ──
@@ -267,14 +265,14 @@ export function conservationReducer(
       };
 
     case 'PLACE_ON_BALANCE': {
-      let nextState = { ...state, flaskOnBalance: true };
-      if (state.step === ConservationStep.WEIGH_INITIAL && state.flaskSealed) {
-        nextState.initialMass = state.simulatedM1;
-        nextState.step = ConservationStep.MIX_REACTANTS;
-      } else if (state.step === ConservationStep.WEIGH_FINAL && state.hasObserved) {
-        nextState.finalMass = state.simulatedM2;
-      }
-      return nextState;
+      const isInitialWeigh = state.step === ConservationStep.WEIGH_INITIAL && state.flaskSealed;
+      const isFinalWeigh = state.step === ConservationStep.WEIGH_FINAL && state.hasObserved;
+      return {
+        ...state,
+        flaskOnBalance: true,
+        ...(isInitialWeigh ? { initialMass: state.simulatedM1, step: ConservationStep.MIX_REACTANTS } : {}),
+        ...(isFinalWeigh ? { finalMass: state.simulatedM2 } : {}),
+      };
     }
 
     case 'WEIGH_INITIAL':

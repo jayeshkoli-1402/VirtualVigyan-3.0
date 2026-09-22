@@ -14,9 +14,10 @@ interface LabBenchProps {
   state: TitrationState;
   dispatch: React.Dispatch<TitrationAction>;
   activeDropZone: string | null;
+  onMarkEndpoint?: () => void;
 }
 
-const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) => {
+const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone, onMarkEndpoint }) => {
   const { t } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
   const [isStirring, setIsStirring] = React.useState(false);
@@ -382,7 +383,11 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone }) 
                 id="btn-mark-endpoint"
                 className="btn-danger"
                 onClick={() => {
-                  dispatch({ type: 'MARK_ENDPOINT' });
+                  if (onMarkEndpoint) {
+                    onMarkEndpoint();
+                  } else {
+                    dispatch({ type: 'MARK_ENDPOINT' });
+                  }
                 }}
                 style={{ fontSize: '0.62rem', padding: '5px 8px', width: '100%', whiteSpace: 'nowrap', borderRadius: 6 }}
               >

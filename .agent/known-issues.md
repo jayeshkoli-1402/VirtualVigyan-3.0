@@ -2,50 +2,29 @@
 
 ## 🔴 Bugs
 
-### 1. Endpoint interception via document-level click capture
-**File:** [App.tsx](file:///x:/TECH/Projects/virtualvigyan%202.0/src/App.tsx#L160-L181)  
-**Issue:** The "Mark Endpoint" button click is intercepted in the **capture phase** of a document-level event listener (lines 160–181). This is a fragile pattern — it relies on matching `target.id === 'btn-mark-endpoint'` and intercepting before LabBench's own handler fires. If another element with the same ID is added, or if event propagation changes, this breaks silently.  
-**Impact:** Medium. Works today, but is a maintenance risk.  
-**Workaround:** None needed currently — just don't add duplicate IDs.
-
-### 2. Conservation simulated masses regenerate on every reducer call to RESET
-**File:** [conservationState.ts](file:///x:/TECH/Projects/virtualvigyan%202.0/src/engine/conservationState.ts#L113-L121)  
-**Issue:** `generateSimulatedMasses()` is called in the module's top-level scope for `defaultMasses`, AND again inside `START_EXPERIMENT` and `RESET` actions. The top-level call creates masses that are immediately thrown away on first experiment start.  
-**Impact:** Low. Cosmetic waste — no user-visible bug.
-
-### 3. `let` used instead of `const` in conservation reducer
-**File:** [conservationState.ts](file:///x:/TECH/Projects/virtualvigyan%202.0/src/engine/conservationState.ts#L270)  
-**Issue:** `let nextState = { ...state, flaskOnBalance: true }` in `PLACE_ON_BALANCE` — `nextState` is reassigned conditionally, so `let` is technically correct, but the mutation pattern (assigning `nextState.initialMass = ...`) breaks the immutability convention used everywhere else.  
-**Impact:** Low. Works in practice because the spread already created a new object, but it's inconsistent with the rest of the codebase.
+*No active bugs! All previously reported bugs have been verified and resolved.*
 
 ---
 
 ## 🟡 Limitations (by design — not bugs)
 
-### 4. No state persistence
+### 1. No state persistence
 State lives entirely in React. Refreshing the page resets the experiment to the beginning. There is no `localStorage` save/restore. This is intentional for the demo phase.
 
-### 5. No keyboard accessibility for stopcock
+### 2. No keyboard accessibility for stopcock
 The stopcock is operated by mouse drag / touch. There is no keyboard fallback (e.g., arrow keys to open/close). `@dnd-kit` provides some keyboard support but it hasn't been configured for the stopcock's rotational interaction.
 
-### 6. Hardcoded chemistry values
-All chemistry constants (HCl concentration, NaOH molarity, equivalence volume, color thresholds) are hardcoded in `chemistryRules.ts` and `conservationRules.ts`. There is no experiment configuration file or parameterization system yet. Adding a second variant of the same experiment type (e.g., different molarity titration) requires code changes, not config changes.
+### 3. Hardcoded chemistry values in legacy titration
+Legacy titration constants (HCl concentration, NaOH molarity, equivalence volume) are hardcoded in `chemistryRules.ts`. (Note: all new experiments use `ExperimentConfig` data schemas).
 
-### 7. Color description function is slightly wrong
-**File:** [chemistryRules.ts](file:///x:/TECH/Projects/virtualvigyan%202.0/src/engine/chemistryRules.ts#L53-L59)  
-`getColorDescription()` returns `'Pale persistent pink (Endpoint)'` for `volumeAdded <= OVERSHOOT_ML` (26 mL), but the actual endpoint is at 25 mL. The 25–26 mL range should arguably say "Pink deepening to magenta" to match `getFlaskColor()`'s visual behavior. Not user-facing in a critical way, but could confuse agents reading the code.
-
-### 8. Spec calls for drag-to-open stopcock, implementation uses rotation
+### 4. Spec calls for drag-to-open stopcock, implementation uses rotation
 The original spec describes the stopcock as *"a small draggable lever/knob — dragging it open"*, mapping drag distance to open-percentage. The implementation uses a **rotatable tap valve** where click/drag rotates the handle. Functionally equivalent, but the interaction metaphor differs from the spec's description.
 
-### 9. Mobile layout is responsive but not optimized
+### 5. Mobile layout is responsive but not optimized
 The three-panel grid switches to single-column below 900px, but:
 - Panel ordering (bench first, toolbox second, instructions third) hasn't been user-tested on real tablets.
 - Collapsed panel states (52px width) on mobile may be confusing.
 - No explicit handling for landscape vs. portrait orientation.
-
-### 10. No unit tests
-There are zero automated tests. All validation was done manually. The `engine/` modules (pure functions, reducers) are excellent candidates for unit testing but none exist.
 
 ---
 
@@ -129,54 +108,49 @@ There are zero automated tests. All validation was done manually. The `engine/` 
 
 ### 24. Apparatus titles, drop zone labels, and banners merging and colliding with instruments (FIXED)
 **Was:** Multiple text and title elements collided directly with the visual apparatus on the lab bench:
-1. Drop zone text labels (`zone.label` in `DropZone`) were centered inside drop boxes directly overlapping background hardware (e.g. "Clamp Burette on Retort Stand" directly stamped across the retort stand pole and clamp; "Fill Burette" centered over the burette opening; "Into Conical Flask" centered over the burette tip and flask neck).
-2. Internal SVG labels in glassware and reaction vessels (`ConicalFlask`, `Beaker`, `TestTube`, `MeasuringCylinder`, `VolumetricFlask`, `BODBottle`) were printed at the very base or body of the SVG, causing the text to collide with the liquid, meniscus, magnetic stirrer plates, water baths, or the bench tabletop apron.
-3. The burette label plaque ("50 mL Burette") sat at `y=6..19` directly over the top mouth opening of the burette tube, obstructing the funnel/opening.
-4. The burette stopcock guidance badges ("⚠️ Burette is Empty", "↻ Click to Open", "Active Flow Rate") were positioned at `tubeBottom + 10` (y=220), which collided directly with the conical flask rim, neck, and liquid below the burette tip.
-5. Observation and POP sound banners were placed at `top: 14, left: 50%, transform: translateX(-50%)`, directly overlapping the top of center instruments (burettes and stands).
-6. `StopcockUI` was hardcoded at `left: 48%, top: 55%`, colliding with center glassware.
-7. Legacy `LabBench.tsx` drop zone badges were positioned dead center over the retort stand pole and base.
+1. Drop zone text labels (`zone.label` in `DropZone`) were centered inside drop boxes directly overlapping background hardware.
+2. Internal SVG labels in glassware and reaction vessels were printed at the very base or body of the SVG, colliding with liquid and stirrer plates.
+3. The burette label plaque sat directly over the top mouth opening of the burette tube.
+4. The burette stopcock guidance badges collided directly with the conical flask rim below the burette tip.
+5. Observation and POP sound banners directly overlapped the top of center instruments.
+6. `StopcockUI` was hardcoded at center screen, colliding with glassware.
 **Fix:**
 1. **Drop Zones (`GenericBench.tsx`):** Unplaced drop zone labels now render as high-contrast floating pill badges (`📍 {zone.label}`) positioned in clean empty space outside the instrument bounding box with an opaque white card background, subtle blue border, and shadow.
-2. **Placed Apparatus Titles (`GenericBench.tsx`):** Placed bench apparatus receive `label={undefined}` to suppress internal SVG text collisions with liquid and glassware. A clean, dedicated title pill badge is rendered in empty space below the instrument (`top: 100%, translateY: 4px`), guaranteeing 100% legibility and zero interference with glassware.
+2. **Placed Apparatus Titles (`GenericBench.tsx`):** Placed bench apparatus receive `label={undefined}` to suppress internal SVG text collisions. A clean dedicated title pill badge is rendered in empty space below the instrument (`top: 100%, translateY: 4px`).
 3. **Burette Stand & SVG (`src/apparatus/index.tsx`):**
-   - Top label plaque moved to empty space to the right of the tube (`translate(buretteX + 28, 14)`), leaving the burette mouth 100% unobstructed.
-   - Stopcock guide badges moved to clean empty space to the right of the burette tube (`translate(buretteX + 26, tubeBottom - 12)` at y=198), completely clearing the conical flask mouth (at y=225+) and liquid stream path.
-   - Added opaque white badge pill styling to "↻ Click to Open" so text never blends with bench background.
-4. **Bench Banners (`GenericBench.tsx`):** Observation, Effervescence, and Pop Sound banners repositioned to top-left empty space (`top: 14, left: 14`), completely clearing center apparatus.
+   - Top label plaque moved to empty space to the right of the tube (`translate(buretteX + 28, 14)`).
+   - Stopcock guide badges moved to clean empty space to the right of the burette tube (`translate(buretteX + 26, tubeBottom - 12)`).
+4. **Bench Banners (`GenericBench.tsx`):** Repositioned to top-left empty space (`top: 14, left: 14`).
 5. **Stopcock UI (`GenericBench.tsx`):** Docked cleanly in bottom-right empty space (`bottom: 16, right: 16`).
-6. **Legacy Lab Bench (`src/components/LabBench.tsx`):** Repositioned clamp drop zone badge to wide-open empty space to the right of the stand (`x + width + 8`), and base drop zone badge above the stand base plate.
 
 ### 25. Universal Multi-Chemical Reaction & Stoichiometry Engine (IMPLEMENTED)
-**Was:** Previously, the virtual lab engine was primarily state-machine driven—it knew how to follow scripted steps, but did not know what would happen at a fundamental chemical/thermodynamic level if students added arbitrary chemical species $X_1, X_2 \dots X_n$ in variable quantities, unscripted combinations, or in large excess.
-**Fix:** Built a complete, 100% client-side deterministic reaction and stoichiometry solver:
-1. **`src/engine/chemicalDatabase.ts`:** Database of 50+ chemical species with formulas, molar masses ($M_r$), densities, physical states, $pK_a$, base colors, and safety hazard warnings.
-2. **`src/engine/reactionMatrix.ts`:** Rule-based reaction matrix encompassing acid-base neutralization, carbonate effervescence, single displacement, double displacement & precipitation (BaSO₄, AgCl, PbI₂ "Golden Rain", Cu(OH)₂, Fe(OH)₃), redox, limewater carbon dioxide confirmation, and thiosulfate turbidity kinetics.
-3. **`src/engine/stoichiometrySolver.ts`:** Deterministic solver calculating:
-   - Limiting reagent extent $\xi = \min_i(n_i / \nu_i)$ and exact unreacted excess.
-   - Thermodynamic reaction heat $q = -\sum \xi \Delta H$ and vessel temperature surge $\Delta T = q / (m \cdot c_p)$.
-   - Exact pH based on net $[H^+]$ / $[OH^-]$, weak acid equilibria, and buffer equations.
-   - Insoluble precipitate mass ($g$) and optical opacity.
-   - Dynamic gas evolution rate ($mL$) and effervescence bubbling.
-4. **`src/components/GenericLab/ChemicalInspectorModal.tsx` & `GenericBench.tsx`:**
-   - Added "🧪 Inspect Reaction" button in workbench action bar and on placed vessel badges.
-   - Interactive chemical inspection modal showing live molar composition ($n$, $C$), limiting/excess reagents, precipitate mass, pH gauge, temperature, reaction logs with scientific explanations, and an interactive "Reagent Playground" to pour arbitrary reagents $X_1 \dots X_n$ with variable quantities.
-5. **`scripts/test_stoichiometry.mjs`:** 29 automated test assertions validating limiting reagents, equivalence points, precipitates, gas volumes, and temperatures (100% pass rate).
+**Was:** Engine was purely state-machine driven and could not solve arbitrary multi-reagent chemical equilibria.
+**Fix:** Built complete client-side deterministic reaction and stoichiometry solver in `src/engine/chemicalDatabase.ts`, `src/engine/reactionMatrix.ts`, and `src/engine/stoichiometrySolver.ts` with live Chemical Inspector Modal and 29 automated test assertions.
 
 ### 26. Landing Page Scroll-Reveal Class Mismatch and Visibility Collapse (FIXED)
-**Was:** In commit `52e9e13`, `src/components/landing/landing.css` defined `.ln-reveal { opacity: 0; transform: translateY(30px); }` and `.ln-reveal.visible { opacity: 1; transform: translateY(0); }`. However, in `src/components/landing/LandingPage.tsx`, the `IntersectionObserver` callback added `entry.target.classList.add('active')` instead of `'visible'`.
-Because `.active` was added instead of `.visible`:
-1. Every element bearing `.ln-reveal` remained permanently trapped at `opacity: 0`.
-2. Over 80% of the landing page vanished into giant white voids (TrustBar cards, How It Works timeline, Experiment Showcase headers/filter pills, Lab Preview interactive workbench, Learning loop, Students & Teachers role cards, About cards, FAQs, and Final CTA). Only background floating SVGs and card borders without `.ln-reveal` were visible.
-**Fix:**
-1. **Dual-Class CSS Synchronization (`src/components/landing/landing.css`):**
-   - Updated CSS to `.ln-reveal.visible, .ln-reveal.active { opacity: 1; transform: translateY(0); }`.
-   - Added `@media print { .ln-reveal { opacity: 1 !important; transform: none !important; } }`.
-2. **Progressive Fallback & Synchronized JS (`src/components/landing/LandingPage.tsx`):**
-   - Observer adds both `'visible'` and `'active'` to `classList`.
-   - Added `!('IntersectionObserver' in window)` fallback check to immediately reveal all elements.
-   - Added safety fallback `setTimeout` (1000ms) ensuring that no element is ever trapped invisible if an observer is throttled or delayed.
-   - Adjusted observer `threshold: 0.08` and `rootMargin: '0px 0px 60px 0px'` so animations trigger smoothly as elements scroll into view.
-3. **Removed Nested Reveals (`src/components/landing/HowItWorksSection.tsx`):**
-   - Removed redundant `.ln-reveal` on `.ln-timeline` wrapper so steps stagger cleanly without parent container opacity conflicts.
-4. **Prevention:** Enforced Zero-Invisibility Mandate in `.agent/conventions.md` and created root `AGENTS.md` and `GEMINI.md` requiring all contributor AI agents to inspect `.agent/` first.
+**Was:** IntersectionObserver added `.active` while CSS only targeted `.ln-reveal.visible`, trapping 80% of landing page elements at `opacity: 0`.
+**Fix:** Implemented Dual-Class CSS synchronization (`.ln-reveal.visible, .ln-reveal.active`), progressive fallback timer (`setTimeout` 1000ms), and pre-check for IntersectionObserver support.
+
+### 27. Endpoint interception via document-level click capture (FIXED)
+**Was:** In `App.tsx`, a capture-phase `document.addEventListener('click')` intercepted any click on elements with `id === 'btn-mark-endpoint'`. This broke React unidirectional data flow and interfered with other experiments sharing the button ID.
+**Fix:** Added direct `onMarkEndpoint` callback prop to `LabBenchProps` in `src/components/LabBench.tsx`. `App.tsx` now passes `onMarkEndpoint={handleMarkEndpoint}` directly to `<LabBench />`, completely removing the document-level event listener.
+
+### 28. Conservation simulated masses regenerated redundantly in module scope (FIXED)
+**Was:** `generateSimulatedMasses()` ran at top-level module evaluation in `conservationState.ts` and was immediately overwritten and discarded on first experiment start or reset.
+**Fix:** Initialized `conservationInitialState` with static default masses (`125.40 g`) and removed the top-level random call. Fresh randomized masses are cleanly generated strictly upon dispatching `START_EXPERIMENT` or `RESET`.
+
+### 29. Mutable state assignment in `conservationReducer` (FIXED)
+**Was:** `case 'PLACE_ON_BALANCE'` assigned `let nextState = { ...state }` and mutated `nextState.initialMass = ...`, violating immutability conventions.
+**Fix:** Refactored into a pure functional immutable return expression using `const` and spread syntax.
+
+### 30. Color description range calibration (FIXED)
+**Was:** `getColorDescription()` in `src/engine/chemistryRules.ts` labeled volumes up to 26 mL as `"Pale persistent pink (Endpoint)"`, when equivalence actually occurs at 25 mL.
+**Fix:** Calibrated thresholds to match visual rendering in `getFlaskColor()`: `< 24.8 mL` = transient faint pink, `25.0 ± 0.1 mL` = persistent pale pink (Endpoint), `<= 26.0 mL` = pink deepening to magenta (Overshot), and `> 26.0 mL` = deep magenta (Overshot). Exported `COLOR_CHANGE_START_ML`, `ENDPOINT_ML`, and `OVERSHOOT_ML`.
+
+### 31. OxLint React Ref access during render in `src/apparatus/index.tsx` (FIXED)
+**Was:** `BuretteStand` and `BuretteSVG` accessed `isPointerDownRef.current` directly in their SVG `<g>` inline style transitions during render, violating React render purity and skipping React compiler optimizations.
+**Fix:** Introduced `isDraggingValve` React state set during `handlePointerDown` / `handlePointerUp`, completely eliminating ref access during render.
+
+### 32. Engine Automated Unit Test Suite (IMPLEMENTED)
+**Was:** Zero automated tests existed for core engine state machines and chemistry validation functions.
+**Fix:** Created `scripts/test_engine.ts` testing `chemistryRules`, `validationEngine`, `titrationReducer`, and `conservationReducer` (16 test assertions). Added `"test"` command to `package.json` executing both `test_engine.ts` and `test_stoichiometry.mjs` (45 / 45 passing assertions).

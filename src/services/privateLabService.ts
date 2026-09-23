@@ -230,8 +230,8 @@ export function matchLabCode(enteredCode: string, labCode: string): boolean {
   const a2 = c2.replace(/[^A-Z0-9]/g, '');
   if (a1 === a2) return true;
 
-  // If user entered only the number part e.g. "2394" matching "CHEM-2394"
-  if (a1.length >= 4 && (a2.endsWith(a1) || a1.endsWith(a2))) return true;
+  // Allow omitting default "CHEM" prefix (e.g. entering "A1B2C3" for "CHEM-A1B2C3")
+  if (a2.startsWith('CHEM') && a2.slice(4) === a1) return true;
 
   return false;
 }
@@ -242,16 +242,18 @@ export function matchLabCode(enteredCode: string, labCode: string): boolean {
 export function generateLabCode(prefix = 'CHEM'): string {
   const existingLabs = getAllPrivateLabs();
   const existingCodes = new Set(existingLabs.map((l) => l.code.toUpperCase()));
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Unambiguous charset (no 0/O, 1/I)
 
   for (let i = 0; i < 50; i++) {
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    const code = `${prefix}-${randomNum}`;
+    const array = new Uint8Array(6);
+    crypto.getRandomValues(array);
+    const code = `${prefix}-${Array.from(array, (b) => chars[b % chars.length]).join('')}`;
     if (!existingCodes.has(code)) {
       return code;
     }
   }
 
-  return `${prefix}-${Date.now().toString().slice(-4)}`;
+  return `${prefix}-${crypto.randomUUID().substring(0, 8).toUpperCase()}`;
 }
 
 /**
@@ -264,7 +266,7 @@ export function createPrivateLab(
   }
 ): PrivateLab {
   const labs = getAllPrivateLabs();
-  const id = `lab_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const id = `lab_${crypto.randomUUID()}`;
   const code = (params.customCode?.trim().toUpperCase() || generateLabCode()).replace(/\s+/g, '-');
 
   // Default to 5-day deadline if teacher does not set one
@@ -536,7 +538,7 @@ export function recordPrivateLabSubmission(
 
   const submission: PrivateLabSubmission = {
     ...submissionData,
-    id: `sub_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: `sub_${crypto.randomUUID()}`,
     percentage,
     completedAt: new Date().toISOString(),
   };
@@ -676,6 +678,20 @@ export function deletePrivateLab(labId: string): boolean {
 /**
  * Export a lab's gradebook roster and submissions as a clean CSV file
  */
+/**
+ * Sanitize a string value for safe CSV export.
+ * Prevents formula injection by stripping leading =, +, -, @, tab, CR characters
+ * and properly escapes internal double-quotes.
+ */
+function escapeCSV(value: string): string {
+  let safe = value.replace(/^[=+\-@\t\r]+/, '');
+  safe = safe.replace(/"/g, '""');
+  return `"${safe}"`;
+}
+
+/**
+ * Export a lab's gradebook roster and submissions as a clean CSV file
+ */
 export function exportGradebookCSV(labId: string): void {
   const lab = getPrivateLabById(labId);
   if (!lab) return;
@@ -700,17 +716,17 @@ export function exportGradebookCSV(labId: string): void {
     // If no submissions yet, export enrolled roster
     lab.enrolledStudents.forEach((st) => {
       rows.push([
-        `"${st.studentName}"`,
-        `"${st.studentEmail}"`,
-        `"${new Date(st.joinedAt).toLocaleDateString()}"`,
-        '"Not Attempted"',
+        escapeCSV(st.studentName),
+        escapeCSV(st.studentEmail),
+        escapeCSV(new Date(st.joinedAt).toLocaleDateString()),
+        escapeCSV('Not Attempted'),
         '0',
         '100',
         '0',
         '0',
         '0',
-        '"N/A"',
-        '"None"',
+        escapeCSV('N/A'),
+        escapeCSV('None'),
       ]);
     });
   } else {
@@ -719,17 +735,17 @@ export function exportGradebookCSV(labId: string): void {
         (e) => e.studentEmail?.toLowerCase() === sub.studentEmail?.toLowerCase()
       );
       rows.push([
-        `"${sub.studentName}"`,
-        `"${sub.studentEmail}"`,
-        student ? `"${new Date(student.joinedAt).toLocaleDateString()}"` : '"N/A"',
-        `"${sub.experimentTitle}"`,
+        escapeCSV(sub.studentName),
+        escapeCSV(sub.studentEmail),
+        student ? escapeCSV(new Date(student.joinedAt).toLocaleDateString()) : escapeCSV('N/A'),
+        escapeCSV(sub.experimentTitle),
         sub.score.toString(),
         sub.maxScore.toString(),
         sub.percentage.toString(),
         sub.attemptNumber.toString(),
         sub.timeSpentSeconds.toString(),
-        `"${new Date(sub.completedAt).toLocaleString()}"`,
-        `"${sub.mistakes.join('; ')}"`,
+        escapeCSV(new Date(sub.completedAt).toLocaleString()),
+        escapeCSV(sub.mistakes.join('; ')),
       ]);
     });
   }

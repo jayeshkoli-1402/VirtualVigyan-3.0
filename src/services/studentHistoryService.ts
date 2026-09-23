@@ -124,16 +124,75 @@ function initStorage(): void {
 }
 
 /**
- * Get all performance records from storage
+ * Get all performance records from storage, merged with private lab submissions
  */
 export function getAllPerformanceRecords(): StudentPerformanceRecord[] {
   initStorage();
+  let baseRecords: StudentPerformanceRecord[] = [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : SEED_HISTORY;
+    baseRecords = raw ? JSON.parse(raw) : SEED_HISTORY;
   } catch {
-    return SEED_HISTORY;
+    baseRecords = SEED_HISTORY;
   }
+
+  // Harvest all submissions from private labs in localStorage
+  try {
+    const rawLabs = localStorage.getItem('vv_private_labs');
+    if (rawLabs) {
+      const labs = JSON.parse(rawLabs);
+      if (Array.isArray(labs)) {
+        const recordMap = new Map<string, StudentPerformanceRecord>();
+        baseRecords.forEach((r) => recordMap.set(r.id, r));
+
+        for (const lab of labs) {
+          for (const sub of (lab.submissions || [])) {
+            const alreadyInBase = baseRecords.some(
+              (r) =>
+                r.id === sub.id ||
+                ((r.studentEmail || '').trim().toLowerCase() === (sub.studentEmail || '').trim().toLowerCase() &&
+                  r.experimentId === sub.experimentId &&
+                  r.attemptNumber === sub.attemptNumber &&
+                  r.labId === lab.id)
+            );
+
+            if (!alreadyInBase && !recordMap.has(sub.id)) {
+              recordMap.set(sub.id, {
+                id: sub.id,
+                studentId: sub.studentId,
+                studentName: sub.studentName,
+                studentEmail: sub.studentEmail,
+                avatar: sub.avatar || '🎓',
+                experimentId: sub.experimentId,
+                experimentTitle: sub.experimentTitle,
+                type: 'private_lab',
+                labId: lab.id,
+                labTitle: lab.title,
+                labCode: lab.code,
+                score: sub.score,
+                maxScore: sub.maxScore,
+                percentage: sub.percentage,
+                attemptNumber: sub.attemptNumber,
+                timeSpentSeconds: sub.timeSpentSeconds,
+                mistakes: sub.mistakes || [],
+                calculationAnswers: sub.calculationAnswers,
+                completedAt: sub.completedAt,
+              });
+            }
+          }
+        }
+        return Array.from(recordMap.values()).sort(
+          (a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('[StudentHistory] Error merging private lab submissions:', err);
+  }
+
+  return baseRecords.sort(
+    (a, b) => new Date(b.completedAt || 0).getTime() - new Date(a.completedAt || 0).getTime()
+  );
 }
 
 /**
@@ -159,14 +218,32 @@ export function recordStudentPerformance(
   const records = getAllPerformanceRecords();
   const percentage = Math.round((entry.score / (entry.maxScore || 100)) * 100);
 
+  const normEmail = (entry.studentEmail || '').trim().toLowerCase();
+  // Check if a matching record exists within the last 90 seconds (update instead of duplicate)
+  const recentIdx = records.findIndex(
+    (r) =>
+      (r.studentEmail || '').trim().toLowerCase() === normEmail &&
+      r.experimentId === entry.experimentId &&
+      (r.labId || '') === (entry.labId || '') &&
+      Math.abs(Date.now() - new Date(r.completedAt).getTime()) < 90000
+  );
+
   const newRecord: StudentPerformanceRecord = {
     ...entry,
-    id: `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    studentEmail: entry.studentEmail || 'student@virtualvigyan.in',
+    studentName: entry.studentName || 'Student Learner',
+    avatar: entry.avatar || '🎓',
+    id: recentIdx >= 0 ? records[recentIdx].id : `hist_${crypto.randomUUID()}`,
     percentage,
     completedAt: new Date().toISOString(),
   };
 
-  records.unshift(newRecord);
+  if (recentIdx >= 0) {
+    records[recentIdx] = newRecord;
+  } else {
+    records.unshift(newRecord);
+  }
+
   saveRecords(records);
   return newRecord;
 }
@@ -177,11 +254,32 @@ export function recordStudentPerformance(
  */
 export function getStudentHistory(studentEmail?: string): StudentPerformanceRecord[] {
   const all = getAllPerformanceRecords();
-  if (!studentEmail) return all;
-  const norm = studentEmail.trim().toLowerCase();
-  return all
-    .filter((r) => r.studentEmail?.toLowerCase() === norm)
-    .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+  let targetEmail = studentEmail;
+  if (!targetEmail) {
+    try {
+      const cached = localStorage.getItem('vv_active_user') || localStorage.getItem('vv_user');
+      if (cached) {
+        const u = JSON.parse(cached);
+        if (u && u.email) targetEmail = u.email;
+      }
+    } catch {}
+  }
+
+  if (!targetEmail) {
+    return all;
+  }
+
+  const norm = targetEmail.trim().toLowerCase();
+  const filtered = all.filter((r) => {
+    const rEmail = (r.studentEmail || '').trim().toLowerCase();
+    if (rEmail === norm) return true;
+    if (norm === 'student@virtualvigyan.in' && (r.studentId === 'usr_guest' || !r.studentEmail)) return true;
+    return false;
+  });
+
+  // SECURITY: Return the student's records (or empty array if new student with 0 attempts).
+  // Do NOT leak other students' records or seed history.
+  return filtered;
 }
 
 /**
@@ -210,7 +308,7 @@ export function getStudentOverallStats(studentEmail?: string): {
   const totalScore = history.reduce((acc, h) => acc + h.score, 0);
   const totalSeconds = history.reduce((acc, h) => acc + (h.timeSpentSeconds || 0), 0);
   const privateLabs = history.filter((h) => h.type === 'private_lab').length;
-  const practice = history.filter((h) => h.type === 'practice').length;
+  const practice = history.filter((h) => h.type !== 'private_lab').length;
   const distinct = new Set(history.map((h) => h.experimentId)).size;
 
   return {

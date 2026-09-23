@@ -2,7 +2,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ── Helper Functions ──
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -11,39 +12,83 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User profiles collection
+    // Admin check: supports Firebase Auth token custom claim OR verified designated admin emails
+    // (Jayesh, Om, Dipali, Vaishnavi)
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email in [
+          'jayeshkoli106@gmail.com',
+          'omchaudhari0365@gmail.com',
+          'dipaliishi2006@gmail.com',
+          'vaishnavigirase802@gmail.com'
+        ]
+      );
+    }
+
+    // ── User Profiles ──
     // Stored at /users/{userId}
     match /users/{userId} {
-      // Any authenticated user can read user profiles (needed for student list, teacher badges, cohorts)
-      allow read: if isAuthenticated();
+      // Users can read their own profile; admins can read any profile
+      allow read: if isOwner(userId) || isAdmin();
 
-      // Users can create/update their own profile
-      allow create, update: if isOwner(userId);
+      // Users can create their own profile document
+      allow create: if isOwner(userId);
 
-      // Allow admin moderation or owner deletion
-      allow delete: if isOwner(userId) || (isAuthenticated() && request.auth.token.role == 'admin');
+      // Users can update their own profile, BUT cannot self-escalate role or permissions
+      // Only admins can modify the 'role' and 'permissions' fields
+      allow update: if isOwner(userId)
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'permissions'])
+            || isAdmin());
+
+      // Only the user themselves or an admin can delete a profile
+      allow delete: if isOwner(userId) || isAdmin();
     }
 
-    // Cohorts & assigned experiments
+    // ── Cohorts & Assigned Experiments ──
     match /cohorts/{cohortId} {
+      // Authenticated users can read cohorts they belong to
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated();
+
+      // Only admins can create/modify/delete cohorts
+      allow write: if isAdmin();
     }
 
-    // Private classroom labs & assessments
+    // ── Private Classroom Labs & Assessments ──
     match /private_labs/{labId} {
+      // Authenticated users can read labs (necessary for students to join by lab code)
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+
+      // Any authenticated teacher can create a new lab (teacherId must match authenticated user)
+      allow create: if isAuthenticated()
+        && request.resource.data.teacherId == request.auth.uid;
+
+      // Teachers who own the lab or admins can update any field;
+      // Students can only update 'enrolledStudents' and 'submissions' arrays
+      allow update: if isAuthenticated() && (
+        resource.data.teacherId == request.auth.uid ||
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledStudents', 'submissions'])
+      );
+
+      // Only the owning teacher or an admin can delete a lab
+      allow delete: if isAuthenticated()
+        && (resource.data.teacherId == request.auth.uid || isAdmin());
     }
 
-    // Student lab results, assessments and simulations
+    // ── Student Lab Results ──
     match /lab_results/{resultId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid);
+      // Students can read their own results; admins can read all
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+
+      // Students can create their own results (userId must match)
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
+
+      // Students can update/delete only their own results
+      allow update, delete: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
     }
   }
 }
-
-

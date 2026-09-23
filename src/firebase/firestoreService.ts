@@ -257,7 +257,7 @@ export async function getPrivateLabFromFirestoreByCode(code: string): Promise<Pr
     const labs = await getAllPrivateLabsFromFirestore();
     const match = labs.find((l) => {
       const cleanLabCode = (l.code || '').toUpperCase().replace(/[^A-Z0-9]/gi, '');
-      return cleanLabCode === cleanInput || cleanLabCode.endsWith(cleanInput) || cleanInput.endsWith(cleanLabCode);
+      return cleanLabCode === cleanInput;
     });
     return match || null;
   } catch (err) {

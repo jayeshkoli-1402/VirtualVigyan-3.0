@@ -53,6 +53,48 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
     return matchesSearch && matchesRole;
   });
 
+  // SECURITY: Defense-in-depth role guard. Only verified administrators can view the AdminPanel.
+  if (user?.role !== 'admin') {
+    return (
+      <div
+        className="animate-fade-in"
+        style={{
+          flex: 1,
+          padding: '60px 24px',
+          maxWidth: 580,
+          margin: '0 auto',
+          textAlign: 'center',
+          boxSizing: 'border-box',
+        }}
+      >
+        <div className="clay-card" style={{ padding: '36px 32px' }}>
+          <div style={{ fontSize: '3.2rem', marginBottom: 16 }}>🛡️</div>
+          <h2
+            style={{
+              fontFamily: 'var(--font-heading)',
+              fontSize: '1.4rem',
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              margin: '0 0 12px',
+            }}
+          >
+            Access Restricted
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 24px', lineHeight: 1.5 }}>
+            The Administrator Command Center is restricted to authorized platform administrators. Your account does not have superuser privileges.
+          </p>
+          <button
+            onClick={onViewAsStudent}
+            className="clay-btn clay-btn-primary"
+            style={{ padding: '12px 26px', borderRadius: 16, fontWeight: 700, fontSize: '0.88rem' }}
+          >
+            Return to Laboratory Workspace
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="animate-fade-in"

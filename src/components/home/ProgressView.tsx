@@ -22,26 +22,43 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
   const [filter, setFilter] = useState<'all' | 'private_lab' | 'practice'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  const effectiveEmail = user?.email || (() => {
+    try {
+      const raw = localStorage.getItem('vv_active_user') || localStorage.getItem('vv_user');
+      const u = raw ? JSON.parse(raw) : null;
+      return u?.email;
+    } catch {
+      return null;
+    }
+  })() || 'student@virtualvigyan.in';
+
   const loadData = () => {
-    setHistory(getStudentHistory(user?.email));
+    setHistory(getStudentHistory(effectiveEmail));
   };
 
   useEffect(() => {
     loadData();
+
+    // Trigger cloud sync to pull latest submissions
+    import('../../services/privateLabService').then(({ syncPrivateLabsWithCloud }) => {
+      syncPrivateLabsWithCloud().then(loadData).catch(() => {});
+    });
 
     const handleUpdate = () => {
       loadData();
     };
 
     window.addEventListener('vv_student_history_updated', handleUpdate);
+    window.addEventListener('vv_privatelabs_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
       window.removeEventListener('vv_student_history_updated', handleUpdate);
+      window.removeEventListener('vv_privatelabs_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
-  }, [user?.email]);
+  }, [user?.email, effectiveEmail]);
 
-  const stats = getStudentOverallStats(user?.email);
+  const stats = getStudentOverallStats(effectiveEmail);
 
   const filteredHistory = history.filter((h) => {
     if (filter === 'all') return true;

@@ -169,6 +169,20 @@ const AppContent: React.FC = () => {
     }
   }, [user?.role, activeTab]);
 
+  // SECURITY: Ensure unauthorized users cannot navigate to admin or teacher command centers
+  useEffect(() => {
+    if (activeExperiment === 'admin' && user?.role !== 'admin') {
+      setActiveExperiment('select');
+      setActiveTab('experiments');
+      sessionStorage.setItem('vv_activeExperiment', 'select');
+    }
+    if (activeExperiment === 'teacher' && user?.role !== 'teacher' && user?.role !== 'admin') {
+      setActiveExperiment('select');
+      setActiveTab('experiments');
+      sessionStorage.setItem('vv_activeExperiment', 'select');
+    }
+  }, [activeExperiment, user?.role]);
+
   // Automatically open pre-lab Safety Briefing when entering an experiment
   useEffect(() => {
     const isActualExperiment =
@@ -827,16 +841,16 @@ const AppContent: React.FC = () => {
 
       {/* Main Experiment Content */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {/* Admin Command Center */}
-        {activeExperiment === 'admin' && (
+        {/* Admin Command Center (SECURITY: Guarded by user.role === 'admin') */}
+        {activeExperiment === 'admin' && user?.role === 'admin' && (
           <AdminPanel
             onLaunchExperiment={(id) => setActiveExperiment(id)}
             onViewAsStudent={() => setActiveExperiment('select')}
           />
         )}
 
-        {/* Teacher Dashboard */}
-        {activeExperiment === 'teacher' && (
+        {/* Teacher Dashboard (SECURITY: Guarded by teacher/admin role) */}
+        {activeExperiment === 'teacher' && (user?.role === 'teacher' || user?.role === 'admin') && (
           <TeacherDashboard
             onLaunchExperiment={(id) => setActiveExperiment(id)}
             onNavigateToAuth={handleNavigateToAuth}

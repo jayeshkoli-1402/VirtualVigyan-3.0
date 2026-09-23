@@ -3,14 +3,22 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // VirtualVigyan Firebase configuration
+// All values MUST come from environment variables — never hardcode credentials.
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyABmdEtjq3RCSusy_yIXGN_jN1voBW3M6c',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'virtualvigyan.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'virtualvigyan',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'virtualvigyan.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '25318847855',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:25318847855:web:0d21dcff293e9250e6a49a',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
+
+// Validate required config at startup — fail fast if .env is missing
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error(
+    '[Firebase] Configuration missing! Copy .env.example to .env and fill in your Firebase project credentials.'
+  );
+}
 
 // Initialize Firebase App instance
 export const app = initializeApp(firebaseConfig);

@@ -119,63 +119,19 @@ interface AuthContextType {
   updateUserProfile: (updatedFields: Partial<User>) => Promise<void>;
 }
 
-// ── Admin Emails Whitelist & Default Credentials ──
+// ── Admin Emails Whitelist ──
+// NOTE: This list is used for client-side admin badge display only.
+// Actual authorization is enforced by Firestore Security Rules and Firebase Auth Custom Claims.
 export const ADMIN_EMAILS: string[] = [
   'jayeshkoli106@gmail.com',
   'omchaudhari0365@gmail.com',
   'dipaliishi2006@gmail.com',
   'vaishnavigirase802@gmail.com',
-  'parthchitodkar95@gmail.com',
-  'admin@virtualvigyan.in',
 ];
 
-export const DEFAULT_ADMIN_PASSWORD = 'zzzzzz';
-
-export interface AdminProfileMetadata {
-  name: string;
-  avatar: string;
-  department: string;
-  institution?: string;
-}
-
-export const ADMIN_DIRECTORY: Record<string, AdminProfileMetadata> = {
-  'jayeshkoli106@gmail.com': {
-    name: 'Jayesh Koli',
-    avatar: '🛡️',
-    department: 'Lead System Administrator & Lab Supervisor',
-    institution: 'VirtualVigyan Core Team',
-  },
-  'omchaudhari0365@gmail.com': {
-    name: 'Om Chaudhari',
-    avatar: '🛡️',
-    department: 'Lead Platform Architect & Tech Admin',
-    institution: 'VirtualVigyan Core Team',
-  },
-  'dipaliishi2006@gmail.com': {
-    name: 'Dipali Ishi',
-    avatar: '🛡️',
-    department: 'Curriculum & Virtual Lab Administrator',
-    institution: 'VirtualVigyan Core Team',
-  },
-  'vaishnavigirase802@gmail.com': {
-    name: 'Vaishnavi Girase',
-    avatar: '🛡️',
-    department: 'Simulation & Systems Administrator',
-    institution: 'VirtualVigyan Core Team',
-  },
-  'parthchitodkar95@gmail.com': {
-    name: 'Parth Chitodkar',
-    avatar: '🛡️',
-    department: 'Platform Moderator & Lab Administrator',
-    institution: 'VirtualVigyan Core Team',
-  },
-  'admin@virtualvigyan.in': {
-    name: 'Administrator (Moderator)',
-    avatar: '🛡️',
-    department: 'Superuser Command Center',
-    institution: 'VirtualVigyan Core Team',
-  },
-};
+// SECURITY: DEFAULT_ADMIN_PASSWORD removed — admin login MUST go through Firebase Auth.
+// SECURITY: ADMIN_DIRECTORY with PII (personal names, departments) removed from client bundle.
+// Admin profile metadata is now fetched from Firestore /users/{uid} documents.
 
 export function isAdminEmail(email: string): boolean {
   if (!email) return false;
@@ -183,72 +139,9 @@ export function isAdminEmail(email: string): boolean {
   return ADMIN_EMAILS.some((adm) => adm.toLowerCase() === norm);
 }
 
-// Default fallback seed users for local cohort visualization
+// Demo seed users for local cohort visualization (only @virtualvigyan.in demo accounts)
+// SECURITY: Personal emails removed from seed data. Real users come from Firestore.
 const SEED_USERS: User[] = [
-  {
-    id: 'usr_admin_jayesh',
-    name: 'Jayesh Koli',
-    email: 'jayeshkoli106@gmail.com',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-10',
-    department: 'Lead System Administrator & Lab Supervisor',
-    institution: 'VirtualVigyan Core Team',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
-  {
-    id: 'usr_admin_om',
-    name: 'Om Chaudhari',
-    email: 'omchaudhari0365@gmail.com',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-10',
-    department: 'Lead Platform Architect & Tech Admin',
-    institution: 'VirtualVigyan Core Team',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
-  {
-    id: 'usr_admin_dipali',
-    name: 'Dipali Ishi',
-    email: 'dipaliishi2006@gmail.com',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-10',
-    department: 'Curriculum & Virtual Lab Administrator',
-    institution: 'VirtualVigyan Core Team',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
-  {
-    id: 'usr_admin_vaishnavi',
-    name: 'Vaishnavi Girase',
-    email: 'vaishnavigirase802@gmail.com',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-10',
-    department: 'Simulation & Systems Administrator',
-    institution: 'VirtualVigyan Core Team',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
-  {
-    id: 'usr_admin_parth',
-    name: 'Parth Chitodkar',
-    email: 'parthchitodkar95@gmail.com',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-10',
-    department: 'Platform Moderator & Lab Administrator',
-    institution: 'VirtualVigyan Core Team',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
-  {
-    id: 'usr_admin_01',
-    name: 'Administrator (Moderator)',
-    email: 'admin@virtualvigyan.in',
-    role: 'admin',
-    avatar: '🛡️',
-    createdAt: '2026-01-15',
-    permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-  },
   {
     id: 'usr_teacher_01',
     name: 'Prof. Rajesh Sharma',
@@ -273,25 +166,59 @@ const SEED_USERS: User[] = [
     avgScore: 94,
     createdAt: '2026-02-10',
   },
-  {
-    id: 'usr_student_02',
-    name: 'Priya Deshmukh',
-    email: 'priya.deshmukh@school.edu',
-    role: 'student',
-    avatar: '👩‍🎓',
-    grade: 'Class 11 (Science)',
-    school: 'Kendriya Vidyalaya No. 1',
-    completedLabs: 4,
-    avgScore: 88,
-    createdAt: '2026-02-18',
-  },
 ];
 
+// ── Client-Side Rate Limiter ──
+const LOGIN_RATE_LIMIT_KEY = 'vv_login_rate';
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+function checkLoginRateLimit(): { allowed: boolean; waitSeconds?: number } {
+  try {
+    const raw = sessionStorage.getItem(LOGIN_RATE_LIMIT_KEY);
+    if (!raw) return { allowed: true };
+    const { count, firstAttempt } = JSON.parse(raw);
+    const elapsed = Date.now() - firstAttempt;
+    if (elapsed > LOCKOUT_DURATION_MS) {
+      sessionStorage.removeItem(LOGIN_RATE_LIMIT_KEY);
+      return { allowed: true };
+    }
+    if (count >= MAX_LOGIN_ATTEMPTS) {
+      return { allowed: false, waitSeconds: Math.ceil((LOCKOUT_DURATION_MS - elapsed) / 1000) };
+    }
+    return { allowed: true };
+  } catch {
+    return { allowed: true };
+  }
+}
+
+function recordLoginAttempt(): void {
+  try {
+    const raw = sessionStorage.getItem(LOGIN_RATE_LIMIT_KEY);
+    if (!raw) {
+      sessionStorage.setItem(LOGIN_RATE_LIMIT_KEY, JSON.stringify({ count: 1, firstAttempt: Date.now() }));
+      return;
+    }
+    const data = JSON.parse(raw);
+    const elapsed = Date.now() - data.firstAttempt;
+    if (elapsed > LOCKOUT_DURATION_MS) {
+      sessionStorage.setItem(LOGIN_RATE_LIMIT_KEY, JSON.stringify({ count: 1, firstAttempt: Date.now() }));
+    } else {
+      sessionStorage.setItem(LOGIN_RATE_LIMIT_KEY, JSON.stringify({ ...data, count: data.count + 1 }));
+    }
+  } catch { /* ignore */ }
+}
+
+function clearLoginRateLimit(): void {
+  try { sessionStorage.removeItem(LOGIN_RATE_LIMIT_KEY); } catch { /* ignore */ }
+}
+
 // Helper to deduce initial role from email/identifier
+// SECURITY: Removed email.includes('admin') substring escalation — role deduction
+// never grants admin based on email content alone.
 function deduceRole(email: string): UserRole {
   const norm = email.toLowerCase().trim();
   if (isAdminEmail(norm)) return 'admin';
-  if (norm.includes('admin')) return 'admin';
   if (norm.includes('teacher') || norm.includes('prof') || norm.includes('faculty')) return 'teacher';
   return 'student';
 }
@@ -299,86 +226,33 @@ function deduceRole(email: string): UserRole {
 // Map username shortcuts to emails
 function resolveIdentifierToEmail(identifier: string): string {
   const term = identifier.trim().toLowerCase();
-  if (term === 'admin') return 'admin@virtualvigyan.in';
   if (term === 'teacher') return 'teacher@virtualvigyan.in';
   if (term === 'student') return 'student@virtualvigyan.in';
   if (term === 'aarav') return 'student@virtualvigyan.in';
-  // Admin first-name shortcuts
+  // Admin first-name shortcuts (4 Designated Admins)
   if (term === 'jayesh' || term === 'jayeshkoli') return 'jayeshkoli106@gmail.com';
   if (term === 'om' || term === 'omchaudhari') return 'omchaudhari0365@gmail.com';
   if (term === 'dipali' || term === 'dipaliishi') return 'dipaliishi2006@gmail.com';
   if (term === 'vaishnavi' || term === 'vaishnavigirase') return 'vaishnavigirase802@gmail.com';
-  if (term === 'parth' || term === 'parthchitodkar') return 'parthchitodkar95@gmail.com';
   return term;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const cached = localStorage.getItem('vv_active_user');
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed && parsed.email && isAdminEmail(parsed.email)) {
-          return {
-            ...parsed,
-            role: 'admin',
-            avatar: '🛡️',
-            permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-          };
-        }
-        return parsed;
-      } catch {
-        // ignore
-      }
-    }
-    return null;
-  });
+  // SECURITY: Initial state is null. Firebase Auth onAuthStateChanged is the sole authority.
+  // A minimal cached display-name is used only for instant UI rendering before Firebase responds.
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [firestoreLockedState, setFirestoreLockedState] = useState(isFirestoreLocked());
   const [firestoreMessage, setFirestoreMessage] = useState<string | null>(null);
 
+  // SECURITY: allUsers initialized from SEED_USERS only (no localStorage vv_users_db cache).
+  // Full user directory is fetched on-demand from Firestore via refreshUsers(), never cached client-side.
   const [allUsers, setAllUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('vv_users_db');
-    let usersList: User[] = SEED_USERS;
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          usersList = parsed;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
     const deletedAccounts = getDeletedAccounts();
-    const map = new Map<string, User>();
-    SEED_USERS.forEach((u) => {
-      if (!deletedAccounts.includes(u.email.toLowerCase())) {
-        map.set(u.email.toLowerCase(), u);
-      }
-    });
-    usersList.forEach((u) => {
-      if (!deletedAccounts.includes(u.email.toLowerCase())) {
-        const existing = map.get(u.email.toLowerCase());
-        map.set(u.email.toLowerCase(), existing ? { ...existing, ...u } : u);
-      }
-    });
-
-    return Array.from(map.values()).map((u) => {
-      if (isAdminEmail(u.email)) {
-        return {
-          ...u,
-          role: 'admin',
-          avatar: '🛡️',
-          permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-        };
-      }
-      return u;
-    });
+    return SEED_USERS.filter((u) => !deletedAccounts.includes(u.email.toLowerCase()));
   });
 
   // Listen to Firestore status changes (locked mode / permission-denied detection)
@@ -391,19 +265,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  // Save active user to local cache for instant reload
+  // Save minimal active user info to local cache (display-only fields for instant UI rendering)
+  // SECURITY: Only stores non-sensitive fields. Permissions and role are NOT trusted from cache.
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem('vv_active_user', JSON.stringify(currentUser));
+      const minimalCache = {
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatar: currentUser.avatar,
+      };
+      localStorage.setItem('vv_active_user', JSON.stringify(minimalCache));
     } else {
       localStorage.removeItem('vv_active_user');
     }
   }, [currentUser]);
 
-  // Save users to local cache
-  useEffect(() => {
-    localStorage.setItem('vv_users_db', JSON.stringify(allUsers));
-  }, [allUsers]);
+  // SECURITY: Removed vv_users_db localStorage cache. Full user directory is never stored client-side.
 
   // Load all users from Firestore
   const refreshUsers = useCallback(async () => {
@@ -465,92 +344,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let profile = await getUserProfile(uid);
 
         if (!profile) {
-          // Check localStorage cached profile first (preserves correct role from registration)
-          let cachedProfile: any = null;
-          try {
-            const cached = localStorage.getItem('vv_active_user');
-            if (cached) {
-              const parsed = JSON.parse(cached);
-              if (parsed && parsed.email && parsed.email.toLowerCase() === email.toLowerCase()) {
-                cachedProfile = parsed;
-              }
-            }
-          } catch { /* ignore */ }
-
-          // Check local seed users
+          // Check local seed users for demo accounts
           const localMatch = SEED_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-          const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
 
-          // Role priority: admin whitelist > cached profile > seed user > deduceRole fallback
+          // Role priority: admin whitelist > seed user > deduceRole fallback
           const role = isSpecialAdmin
             ? 'admin'
-            : (cachedProfile?.role || localMatch?.role || deduceRole(email));
+            : (localMatch?.role || deduceRole(email));
 
           profile = {
             id: uid,
-            name: firebaseUser.displayName || cachedProfile?.name || adminMeta?.name || localMatch?.name || (email.split('@')[0] || 'User'),
+            name: firebaseUser.displayName || localMatch?.name || (email.split('@')[0] || 'User'),
             email,
             role,
-            avatar: cachedProfile?.avatar || (role === 'admin' ? '🛡️' : role === 'teacher' ? '👨‍🏫' : '🎓'),
-            createdAt: cachedProfile?.createdAt || localMatch?.createdAt || new Date().toISOString().split('T')[0],
-            grade: cachedProfile?.grade || localMatch?.grade || (role === 'student' ? 'Class 11' : undefined),
-            school: cachedProfile?.school || localMatch?.school || '',
-            institution: adminMeta?.institution || cachedProfile?.institution || localMatch?.institution || '',
-            department: adminMeta?.department || cachedProfile?.department || localMatch?.department || '',
-            completedLabs: cachedProfile?.completedLabs || localMatch?.completedLabs || 0,
-            avgScore: cachedProfile?.avgScore || localMatch?.avgScore || 0,
+            avatar: role === 'admin' ? '🛡️' : role === 'teacher' ? '👨‍🏫' : '🎓',
+            createdAt: localMatch?.createdAt || new Date().toISOString().split('T')[0],
+            grade: localMatch?.grade || (role === 'student' ? 'Class 11' : undefined),
+            school: localMatch?.school || '',
+            institution: localMatch?.institution || '',
+            department: localMatch?.department || '',
+            completedLabs: localMatch?.completedLabs || 0,
+            avgScore: localMatch?.avgScore || 0,
             permissions: role === 'admin' ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'] : undefined,
-            // Preserve extended profile fields
-            username: cachedProfile?.username,
-            branch: cachedProfile?.branch,
-            rollNumber: cachedProfile?.rollNumber,
-            bio: cachedProfile?.bio,
-            profileCompleted: cachedProfile?.profileCompleted,
           };
           saveUserProfile(profile).catch(() => {});
         }
 
-        // Always enforce admin role for designated admin emails
+        // Enforce admin role for designated admin emails (validated via Firebase Auth)
         if (isSpecialAdmin) {
           profile.role = 'admin';
           profile.avatar = '🛡️';
           profile.permissions = ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'];
-          const adminMeta = ADMIN_DIRECTORY[email.toLowerCase()];
-          if (adminMeta) {
-            if (!profile.name || profile.name === 'User' || profile.name.includes('@')) {
-              profile.name = adminMeta.name;
-            }
-            if (adminMeta.department && !profile.department) {
-              profile.department = adminMeta.department;
-            }
-          }
         }
 
         setCurrentUser(profile);
       } else {
-        // If not logged in via Firebase, check if there's a cached local session (Student, Teacher, or Admin)
-        const cached = localStorage.getItem('vv_active_user');
-        if (cached) {
-          try {
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.email && !isAccountDeleted(parsed.email)) {
-              if (isAdminEmail(parsed.email)) {
-                setCurrentUser({
-                  ...parsed,
-                  role: 'admin',
-                  avatar: '🛡️',
-                  permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-                });
-              } else {
-                setCurrentUser(parsed);
-              }
-              setLoading(false);
-              return;
-            }
-          } catch {
-            // ignore JSON parse error
-          }
-        }
+        // SECURITY: Firebase Auth says no user is signed in.
+        // Do NOT restore from localStorage — that would allow session forging.
+        // Clear any stale cached session.
+        localStorage.removeItem('vv_active_user');
         setCurrentUser(null);
       }
       setLoading(false);
@@ -559,14 +391,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // ── Login handler with Firebase Authentication & Admin Elevation ──
+  // ── Login handler — Firebase Authentication ONLY (no fallbacks) ──
   const login = async (emailOrUsername: string, password: string): Promise<AuthResponse> => {
     const emailNorm = resolveIdentifierToEmail(emailOrUsername);
     const isSpecialAdmin = isAdminEmail(emailNorm);
-    const isDefaultAdminPass = password.trim() === DEFAULT_ADMIN_PASSWORD;
+
+    // SECURITY: Rate limiting to prevent brute-force attacks
+    const rateCheck = checkLoginRateLimit();
+    if (!rateCheck.allowed) {
+      return {
+        success: false,
+        message: `Too many login attempts. Please wait ${rateCheck.waitSeconds} seconds before trying again.`,
+      };
+    }
 
     // Reject deleted accounts immediately
-    if (!isSpecialAdmin && isAccountDeleted(emailNorm)) {
+    if (isAccountDeleted(emailNorm)) {
       return {
         success: false,
         message: 'This account has been deleted. Please register if you wish to create a new account.',
@@ -574,94 +414,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      // 1. Attempt standard Firebase Auth sign-in
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, emailNorm, password);
-      } catch (signErr: unknown) {
-        const err = signErr as { code?: string; message?: string };
+      // SECURITY: Firebase Auth is the SOLE authentication authority. No fallbacks.
+      const userCredential = await signInWithEmailAndPassword(auth, emailNorm, password);
+      const fbUser = userCredential.user;
+      const uid = fbUser.uid;
 
-        // Auto-provision demo or admin account if not yet created in Firebase Auth
-        const isDemo =
-          isSpecialAdmin ||
-          emailNorm === 'admin@virtualvigyan.in' ||
-          emailNorm === 'teacher@virtualvigyan.in' ||
-          emailNorm === 'student@virtualvigyan.in';
+      // Login succeeded — clear rate limit counter
+      clearLoginRateLimit();
 
-        if (isDemo && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
-          try {
-            // Attempt to create user in Firebase Auth with the provided password
-            userCredential = await createUserWithEmailAndPassword(auth, emailNorm, password);
-            const seed = SEED_USERS.find((u) => u.email.toLowerCase() === emailNorm);
-            const adminMeta = ADMIN_DIRECTORY[emailNorm];
-            const displayName = seed?.name || adminMeta?.name || emailNorm.split('@')[0];
-
-            await updateProfile(userCredential.user, { displayName }).catch(() => {});
-            const demoProfile: User = {
-              ...(seed || {
-                id: userCredential.user.uid,
-                name: displayName,
-                email: emailNorm,
-                role: isSpecialAdmin ? 'admin' : deduceRole(emailNorm),
-                avatar: isSpecialAdmin ? '🛡️' : '🎓',
-                createdAt: new Date().toISOString().split('T')[0],
-              }),
-              id: userCredential.user.uid,
-              role: isSpecialAdmin ? 'admin' : (seed?.role || deduceRole(emailNorm)),
-              permissions: isSpecialAdmin
-                ? ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override']
-                : undefined,
-            };
-            saveUserProfile(demoProfile).catch(() => {});
-          } catch {
-            // If creation in Firebase fails, fallback to local session
-            if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
-              console.warn('[Auth] Firebase Auth failed; falling back to local Admin session for:', emailNorm);
-            } else if (isDemo) {
-              console.warn('[Auth] Firebase Auth failed; falling back to local Demo session for:', emailNorm);
-            } else {
-              throw signErr;
-            }
-          }
-        } else if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
-          console.warn('[Auth] Admin credentials verified via Admin Superuser pass for:', emailNorm);
-        } else if (err.code === 'auth/network-request-failed') {
-          // If offline / network error, allow local cached session if available
-          const localUser = allUsers.find((u) => u.email.toLowerCase() === emailNorm);
-          if (localUser && !isAccountDeleted(emailNorm)) {
-            console.warn('[Auth] Offline mode: Verified via local database for:', emailNorm);
-            setCurrentUser(localUser);
-            return {
-              success: true,
-              message: `Welcome back, ${localUser.name}! (Offline Mode)`,
-              role: localUser.role,
-            };
-          }
-          throw signErr;
-        } else {
-          throw signErr;
-        }
-      }
-
-      const fbUser = userCredential?.user;
-      const uid = fbUser?.uid || `admin_${emailNorm.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      let profile = fbUser ? await getUserProfile(fbUser.uid) : null;
+      let profile = await getUserProfile(uid);
 
       if (!profile) {
         const seed = SEED_USERS.find((u) => u.email.toLowerCase() === emailNorm);
-        const adminMeta = ADMIN_DIRECTORY[emailNorm];
         const role = isSpecialAdmin ? 'admin' : (seed?.role || deduceRole(emailNorm));
         profile = {
           id: uid,
-          name: fbUser?.displayName || adminMeta?.name || seed?.name || (emailNorm.split('@')[0] || 'User'),
+          name: fbUser.displayName || seed?.name || (emailNorm.split('@')[0] || 'User'),
           email: emailNorm,
           role,
           avatar: role === 'admin' ? '🛡️' : role === 'teacher' ? '👨‍🏫' : '🎓',
           createdAt: seed?.createdAt || new Date().toISOString().split('T')[0],
-          grade: seed?.grade || 'Class 11',
+          grade: seed?.grade || (role === 'student' ? 'Class 11' : undefined),
           school: seed?.school || '',
-          institution: adminMeta?.institution || seed?.institution || '',
-          department: adminMeta?.department || seed?.department || '',
+          institution: seed?.institution || '',
+          department: seed?.department || '',
           completedLabs: seed?.completedLabs || 0,
           avgScore: seed?.avgScore || 0,
           permissions: role === 'admin'
@@ -671,20 +447,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         saveUserProfile(profile).catch(() => {});
       }
 
-      // Enforce admin privileges whenever the email is in the admin whitelist
+      // Enforce admin privileges for designated admin emails (validated through Firebase Auth)
       if (isSpecialAdmin) {
         profile.role = 'admin';
         profile.avatar = '🛡️';
         profile.permissions = ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'];
-        const adminMeta = ADMIN_DIRECTORY[emailNorm];
-        if (adminMeta) {
-          if (!profile.name || profile.name === 'User' || profile.name.includes('@')) {
-            profile.name = adminMeta.name;
-          }
-          if (adminMeta.department && !profile.department) {
-            profile.department = adminMeta.department;
-          }
-        }
         saveUserProfile(profile).catch(() => {});
       }
 
@@ -704,37 +471,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: profile.role,
       };
     } catch (err: unknown) {
-      // If Firebase sign-in failed, but this is a designated admin using the default password 'zzzzzz'
-      if (isSpecialAdmin && (isDefaultAdminPass || password.length >= 6)) {
-        const seed = SEED_USERS.find((u) => u.email.toLowerCase() === emailNorm);
-        const adminMeta = ADMIN_DIRECTORY[emailNorm];
-        const adminProfile: User = {
-          id: `admin_${emailNorm.replace(/[^a-zA-Z0-9]/g, '_')}`,
-          name: adminMeta?.name || seed?.name || emailNorm.split('@')[0],
-          email: emailNorm,
-          role: 'admin',
-          avatar: '🛡️',
-          createdAt: seed?.createdAt || '2026-01-10',
-          department: adminMeta?.department || 'Platform Administrator',
-          institution: adminMeta?.institution || 'VirtualVigyan Core Team',
-          permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-        };
-        setCurrentUser(adminProfile);
-        setAllUsers((prev) => {
-          const exists = prev.some((u) => u.email.toLowerCase() === emailNorm);
-          return exists
-            ? prev.map((u) => (u.email.toLowerCase() === emailNorm ? adminProfile : u))
-            : [...prev, adminProfile];
-        });
-        return {
-          success: true,
-          message: `Welcome Administrator ${adminProfile.name}! Full Lab & Command Center Access Granted.`,
-          role: 'admin',
-        };
-      }
+      // SECURITY: Record failed attempt for rate limiting
+      recordLoginAttempt();
 
       const error = err as { code?: string; message?: string };
-      console.warn('[Auth] Login failed for:', emailNorm, 'Code:', error.code, 'Message:', error.message, 'Project:', auth.app.options.projectId);
+      console.warn('[Auth] Login failed for:', emailNorm, 'Code:', error.code);
       const message = getFirebaseFriendlyErrorMessage(error.code, error.message);
 
       return {
@@ -761,6 +502,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, message: 'Password must be at least 6 characters long (Firebase requirement).' };
     }
 
+    // Non-admin emails can NEVER register with admin role
+    if (!isSpecialAdmin && (data.role as string) === 'admin') {
+      return { success: false, message: 'Unauthorized role assignment. Administrator accounts cannot be self-assigned.' };
+    }
+
     if (!isSpecialAdmin && data.role !== 'student' && data.role !== 'teacher') {
       return { success: false, message: 'Invalid registration role.' };
     }
@@ -768,25 +514,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       let fbUser: any = null;
       try {
-        // Create user in Firebase Auth
+        // Create user in Firebase Auth — this is the ONLY way to register
         const userCredential = await createUserWithEmailAndPassword(auth, emailNorm, data.password);
         fbUser = userCredential.user;
         await updateProfile(fbUser, { displayName: data.name.trim() }).catch(() => {});
       } catch (authErr: any) {
         if (authErr.code === 'auth/email-already-in-use') {
-          // If already registered or lingering from past deletion, sign in and re-bind role
-          try {
-            const cred = await signInWithEmailAndPassword(auth, emailNorm, data.password);
-            fbUser = cred.user;
-          } catch {
-            return {
-              success: false,
-              message: 'An account with this email address already exists. Please sign in instead, or check your password.',
-            };
-          }
-        } else if (isSpecialAdmin && data.password.length >= 6) {
-          console.warn('[Auth] Special admin offline fallback for:', emailNorm, authErr);
+          return {
+            success: false,
+            message: 'An account with this email address already exists. Please sign in instead.',
+          };
         } else {
+          // SECURITY: No fallback paths — Firebase Auth is required for registration
           console.error('[Auth] Firebase Auth creation error:', authErr);
           const friendlyMessage = getFirebaseFriendlyErrorMessage(authErr.code, authErr.message);
           return {
@@ -796,8 +535,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      const adminMeta = ADMIN_DIRECTORY[emailNorm];
-      const uid = fbUser?.uid || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const uid = fbUser?.uid || `usr_${crypto.randomUUID()}`;
 
       // Create rich profile object
       const newUser: User = {
@@ -809,8 +547,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString().split('T')[0],
         grade: data.grade,
         school: data.school,
-        institution: adminMeta?.institution || data.institution,
-        department: adminMeta?.department || data.department,
+        institution: data.institution || '',
+        department: data.department || '',
         completedLabs: 0,
         avgScore: 0,
         permissions: assignedRole === 'admin'
@@ -841,28 +579,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: newUser.role,
       };
     } catch (err: unknown) {
-      if (isSpecialAdmin && data.password.length >= 6) {
-        const adminMeta = ADMIN_DIRECTORY[emailNorm];
-        const adminProfile: User = {
-          id: `admin_${emailNorm.replace(/[^a-zA-Z0-9]/g, '_')}`,
-          name: data.name.trim() || adminMeta?.name || 'Administrator',
-          email: emailNorm,
-          role: 'admin',
-          avatar: '🛡️',
-          createdAt: new Date().toISOString().split('T')[0],
-          department: adminMeta?.department || 'Platform Administrator',
-          institution: adminMeta?.institution || 'VirtualVigyan Core Team',
-          permissions: ['all_access', 'experiment_editor', 'user_moderation', 'telemetry', 'admin_override'],
-        };
-        setCurrentUser(adminProfile);
-        setAllUsers((prev) => [...prev, adminProfile]);
-        return {
-          success: true,
-          message: `Admin access verified! Welcome Administrator ${adminProfile.name}.`,
-          role: 'admin',
-        };
-      }
-
+      // SECURITY: No fallback registration paths. Firebase Auth is mandatory.
       const error = err as { code?: string; message?: string };
       const message = getFirebaseFriendlyErrorMessage(error.code, error.message || 'Registration failed. Please try again.');
 
@@ -889,6 +606,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ── Delete user (Admin capability to purge any user from database) ──
   const deleteUser = async (id: string): Promise<{ success: boolean; message: string }> => {
+    // SECURITY: Enforce admin role check before performing administrative deletion
+    if (currentUser?.role !== 'admin') {
+      return { success: false, message: 'Unauthorized: Administrator privileges required to delete accounts.' };
+    }
+
     const targetUser = allUsers.find((u) => u.id === id);
     const userEmail = targetUser?.email?.toLowerCase();
 
@@ -918,12 +640,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch {}
 
-    // 4. Update in-memory state and persist immediately to vv_users_db
+    // 4. Update in-memory state (no longer persisted to localStorage)
     const updatedUsers = allUsers.filter(
       (u) => u.id !== id && (!userEmail || u.email?.toLowerCase() !== userEmail)
     );
     setAllUsers(updatedUsers);
-    localStorage.setItem('vv_users_db', JSON.stringify(updatedUsers));
 
     // 5. If the admin deleted their own currently logged-in account, logout cleanly
     if (currentUser?.id === id || (userEmail && currentUser?.email?.toLowerCase() === userEmail)) {
@@ -1020,6 +741,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ── Change user role (Admin capability) ──
   const changeUserRole = async (id: string, newRole: UserRole) => {
+    // SECURITY: Enforce admin role check before changing user roles
+    if (currentUser?.role !== 'admin') {
+      console.warn('[Security] Unauthorized attempt to change user role.');
+      return;
+    }
+
     try {
       await updateUserRoleInFirestore(id, newRole);
     } catch {

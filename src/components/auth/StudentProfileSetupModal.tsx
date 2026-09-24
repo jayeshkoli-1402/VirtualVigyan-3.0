@@ -127,7 +127,8 @@ export const StudentProfileSetupModal: React.FC<StudentProfileSetupModalProps> =
     setIsSaving(true);
 
     try {
-      const finalAvatar = useCustomUrl && customAvatarUrl.trim() ? customAvatarUrl.trim() : selectedAvatar;
+      const isSafeAvatarUrl = (url: string) => /^https:\/\/[^\s/$.?#].[^\s]*$/i.test(url.trim());
+      const finalAvatar = useCustomUrl && isSafeAvatarUrl(customAvatarUrl) ? customAvatarUrl.trim() : selectedAvatar;
       const cleanUsername = username.trim().replace(/^@/, '').toLowerCase();
 
       await updateUserProfile({

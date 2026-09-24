@@ -294,7 +294,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         flexShrink: 0,
                       }}
                     >
-                      {user.avatar && user.avatar.startsWith('http') ? (
+                      {user.avatar && user.avatar.startsWith('https://') ? (
                         <img
                           src={user.avatar}
                           alt={user.name}

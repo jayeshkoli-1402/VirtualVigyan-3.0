@@ -32,7 +32,7 @@ export const MathFormula: React.FC<MathFormulaProps> = ({
         katex.render(tex, ref.current, {
           displayMode: display,
           throwOnError: false,
-          trust: true,
+          trust: false,
         });
       } catch {
         // Fallback: show raw TeX string

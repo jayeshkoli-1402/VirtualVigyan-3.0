@@ -90,5 +90,10 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated()
         && resource.data.userId == request.auth.uid;
     }
+
+    // ── Default Deny Catch-All ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }

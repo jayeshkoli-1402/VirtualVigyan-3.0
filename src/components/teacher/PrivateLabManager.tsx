@@ -42,7 +42,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
   const [dueDate, setDueDate] = useState(() => getFiveDaysLater());
   const [formError, setFormError] = useState<string | null>(null);
 
-  const experiments = getAllExperiments();
+  const experiments = getAllExperiments().filter((e) => !e.underDevelopment || user?.role === 'admin');
 
   const loadLabs = () => {
     const all = getAllPrivateLabs();

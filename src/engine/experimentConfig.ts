@@ -53,6 +53,12 @@ export type ExperimentConfig = {
   /** Estimated time in minutes */
   estimatedMinutes?: number;
 
+  /** Whether this experiment is currently under active development (staged for admin preview only) */
+  underDevelopment?: boolean;
+
+  /** Restrict visibility strictly to admin users */
+  adminOnly?: boolean;
+
   // ── Lab Configuration ──
 
   /** Apparatus available in the toolbox */

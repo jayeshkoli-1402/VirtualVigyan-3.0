@@ -16,6 +16,8 @@ export interface ExperimentItem {
   difficulty: 'Easy' | 'Medium' | 'Hard';
   thumbnailType: string;
   order: number;
+  underDevelopment?: boolean;
+  adminOnly?: boolean;
 }
 
 export const ALL_EXPERIMENTS: ExperimentItem[] = [
@@ -143,13 +145,79 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
   {
     id: 'conservation',
     type: 'legacy-conservation',
-    title: 'Law of Conservation of Mass',
+    title: 'Law of Conservation of Mass (Legacy 3D Lab)',
     description: 'Verify mass invariance during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
     classLevel: 'Class 9',
     categoryTag: 'Class 9 • Chemical Reactions',
     difficulty: 'Easy',
     thumbnailType: 'water-acidity',
     order: 12,
+  },
+  // ── CBSE Class 9 Practicals (Admin Preview Only / Under Development) ──
+  {
+    id: 'true-solution-colloid-suspension',
+    type: 'generic',
+    title: 'True Solution, Suspension and Colloid',
+    description: 'Prepare mixtures of salt, soil, and starch in water. Classify by transparency, stability, filtration, and Tyndall effect.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    difficulty: 'Easy',
+    thumbnailType: 'water-hardness-edta',
+    order: 13,
+    underDevelopment: true,
+    adminOnly: true,
+  },
+  {
+    id: 'mixture-compound-iron-sulphur',
+    type: 'generic',
+    title: 'Mixture & Compound (Iron and Sulphur)',
+    description: 'Prepare physical mixture and chemical compound (FeS). Test magnetism, CS₂ solubility, and dilute HCl reaction.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    difficulty: 'Medium',
+    thumbnailType: 'acid-value-oil',
+    order: 14,
+    underDevelopment: true,
+    adminOnly: true,
+  },
+  {
+    id: 'physical-chemical-changes',
+    type: 'generic',
+    title: 'Physical and Chemical Changes',
+    description: 'Perform Fe + CuSO₄, burning Mg ribbon, Zn + H₂SO₄, heating CuSO₄ crystals, and NH₄Cl sublimation.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    difficulty: 'Easy',
+    thumbnailType: 'water-acidity',
+    order: 15,
+    underDevelopment: true,
+    adminOnly: true,
+  },
+  {
+    id: 'conservation-of-mass',
+    type: 'generic',
+    title: 'Law of Conservation of Mass (Engine)',
+    description: 'Verify mass invariance (m₁ = m₂) during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Atoms and Molecules',
+    difficulty: 'Medium',
+    thumbnailType: 'water-alkalinity',
+    order: 16,
+    underDevelopment: true,
+    adminOnly: true,
+  },
+  {
+    id: 'melting-ice-boiling-water',
+    type: 'generic',
+    title: 'Melting Point of Ice & Boiling Point of Water',
+    description: 'Measure ice melting (0 °C / 273 K) and water boiling (100 °C / 373 K). Observe latent heat temperature plateaus.',
+    classLevel: 'Class 9',
+    categoryTag: 'Class 9 • Matter in Our Surroundings',
+    difficulty: 'Easy',
+    thumbnailType: 'viscosity-ostwald',
+    order: 17,
+    underDevelopment: true,
+    adminOnly: true,
   },
 ];
 
@@ -191,6 +259,15 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   const filteredExperiments = useMemo(() => {
     let list = ALL_EXPERIMENTS;
 
+    // Admin-only filtering: underDevelopment / adminOnly experiments are strictly visible to admins
+    const isAdmin = user?.role === 'admin';
+    list = list.filter((item) => {
+      if (item.adminOnly || item.underDevelopment) {
+        return isAdmin;
+      }
+      return true;
+    });
+
     // Filter by class pill
     if (selectedClass !== 'All') {
       list = list.filter((item) => item.classLevel === selectedClass);
@@ -220,7 +297,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
       }
       return a.order - b.order;
     });
-  }, [selectedClass, externalSearchQuery, sortOption]);
+  }, [user, selectedClass, externalSearchQuery, sortOption]);
 
   const handleCardClick = (item: ExperimentItem) => {
     if (item.type === 'legacy-titration') {
@@ -621,8 +698,8 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                   }}
                 >
                   <div>
-                    {/* Difficulty Badge */}
-                    <div style={{ marginBottom: 10 }}>
+                    {/* Difficulty Badge & Under Development Badge */}
+                    <div style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <span
                         style={{
                           fontSize: '0.68rem',
@@ -636,6 +713,25 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
                       >
                         {difficultyText}
                       </span>
+                      {item.underDevelopment && (
+                        <span
+                          style={{
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: 4,
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            color: '#d97706',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <span>🚧</span>
+                          <span>Under Development</span>
+                        </span>
+                      )}
                     </div>
 
                     {/* Title */}

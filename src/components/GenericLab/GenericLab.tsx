@@ -206,6 +206,41 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
 
+        {/* Under Development Admin Preview Banner */}
+        {config.underDevelopment && (
+          <div style={{
+            padding: '8px 18px',
+            background: 'linear-gradient(90deg, #78350f, #92400e)',
+            borderBottom: '1px solid #d97706',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.8rem',
+            color: '#fef3c7',
+            fontWeight: 600,
+            zIndex: 50,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                background: '#b45309',
+                color: '#fff',
+                fontWeight: 800,
+                fontSize: '0.68rem',
+                textTransform: 'uppercase',
+                padding: '2px 8px',
+                borderRadius: 4,
+                letterSpacing: '0.04em',
+              }}>
+                🚧 Staging / Admin Preview
+              </span>
+              <span><strong>Under Development:</strong> This experiment is visible strictly to administrators for testing.</span>
+            </div>
+            <span style={{ fontSize: '0.72rem', background: 'rgba(0,0,0,0.2)', padding: '2px 8px', borderRadius: 4 }}>
+              CBSE Class 9 Beta
+            </span>
+          </div>
+        )}
+
         {/* Private Lab Assessment Mode Banner */}
         {privateLabContext && (
           <div style={{

@@ -24,6 +24,7 @@ import {
   type VesselMixture,
   type ChemicalAddition,
 } from './stoichiometrySolver';
+import { CHEMICAL_DATABASE } from './chemicalDatabase';
 
 // ── Chemical Reagent Detection Helpers ───────────────────────────
 
@@ -417,7 +418,19 @@ function applyEffects(
       case 'setFlag':
         newState = {
           ...newState,
-          flags: { ...newState.flags, [effect.key]: effect.value },
+          flags: {
+            ...newState.flags,
+            [effect.key]: effect.value,
+            ...(effect.key === 'buretteFilled' && effect.value === true
+              ? { buretteEmpty: false, 'burette-filled': true }
+              : effect.key === 'buretteFilled' && effect.value === false
+              ? { buretteEmpty: true, 'burette-filled': false }
+              : {}),
+          },
+          variables: {
+            ...newState.variables,
+            ...(effect.key === 'buretteFilled' && effect.value === true ? { volumeAdded: 0, stopcockOpen: 0 } : {}),
+          },
         };
         break;
 
@@ -677,6 +690,62 @@ export function createExperimentReducer(
         const interactions = findMatchingInteractions(config, 'drop', itemId, zoneId);
 
         if (interactions.length === 0) {
+          // Universal burette refill check: If student dropped titrant to refill an empty or depleted burette
+          const isBuretteTarget = zoneId === 'burette-top-zone' || zoneId === 'burette-refill-zone' || zoneId === 'burette' || zoneId.includes('burette');
+          const isTitrantItem = itemId.includes('titrant') || itemId.includes('edta') || itemId.includes('naoh') || itemId.includes('h2so4') || itemId.includes('koh') || itemId.includes('thiosulphate') || itemId.includes('agno3');
+          const buretteNeedsRefill = state.flags.buretteEmpty === true || state.flags.buretteFilled === false || ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) <= 0.05);
+
+          if (isBuretteTarget && isTitrantItem && buretteNeedsRefill) {
+            const titrant = detectBuretteTitrant(config, state);
+            const titrantColor = CHEMICAL_DATABASE[titrant.substanceId]?.baseColor || 'rgba(56, 189, 248, 0.45)';
+            const refillAppProps = { ...state.apparatusProps };
+            refillAppProps['burette'] = {
+              ...(refillAppProps['burette'] ?? {}),
+              liquidLevel: 1.0,
+              liquidColor: titrantColor,
+              label: `${titrant.substanceId ? titrant.substanceId.toUpperCase() : 'Titrant'} (0.00 mL)`,
+            };
+
+            const refilledVars: Record<string, number> = {
+              ...state.variables,
+              volumeAdded: 0,
+              stopcockOpen: 0,
+            };
+
+            const titrationKeys = ['stdEdtaVolume', 'sampleEdtaVolume', 'kohVolume', 'thiosulphateVolume', 'volumeA', 'volumeB', 'volumeY', 'volumeZ', 'naohVolume', 'buretteReading'];
+            for (const tk of titrationKeys) {
+              if (refilledVars[tk] !== undefined && !state.flags['titrationDone'] && !state.flags['v1EndpointBlue']) {
+                refilledVars[tk] = 0;
+              }
+            }
+
+            return {
+              ...state,
+              variables: refilledVars,
+              flags: {
+                ...state.flags,
+                buretteFilled: true,
+                'burette-filled': true,
+                buretteEmpty: false,
+                isDropAnimating: false,
+              },
+              apparatusProps: refillAppProps,
+              completedActions: [...new Set([...state.completedActions, 'fill-burette', 'refill-burette'])],
+              animations: { ...state.animations, isPouring: true },
+              activeAnimationInteractionId: null,
+              activeAnimation: {
+                type: 'pour',
+                sourceApparatusId: itemId,
+                targetZoneId: zoneId,
+                color: titrantColor,
+              },
+              mistakes: [
+                ...state.mistakes,
+                '✓ Burette refilled with fresh titrant solution to 0.00 mL mark. Ready for accurate titration.',
+              ],
+            };
+          }
+
           // Check if student dropped a chemical reagent into a reaction vessel (unscripted experimentation)
           const chemAddition = detectChemicalAddition(itemId, config, state);
           const targetVessel = findTargetVesselId(zoneId, config, state);
@@ -931,21 +1000,26 @@ export function createExperimentReducer(
         );
         if (!hasBurette) return state;
 
+        const currentBuretteLevel = (state.apparatusProps['burette']?.liquidLevel as number) ?? (state.flags.buretteFilled ? 1.0 : 0);
+        const currentVolAdded = (state.variables['volumeAdded'] as number) ?? 0;
         const isBuretteFilled = Boolean(
-          hasBurette && (
-            state.flags.buretteFilled === true ||
-            state.flags['burette-filled'] === true ||
-            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
-          ) &&
+          hasBurette &&
+          currentBuretteLevel > 0.02 &&
+          currentVolAdded < 49.9 &&
+          state.flags.buretteEmpty !== true &&
           state.flags.buretteFilled !== false &&
-          state.flags['burette-filled'] !== false
+          state.flags['burette-filled'] !== false &&
+          (state.flags.buretteFilled === true || state.flags['burette-filled'] === true)
         );
 
         if (!isBuretteFilled && action.payload.openAmount > 0) {
           return {
             ...state,
             variables: { ...state.variables, stopcockOpen: 0 },
-            mistakes: [...state.mistakes, 'Burette is empty! Fill the burette with solution before opening the stopcock.'],
+            mistakes: [
+              ...state.mistakes,
+              'Burette is empty! You have drained all titrant solution. Refill the burette to 0.00 mL with titrant before opening the stopcock.',
+            ],
           };
         }
 
@@ -968,22 +1042,23 @@ export function createExperimentReducer(
         const stopcockOpen = state.variables['stopcockOpen'] ?? 0;
         if (stopcockOpen <= 0) return state;
 
-        // Check if burette is filled! Strictly check filled status (default to FALSE)
+        const currentBuretteLevel = (state.apparatusProps['burette']?.liquidLevel as number) ?? (state.flags.buretteFilled ? 1.0 : 0);
+        const currentVolAdded = (state.variables['volumeAdded'] as number) ?? 0;
         const isBuretteFilled = Boolean(
-          hasBurette && (
-            state.flags.buretteFilled === true ||
-            state.flags['burette-filled'] === true ||
-            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
-          ) &&
+          hasBurette &&
+          currentBuretteLevel > 0.02 &&
+          currentVolAdded < 49.9 &&
+          state.flags.buretteEmpty !== true &&
           state.flags.buretteFilled !== false &&
-          state.flags['burette-filled'] !== false
+          state.flags['burette-filled'] !== false &&
+          (state.flags.buretteFilled === true || state.flags['burette-filled'] === true)
         );
 
         if (!isBuretteFilled) {
           return {
             ...state,
             variables: { ...state.variables, stopcockOpen: 0 },
-            flags: { ...state.flags, isDropAnimating: false },
+            flags: { ...state.flags, isDropAnimating: false, buretteFilled: false, 'burette-filled': false, buretteEmpty: true },
           };
         }
 
@@ -993,17 +1068,48 @@ export function createExperimentReducer(
         const newVariables = { ...state.variables };
         const currentVolume = newVariables['volumeAdded'] ?? 0;
 
-        // If burette is empty (50 mL capacity reached), stop flowing
-        if (currentVolume >= 50) {
-          return {
-            ...state,
-            variables: { ...state.variables, stopcockOpen: 0 },
-            flags: { ...state.flags, isDropAnimating: false },
-          };
-        }
-
         const newVolume = Math.round((currentVolume + flowAmount) * 1000) / 1000;
         newVariables['volumeAdded'] = newVolume;
+
+        // Dynamically update receiving vessel's liquid level & burette's level!
+        const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
+
+        // If burette runs dry (50 mL capacity reached or liquid depleted), stop flowing immediately and require refill!
+        if (newVolume >= 50 || buretteLevel <= 0.01) {
+          const emptyProps = { ...state.apparatusProps };
+          emptyProps['burette'] = {
+            ...(emptyProps['burette'] ?? {}),
+            liquidLevel: 0,
+            label: 'Burette (EMPTY - Refill to 0.00 mL Required)',
+          };
+
+          const drainMistakeMsg = 'Burette is completely empty! All titrant solution has been drained. You must refill the burette with titrant to 0.00 mL to take accurate titration readings.';
+          const updatedMistakes = state.mistakes.includes(drainMistakeMsg)
+            ? state.mistakes
+            : [...state.mistakes, drainMistakeMsg];
+
+          // Unset 'fill-burette' from completed actions so student must refill before completing step
+          const updatedCompletedActions = state.completedActions.filter(a => a !== 'fill-burette');
+
+          return {
+            ...state,
+            variables: {
+              ...newVariables,
+              stopcockOpen: 0,
+              volumeAdded: 50,
+            },
+            flags: {
+              ...state.flags,
+              buretteFilled: false,
+              'burette-filled': false,
+              buretteEmpty: true,
+              isDropAnimating: false,
+            },
+            apparatusProps: emptyProps,
+            completedActions: updatedCompletedActions,
+            mistakes: updatedMistakes,
+          };
+        }
 
         // Automatically increment specific experiment titration volume variables if they exist in variables
         const titrationKeys = [
@@ -1037,8 +1143,6 @@ export function createExperimentReducer(
           }
         }
 
-        // Dynamically update receiving vessel's liquid level & burette's level!
-        const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
         const apparatusProps = { ...state.apparatusProps };
         apparatusProps['burette'] = {
           ...(apparatusProps['burette'] ?? {}),
@@ -1095,6 +1199,15 @@ export function createExperimentReducer(
             inter.completesAction &&
             !newStateResult.completedActions.includes(inter.completesAction)
           ) {
+            // Guard: Cannot trigger a titration endpoint if the burette ran out of solution or is empty!
+            const buretteHasSolution = (newStateResult.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0.02 &&
+              newStateResult.flags.buretteFilled !== false &&
+              newStateResult.flags.buretteEmpty !== true;
+
+            if (!buretteHasSolution) {
+              continue;
+            }
+
             const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, newStateResult));
             const guardTriggered = inter.guard && evaluateCondition(inter.guard.condition, newStateResult);
             if (conditionsMet && !guardTriggered) {
@@ -1179,20 +1292,22 @@ export function createExperimentReducer(
         );
         if (!hasBurette) return state;
 
+        const currentBuretteLevel = (state.apparatusProps['burette']?.liquidLevel as number) ?? (state.flags.buretteFilled ? 1.0 : 0);
+        const currentVolAdded = (state.variables['volumeAdded'] as number) ?? 0;
         const isBuretteFilled = Boolean(
-          hasBurette && (
-            state.flags.buretteFilled === true ||
-            state.flags['burette-filled'] === true ||
-            ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0)
-          ) &&
+          hasBurette &&
+          currentBuretteLevel > 0.02 &&
+          currentVolAdded < 49.9 &&
+          state.flags.buretteEmpty !== true &&
           state.flags.buretteFilled !== false &&
-          state.flags['burette-filled'] !== false
+          state.flags['burette-filled'] !== false &&
+          (state.flags.buretteFilled === true || state.flags['burette-filled'] === true)
         );
 
         if (!isBuretteFilled) {
           return {
             ...state,
-            mistakes: [...state.mistakes, 'Burette is empty! Fill the burette before dispensing drops.'],
+            mistakes: [...state.mistakes, 'Burette is empty! You have drained all titrant solution. Refill the burette to 0.00 mL with titrant before dispensing drops.'],
           };
         }
 
@@ -1235,6 +1350,43 @@ export function createExperimentReducer(
         }
 
         const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
+
+        // If burette runs dry on drop addition, stop and require refill!
+        if (newVolume >= 50 || buretteLevel <= 0.01) {
+          const emptyProps = { ...state.apparatusProps };
+          emptyProps['burette'] = {
+            ...(emptyProps['burette'] ?? {}),
+            liquidLevel: 0,
+            label: 'Burette (EMPTY - Refill to 0.00 mL Required)',
+          };
+
+          const drainMistakeMsg = 'Burette is completely empty! All titrant solution has been drained. You must refill the burette with titrant to 0.00 mL to take accurate titration readings.';
+          const updatedMistakes = state.mistakes.includes(drainMistakeMsg)
+            ? state.mistakes
+            : [...state.mistakes, drainMistakeMsg];
+
+          const updatedCompletedActions = state.completedActions.filter(a => a !== 'fill-burette');
+
+          return {
+            ...state,
+            variables: {
+              ...newVariables,
+              stopcockOpen: 0,
+              volumeAdded: 50,
+            },
+            flags: {
+              ...state.flags,
+              buretteFilled: false,
+              'burette-filled': false,
+              buretteEmpty: true,
+              isDropAnimating: false,
+            },
+            apparatusProps: emptyProps,
+            completedActions: updatedCompletedActions,
+            mistakes: updatedMistakes,
+          };
+        }
+
         const apparatusProps = { ...state.apparatusProps };
         apparatusProps['burette'] = {
           ...(apparatusProps['burette'] ?? {}),
@@ -1284,6 +1436,15 @@ export function createExperimentReducer(
             inter.completesAction &&
             !newDropStateResult.completedActions.includes(inter.completesAction)
           ) {
+            // Guard: Cannot trigger a titration endpoint if the burette ran out of solution or is empty!
+            const buretteHasSolution = (newDropStateResult.apparatusProps['burette']?.liquidLevel as number ?? 0) > 0.02 &&
+              newDropStateResult.flags.buretteFilled !== false &&
+              newDropStateResult.flags.buretteEmpty !== true;
+
+            if (!buretteHasSolution) {
+              continue;
+            }
+
             const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, newDropStateResult));
             const guardTriggered = inter.guard && evaluateCondition(inter.guard.condition, newDropStateResult);
             if (conditionsMet && !guardTriggered) {

@@ -936,6 +936,29 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         )}
 
         {/* Real-time titration technique guidance banners */}
+        {Boolean(state.flags.buretteEmpty || (!state.flags.buretteFilled && hasBurette && ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) <= 0.02))) && (
+          <div
+            id="titration-burette-empty-warning"
+            className="animate-fade-in"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              background: 'rgba(239, 68, 68, 0.16)',
+              border: '1.5px solid #ef4444',
+              color: '#dc2626',
+              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
+            }}
+          >
+            <span>⚠️</span>
+            <span>Burette Empty: Drag titrant bottle to top of burette to refill to 0.00 mL!</span>
+          </div>
+        )}
+
         {stopcockOpen >= 0.75 && (
           <div
             id="titration-fast-flow-warning"

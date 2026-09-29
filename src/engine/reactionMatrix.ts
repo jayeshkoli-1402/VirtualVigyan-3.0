@@ -202,6 +202,32 @@ export const REACTION_RULES: ReactionRule[] = [
     },
   },
   {
+    id: 'zn_h2so4_displacement',
+    name: 'Zinc Metal in Dilute Sulfuric Acid (Hydrogen Evolution)',
+    equation: 'Zn(s) + H₂SO₄ → ZnSO₄ + H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'zn', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'znso4', coeff: 1 },
+      { substanceId: 'h2', coeff: 1 },
+    ],
+    deltaH: -153.9,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Hydrogen gas is highly flammable! Keep away from open flames.',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      const excess = ctx.excessReagents[0]
+        ? ` ${ctx.excessReagents[0].name} remains in excess.`
+        : '';
+      return `Single displacement occurred: Zinc metal reacted with dilute sulfuric acid, dissolving into clear ZnSO₄ solution and liberating ~${h2Ml} mL of flammable hydrogen gas (H₂↑) with vigorous effervescence. Exothermic warming: +${ctx.deltaT.toFixed(1)}°C.${excess}`;
+    },
+  },
+  {
     id: 'mg_hcl_displacement',
     name: 'Magnesium Ribbon in Hydrochloric Acid (Violent Fizzing)',
     equation: 'Mg(s) + 2HCl → MgCl₂ + H₂(g)↑',

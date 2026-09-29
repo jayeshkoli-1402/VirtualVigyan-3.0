@@ -50,20 +50,6 @@ export const chlorideMohrMethod: ExperimentConfig = {
       initialProps: { liquidLevel: 0, width: 130, height: 150 },
     },
     {
-      id: 'nacl-standard',
-      component: 'ReagentBottle',
-      label: '0.02 N NaCl Standard',
-      icon: '🧴',
-      initialProps: { liquidColor: 'rgba(56, 189, 248, 0.4)', label: 'Std NaCl' },
-    },
-    {
-      id: 'k2cro4-indicator',
-      component: 'Dropper',
-      label: '5% K₂CrO₄ Indicator',
-      icon: '💧',
-      initialProps: { liquidColor: 'rgba(250, 204, 21, 0.95)', label: 'K₂CrO₄' },
-    },
-    {
       id: 'water-sample',
       component: 'ReagentBottle',
       label: 'Water Sample (Chloride)',
@@ -71,25 +57,11 @@ export const chlorideMohrMethod: ExperimentConfig = {
       initialProps: { liquidColor: 'rgba(56, 189, 248, 0.5)', label: 'Sample' },
     },
     {
-      id: 'na2co3-buffer',
-      component: 'ReagentBottle',
-      label: 'Chloride-free Na₂CO₃',
-      icon: '🧴',
-      initialProps: { liquidColor: 'rgba(255, 255, 255, 0.6)', label: 'Na₂CO₃' },
-    },
-    {
-      id: 'measuring-cylinder',
-      component: 'MeasuringCylinder',
-      label: '50 mL Measuring Cylinder',
-      icon: '📏',
-      initialProps: { width: 65, height: 175, maxVolume: 50 },
-    },
-    {
-      id: 'digital-balance',
-      component: 'DigitalBalance',
-      label: 'Digital Analytical Balance',
-      icon: '⚖️',
-      initialProps: { width: 145, height: 105, massGrams: 0.117, label: '0.117 g' },
+      id: 'k2cro4-indicator',
+      component: 'Dropper',
+      label: '5% K₂CrO₄ Indicator',
+      icon: '💧',
+      initialProps: { liquidColor: 'rgba(250, 204, 21, 0.95)', label: 'K₂CrO₄' },
     },
   ],
 
@@ -123,7 +95,7 @@ export const chlorideMohrMethod: ExperimentConfig = {
     {
       id: 'flask-mouth-zone',
       label: 'Into Conical Flask',
-      accepts: ['nacl-standard', 'k2cro4-indicator', 'water-sample', 'na2co3-buffer'],
+      accepts: ['water-sample', 'k2cro4-indicator'],
       position: { x: 50, y: 50 },
       size: { width: 18, height: 26 },
       rejectMessage: 'Add reagent into the titration flask.',
@@ -140,12 +112,6 @@ export const chlorideMohrMethod: ExperimentConfig = {
         scale: 1.15,
         props: { label: 'Retort Stand' },
       },
-      {
-        component: 'DigitalBalance',
-        position: { x: 80, y: 72 },
-        scale: 0.95,
-        props: { label: 'Analytical Balance' },
-      },
     ],
   },
 
@@ -155,6 +121,12 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'setup-stand',
       label: '1. Mount Burette',
       instruction: 'Drag the 50 mL Burette from the toolbox and clamp it onto the retort stand.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'burettePlaced', equals: true },
+          instruction: '✓ Burette mounted on retort stand! Proceed to fill it with AgNO₃ titrant.',
+        },
+      ],
       requiredActions: ['place-burette'],
       type: 'lab',
     },
@@ -162,6 +134,12 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'fill-burette',
       label: '2. Fill Burette with AgNO₃',
       instruction: 'Drag the 0.02 N AgNO₃ bottle to the top of the burette to fill it up to the 0.0 mL mark.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'buretteFilled', equals: true },
+          instruction: '✓ Burette filled with 0.02 N AgNO₃ to 0.0 mL! Next, place the conical flask.',
+        },
+      ],
       requiredActions: ['fill-burette'],
       type: 'lab',
     },
@@ -169,27 +147,78 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'setup-flask',
       label: '3. Place Flask',
       instruction: 'Place the clean 250 mL conical flask beneath the clamped burette.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'flaskPlaced', equals: true },
+          instruction: '✓ Conical flask positioned under burette! Next, add the water sample.',
+        },
+      ],
       requiredActions: ['place-flask'],
       type: 'lab',
     },
     {
       id: 'pipette-sample',
       label: '4. Add 10 mL Water Sample',
-      instruction: 'Pipette 10 mL of the water sample into the flask. Add a pinch of chloride-free Na₂CO₃.',
+      instruction: 'Pipette exactly 10 mL of the water sample into the conical flask.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'sampleAdded', equals: true },
+          instruction: '✓ 10 mL water sample added to the flask! Next, add the potassium chromate indicator.',
+        },
+      ],
       requiredActions: ['add-sample'],
       type: 'lab',
     },
     {
       id: 'add-chromate',
       label: '5. Add K₂CrO₄ Indicator',
-      instruction: 'Add 3–4 drops of 5% potassium chromate indicator. Note the bright yellow color.',
+      instruction: 'Add 3–4 drops of 5% potassium chromate indicator to the flask. Note the bright yellow color.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'indicatorAdded', equals: true },
+          instruction: '✓ K₂CrO₄ indicator added! The solution is bright yellow. Now titrate with AgNO₃ titrant.',
+        },
+      ],
       requiredActions: ['add-indicator'],
       type: 'lab',
     },
     {
       id: 'titrate-ag',
       label: '6. Titrate with AgNO₃',
-      instruction: 'Click the right wing of the burette cork to titrate drop-by-drop with 0.02 N AgNO₃. Stop when a permanent brick-red Ag₂CrO₄ precipitate appears at 8.2 mL.',
+      instruction: 'Open the burette stopcock to titrate drop-by-drop with 0.02 N AgNO₃ while swirling the flask. Stop when a permanent brick-red Ag₂CrO₄ precipitate appears, then note your burette reading.',
+      dynamicInstructions: [
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'endpointBrickRed', equals: true },
+              { type: 'variable', key: 'stopcockOpen', op: '<=', value: 0 },
+            ],
+          },
+          instruction: '✓ Titration complete! Stopcock closed. Note your final burette reading and click Continue to proceed to calculations.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'endpointBrickRed', equals: true },
+              { type: 'variable', key: 'stopcockOpen', op: '>', value: 0 },
+            ],
+          },
+          instruction: 'Endpoint reached. Close the stopcock manually to record your final burette reading.',
+        },
+        {
+          condition: {
+            type: 'and',
+            conditions: [
+              { type: 'flag', key: 'endpointBrickRed', equals: false },
+              { type: 'variable', key: 'stopcockOpen', op: '<=', value: 0 },
+              { type: 'variable', key: 'buretteReading', op: '>', value: 0 },
+            ],
+          },
+          instruction: 'Endpoint not reached yet (solution is still yellow). Reopen the stopcock to continue titrating with AgNO₃.',
+        },
+      ],
       requiredActions: ['titrate-ag'],
       advanceMode: 'button',
       type: 'lab',
@@ -197,7 +226,7 @@ export const chlorideMohrMethod: ExperimentConfig = {
     {
       id: 'calculation',
       label: '7. Calculations & Viva',
-      instruction: 'Calculate the chloride content in mg/L (ppm) using the burette reading (8.2 mL of 0.02 N AgNO₃).',
+      instruction: 'Calculate the chloride content in mg/L (ppm) using your recorded titre volume from the titration.',
       requiredActions: ['calculation-submitted'],
       advanceMode: 'button',
       type: 'calculation',
@@ -216,6 +245,10 @@ export const chlorideMohrMethod: ExperimentConfig = {
     {
       id: 'inter-place-burette',
       trigger: { type: 'drop', source: 'burette', target: 'clamp-zone' },
+      guard: {
+        condition: { type: 'flag', key: 'burettePlaced', equals: true },
+        message: 'The burette is already mounted on the retort stand.',
+      },
       effects: [
         { type: 'placeApparatus', apparatusId: 'burette', zoneId: 'clamp-zone' },
         { type: 'setFlag', key: 'burettePlaced', value: true },
@@ -226,7 +259,11 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'inter-fill-burette',
       trigger: { type: 'drop', source: 'agno3-titrant', target: 'burette-top-zone' },
       conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
-      blockMessage: 'Clamp the burette on the retort stand before filling it.',
+      blockMessage: 'Clamp the burette on the retort stand before filling it with AgNO₃.',
+      guard: {
+        condition: { type: 'flag', key: 'buretteFilled', equals: true },
+        message: 'The burette is already filled with 0.02 N AgNO₃ to the 0.0 mL mark.',
+      },
       effects: [
         { type: 'setFlag', key: 'buretteFilled', value: true },
         { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidLevel', value: 1.0 },
@@ -239,6 +276,12 @@ export const chlorideMohrMethod: ExperimentConfig = {
     {
       id: 'inter-place-flask',
       trigger: { type: 'drop', source: 'conical-flask', target: 'flask-bench-zone' },
+      conditions: [{ type: 'flag', key: 'buretteFilled', equals: true }],
+      blockMessage: 'Fill the burette with 0.02 N AgNO₃ before positioning the conical flask.',
+      guard: {
+        condition: { type: 'flag', key: 'flaskPlaced', equals: true },
+        message: 'The conical flask is already placed on the bench beneath the burette.',
+      },
       effects: [
         { type: 'placeApparatus', apparatusId: 'conical-flask', zoneId: 'flask-bench-zone' },
         { type: 'setFlag', key: 'flaskPlaced', value: true },
@@ -249,7 +292,11 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'inter-add-sample',
       trigger: { type: 'drop', source: 'water-sample', target: 'flask-mouth-zone' },
       conditions: [{ type: 'flag', key: 'flaskPlaced', equals: true }],
-      blockMessage: 'Place the flask on the bench first.',
+      blockMessage: 'Place the conical flask on the bench first.',
+      guard: {
+        condition: { type: 'flag', key: 'sampleAdded', equals: true },
+        message: 'The 10 mL water sample has already been added to the flask.',
+      },
       effects: [
         { type: 'setFlag', key: 'sampleAdded', value: true },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.35 },
@@ -263,9 +310,14 @@ export const chlorideMohrMethod: ExperimentConfig = {
       id: 'inter-add-chromate',
       trigger: { type: 'drop', source: 'k2cro4-indicator', target: 'flask-mouth-zone' },
       conditions: [{ type: 'flag', key: 'sampleAdded', equals: true }],
-      blockMessage: 'Add the water sample first.',
+      blockMessage: 'Add the 10 mL water sample into the flask before adding the indicator.',
+      guard: {
+        condition: { type: 'flag', key: 'indicatorAdded', equals: true },
+        message: 'K₂CrO₄ indicator has already been added to the flask.',
+      },
       effects: [
         { type: 'setFlag', key: 'indicatorAdded', value: true },
+        { type: 'setVariable', key: 'maxFlowRate', value: 1.0 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.40 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(250, 204, 21, 0.95)' },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Sample + K₂CrO₄ (Bright Yellow)' },
@@ -276,14 +328,20 @@ export const chlorideMohrMethod: ExperimentConfig = {
     {
       id: 'inter-titrate-ag',
       trigger: { type: 'drop', source: 'burette', target: 'flask-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'indicatorAdded', equals: true }],
-      blockMessage: 'Add K₂CrO₄ indicator before starting titration.',
+      conditions: [
+        { type: 'flag', key: 'indicatorAdded', equals: true },
+        { type: 'variable', key: 'buretteReading', op: '>=', value: 8.2 },
+      ],
+      blockMessage: 'Open the burette stopcock to titrate with 0.02 N AgNO₃ until a permanent brick-red precipitate forms.',
+      guard: {
+        condition: { type: 'flag', key: 'endpointBrickRed', equals: true },
+        message: 'Titration is already complete and the brick-red endpoint has been reached.',
+      },
       effects: [
         { type: 'setFlag', key: 'endpointBrickRed', value: true },
-        { type: 'setVariable', key: 'buretteReading', value: 8.2 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.55 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(185, 28, 28, 0.92)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Brick Red Ag₂CrO₄ Endpoint (8.2 mL)' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: 'Brick Red Ag₂CrO₄ Precipitate' },
       ],
       completesAction: 'titrate-ag',
       animation: { type: 'titrate', durationMs: 2400, animatingFlag: 'isTitrating' },
@@ -335,10 +393,93 @@ export const chlorideMohrMethod: ExperimentConfig = {
   // ── Validation ──
   validation: [
     {
+      id: 'already-mounted-burette',
+      trigger: 'drop:burette→clamp-zone',
+      condition: { type: 'flag', key: 'burettePlaced', equals: true },
+      message: 'The burette is already mounted on the retort stand.',
+      blocking: true,
+    },
+    {
       id: 'fill-before-clamp',
       trigger: 'drop:agno3-titrant→burette-top-zone',
       condition: { type: 'flag', key: 'burettePlaced', equals: false },
       message: 'Clamp the burette on the retort stand before filling it with AgNO₃.',
+      blocking: true,
+    },
+    {
+      id: 'already-filled-burette',
+      trigger: 'drop:agno3-titrant→burette-top-zone',
+      condition: { type: 'flag', key: 'buretteFilled', equals: true },
+      message: 'The burette is already filled with 0.02 N AgNO₃ to the 0.0 mL mark.',
+      blocking: true,
+    },
+    {
+      id: 'flask-before-burette-fill',
+      trigger: 'drop:conical-flask→flask-bench-zone',
+      condition: { type: 'flag', key: 'buretteFilled', equals: false },
+      message: 'Fill the burette with 0.02 N AgNO₃ before positioning the conical flask.',
+      blocking: true,
+    },
+    {
+      id: 'already-placed-flask',
+      trigger: 'drop:conical-flask→flask-bench-zone',
+      condition: { type: 'flag', key: 'flaskPlaced', equals: true },
+      message: 'The conical flask is already placed on the bench beneath the burette.',
+      blocking: true,
+    },
+    {
+      id: 'sample-before-flask',
+      trigger: 'drop:water-sample→flask-mouth-zone',
+      condition: { type: 'flag', key: 'flaskPlaced', equals: false },
+      message: 'Place the conical flask on the bench first.',
+      blocking: true,
+    },
+    {
+      id: 'already-added-sample',
+      trigger: 'drop:water-sample→flask-mouth-zone',
+      condition: { type: 'flag', key: 'sampleAdded', equals: true },
+      message: 'The 10 mL water sample has already been added to the flask.',
+      blocking: true,
+    },
+    {
+      id: 'indicator-before-sample',
+      trigger: 'drop:k2cro4-indicator→flask-mouth-zone',
+      condition: { type: 'flag', key: 'sampleAdded', equals: false },
+      message: 'Add the 10 mL water sample into the flask before adding the indicator.',
+      blocking: true,
+    },
+    {
+      id: 'already-added-indicator',
+      trigger: 'drop:k2cro4-indicator→flask-mouth-zone',
+      condition: { type: 'flag', key: 'indicatorAdded', equals: true },
+      message: 'K₂CrO₄ indicator has already been added to the flask.',
+      blocking: true,
+    },
+    {
+      id: 'titrate-before-indicator',
+      trigger: 'drop:burette→flask-mouth-zone',
+      condition: { type: 'flag', key: 'indicatorAdded', equals: false },
+      message: 'Add K₂CrO₄ indicator before starting titration.',
+      blocking: true,
+    },
+    {
+      id: 'titrate-endpoint-not-reached',
+      trigger: 'drop:burette→flask-mouth-zone',
+      condition: {
+        type: 'and',
+        conditions: [
+          { type: 'flag', key: 'indicatorAdded', equals: true },
+          { type: 'variable', key: 'buretteReading', op: '<', value: 8.2 },
+        ],
+      },
+      message: 'Open the burette stopcock to titrate drop-by-drop until the brick-red endpoint appears.',
+      blocking: true,
+    },
+    {
+      id: 'already-titrated',
+      trigger: 'drop:burette→flask-mouth-zone',
+      condition: { type: 'flag', key: 'endpointBrickRed', equals: true },
+      message: 'Titration is already complete and the brick-red endpoint has been reached.',
       blocking: true,
     },
   ],
@@ -348,6 +489,8 @@ export const chlorideMohrMethod: ExperimentConfig = {
     sampleVolume: 10,
     normalityAgNO3: 0.02,
     buretteReading: 0,
+    volumeAdded: 0,
+    maxFlowRate: 0,
     chlorideContent: 0,
     stopcockOpen: 0,
   },

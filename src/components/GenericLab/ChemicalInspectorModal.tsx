@@ -251,13 +251,30 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
             </div>
           </div>
 
-          {/* Effervescence */}
-          <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Gas Evolution')}</div>
-            <div style={{ fontSize: '1.0rem', fontWeight: 700, color: mixture.effervescenceRate > 0 ? '#3b82f6' : '#94a3b8' }}>
-              {mixture.effervescenceRate > 0 ? `🫧 ${tDynamic(mixture.effervescenceGas ?? 'Gas')}` : tDynamic('None')}
-            </div>
-          </div>
+          {/* Effervescence / Gas Evolution */}
+          {(() => {
+            const latestGasEvent = mixture.recentEvents.find(
+              (e) => (e.gasEvolvedMl !== undefined && e.gasEvolvedMl > 0) || Boolean(e.gasName)
+            );
+            const activeGas = mixture.effervescenceGas || latestGasEvent?.gasName;
+            const isBubbling = mixture.effervescenceRate > 0;
+            const hasGas = isBubbling || Boolean(latestGasEvent);
+
+            return (
+              <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+                <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Gas Evolution')}</div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: hasGas ? '#2563eb' : '#94a3b8' }}>
+                  {isBubbling ? (
+                    `🫧 ${tDynamic(activeGas ?? 'Gas')} (${tDynamic('Bubbling')})`
+                  ) : latestGasEvent ? (
+                    `🫧 ${tDynamic(latestGasEvent.gasName ?? 'Gas')} (~${latestGasEvent.gasEvolvedMl?.toFixed(1) ?? '0'} mL)`
+                  ) : (
+                    tDynamic('None')
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* ── Active Hazard Alerts ── */}

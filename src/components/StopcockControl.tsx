@@ -49,10 +49,10 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
 
   const stepUpFlow = useCallback(() => {
     if (!enabled) return;
-    let nextOpen = 0.20;
-    if (stopcockOpen === 0) nextOpen = 0.20;
-    else if (stopcockOpen < 0.35) nextOpen = 0.50;
-    else if (stopcockOpen < 0.70) nextOpen = 0.80;
+    let nextOpen = 0.25;
+    if (stopcockOpen === 0) nextOpen = 0.25;
+    else if (stopcockOpen < 0.45) nextOpen = 0.50;
+    else if (stopcockOpen < 0.70) nextOpen = 0.75;
     else nextOpen = 1.00;
 
     dispatch({ type: 'SET_STOPCOCK', payload: { open: nextOpen } });
@@ -61,8 +61,9 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
   const stepDownFlow = useCallback(() => {
     if (!enabled) return;
     let nextOpen = 0;
-    if (stopcockOpen > 0.85) nextOpen = 0.50;
-    else if (stopcockOpen > 0.35) nextOpen = 0.20;
+    if (stopcockOpen > 0.85) nextOpen = 0.75;
+    else if (stopcockOpen > 0.60) nextOpen = 0.50;
+    else if (stopcockOpen > 0.30) nextOpen = 0.25;
     else nextOpen = 0;
 
     dispatch({ type: 'SET_STOPCOCK', payload: { open: nextOpen } });

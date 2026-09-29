@@ -1105,15 +1105,38 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                           </td>
                           <td style={{ padding: '12px', fontWeight: 600 }}>Attempt #{sub.attemptNumber}</td>
                           <td style={{ padding: '12px' }}>
-                            {sub.mistakes && sub.mistakes.length > 0 ? (
-                              <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.75rem' }}>
-                                ⚠️ {sub.mistakes.length} {sub.mistakes.length === 1 ? 'flaw' : 'flaws'}
-                              </span>
-                            ) : (
-                              <span style={{ color: '#10b981', fontWeight: 600, fontSize: '0.75rem' }}>
-                                Clean
-                              </span>
-                            )}
+                            {(() => {
+                              const techniqueErrors = (sub.mistakes || []).filter(m =>
+                                m.toLowerCase().includes('overshot') ||
+                                m.toLowerCase().includes('titrant') ||
+                                m.toLowerCase().includes('swirling') ||
+                                m.toLowerCase().includes('rapid')
+                              );
+                              if (techniqueErrors.length > 0) {
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                    <span style={{ color: '#dc2626', fontWeight: 800, fontSize: '0.72rem', background: 'rgba(239, 68, 68, 0.12)', padding: '2px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                      ⚠️ -{techniqueErrors.length * 10} pts (Technique)
+                                    </span>
+                                    <span style={{ fontSize: '0.68rem', color: '#b91c1c', fontWeight: 700 }}>
+                                      Missed Perfect Point
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              if (sub.mistakes && sub.mistakes.length > 0) {
+                                return (
+                                  <span style={{ color: '#ef4444', fontWeight: 700, fontSize: '0.75rem' }}>
+                                    ⚠️ {sub.mistakes.length} {sub.mistakes.length === 1 ? 'flaw' : 'flaws'}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span style={{ color: '#059669', fontWeight: 700, fontSize: '0.74rem', background: 'rgba(5, 150, 105, 0.12)', padding: '2px 6px', borderRadius: 4 }}>
+                                  ✓ Perfect Technique
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>
                             {Math.floor(sub.timeSpentSeconds / 60)}m {sub.timeSpentSeconds % 60}s
@@ -1427,10 +1450,74 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                 </div>
               </div>
 
+              {/* Practical Technique & Precision Evaluation Audit */}
+              {(() => {
+                const techniqueErrors = (selectedSubForInspect.mistakes || []).filter(m =>
+                  m.toLowerCase().includes('overshot') ||
+                  m.toLowerCase().includes('titrant') ||
+                  m.toLowerCase().includes('swirling') ||
+                  m.toLowerCase().includes('rapid')
+                );
+                const hasTechniqueErrors = techniqueErrors.length > 0;
+                const pointsCut = techniqueErrors.length * 10;
+
+                return (
+                  <div
+                    style={{
+                      padding: '14px 16px',
+                      borderRadius: 10,
+                      background: hasTechniqueErrors ? 'rgba(239, 68, 68, 0.06)' : 'rgba(5, 150, 105, 0.06)',
+                      border: `1.5px solid ${hasTechniqueErrors ? 'rgba(239, 68, 68, 0.3)' : 'rgba(5, 150, 105, 0.3)'}`,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: hasTechniqueErrors ? '#dc2626' : '#059669', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>{hasTechniqueErrors ? '❌' : '✅'}</span>
+                        <span>
+                          {hasTechniqueErrors
+                            ? 'Point of Perfect Experiment: MISSED (Marks Deducted)'
+                            : 'Point of Perfect Experiment: ACHIEVED (Flawless Technique)'}
+                        </span>
+                      </span>
+                      {hasTechniqueErrors && (
+                        <span style={{ background: '#dc2626', color: '#ffffff', fontSize: '0.72rem', fontWeight: 800, padding: '3px 8px', borderRadius: 6 }}>
+                          -{pointsCut} Marks Cut
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.4 }}>
+                      {hasTechniqueErrors
+                        ? 'The student added titrant too rapidly or failed to swirl continuously during titration, causing localized overshoot and missing the true equivalence point.'
+                        : 'The student maintained slow dropwise dispensing and agitated the flask continuously, successfully capturing the true analytical equivalence point without overshoot.'}
+                    </p>
+                    {hasTechniqueErrors && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {techniqueErrors.map((err, i) => (
+                          <div
+                            key={i}
+                            style={{
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              color: '#b91c1c',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 6,
+                            }}
+                          >
+                            <span>⚠️</span>
+                            <span>{err} (-10 pts)</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* Logged Mistakes / Infractions */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
-                  Engine Logged Mistakes & Safety Penalties:
+                  All Engine Logged Mistakes & Safety Penalties:
                 </label>
                 {selectedSubForInspect.mistakes && selectedSubForInspect.mistakes.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

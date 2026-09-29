@@ -70,8 +70,13 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
   height = 140,
   flags = {},
   extraProps = {},
+  effervescenceRate,
 }) => {
   const isSwirling = Boolean(flags?.swirling || extraProps?.swirling || flags?.shaking || extraProps?.shaking);
+  const effRate = typeof effervescenceRate === 'number'
+    ? effervescenceRate
+    : (typeof extraProps?.effervescenceRate === 'number' ? (extraProps.effervescenceRate as number) : 0);
+  const isEvolvingGas = Boolean(flags?.gasEvolving || flags?.reactionStarted || effRate > 0);
   const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
   // Total fillable height from bottom base (y=121) up to near neck (y=56) is ~65px
   const fillHeight = 65 * effectiveLevel;
@@ -195,6 +200,37 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
             </path>
           </g>
         )}
+
+        {/* ── Effervescence / Gas Bubbles (when reacting/foaming) ── */}
+        {isEvolvingGas && effectiveLevel > 0.05 && (
+          <g id={`flask-effervescence-${id || 'def'}`} clipPath={`url(#flaskInnerClip-${id || 'def'})`}>
+            <circle cx="50" cy="115" r="2.2" fill="rgba(255,255,255,0.85)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="118;85;55" dur="1.2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.2;1;0" dur="1.2s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="50;53;49" dur="1.2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="60" cy="112" r="3.0" fill="rgba(255,255,255,0.9)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="115;80;50" dur="0.95s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.3;1;0" dur="0.95s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="60;58;62" dur="0.95s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="70" cy="116" r="2.4" fill="rgba(255,255,255,0.85)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="118;88;52" dur="1.3s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.2;1;0" dur="1.3s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="70;73;68" dur="1.3s" repeatCount="indefinite" />
+            </circle>
+            {/* Surface fizzing at meniscus */}
+            <circle cx="52" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1;2.5;0" dur="0.4s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="60" cy={fillY - 2} r="2.5" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1.5;3;0" dur="0.35s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="68" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1;2.2;0" dur="0.45s" repeatCount="indefinite" />
+            </circle>
+          </g>
+        )}
       </g>
 
       {/* ── Glass Front Wall & Specular Highlights ── */}
@@ -276,8 +312,13 @@ const Beaker: React.FC<ApparatusProps> = ({
   height = 120,
   flags = {},
   extraProps = {},
+  effervescenceRate,
 }) => {
   const isStirring = Boolean(flags?.stirring || extraProps?.stirring);
+  const effRate = typeof effervescenceRate === 'number'
+    ? effervescenceRate
+    : (typeof extraProps?.effervescenceRate === 'number' ? (extraProps.effervescenceRate as number) : 0);
+  const isEvolvingGas = Boolean(flags?.gasEvolving || flags?.reactionStarted || effRate > 0);
   const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
   // Total fillable height in beaker is ~80px (from y=108 up to y=28)
   const fillHeight = 80 * effectiveLevel;
@@ -390,6 +431,37 @@ const Beaker: React.FC<ApparatusProps> = ({
             )}
           </g>
         )}
+
+        {/* ── Effervescence / Gas Bubbles (when reacting/foaming) ── */}
+        {isEvolvingGas && effectiveLevel > 0.05 && (
+          <g id={`beaker-effervescence-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            <circle cx="35" cy="100" r="2.0" fill="rgba(255,255,255,0.85)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="102;70;40" dur="1.1s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.2;1;0" dur="1.1s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="35;38;34" dur="1.1s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="50" cy="98" r="2.8" fill="rgba(255,255,255,0.9)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="100;65;35" dur="0.9s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.3;1;0" dur="0.9s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="50;48;52" dur="0.9s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="65" cy="102" r="2.2" fill="rgba(255,255,255,0.85)" stroke="#0284c7" strokeWidth="0.5">
+              <animate attributeName="cy" values="104;72;38" dur="1.25s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.2;1;0" dur="1.25s" repeatCount="indefinite" />
+              <animate attributeName="cx" values="65;68;63" dur="1.25s" repeatCount="indefinite" />
+            </circle>
+            {/* Surface fizzing at meniscus */}
+            <circle cx="40" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1;2.4;0" dur="0.38s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="50" cy={fillY - 1.5} r="2.4" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1.2;2.8;0" dur="0.32s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="60" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
+              <animate attributeName="r" values="1;2.2;0" dur="0.42s" repeatCount="indefinite" />
+            </circle>
+          </g>
+        )}
       </g>
 
       {/* ── Glass Front Wall & Highlights ── */}
@@ -464,10 +536,15 @@ const TestTube: React.FC<ApparatusProps> = ({
   hasZinc,
   isReacting,
   popEffect,
+  effervescenceRate,
+  extraProps,
 }) => {
   // Check flags or explicit props for state
+  const effRate = typeof effervescenceRate === 'number'
+    ? effervescenceRate
+    : (typeof extraProps?.effervescenceRate === 'number' ? (extraProps.effervescenceRate as number) : 0);
   const showZinc = Boolean(hasZinc || flags?.zincAdded);
-  const isEvolvingGas = Boolean(isReacting || flags?.reactionStarted || flags?.gasEvolving);
+  const isEvolvingGas = Boolean(isReacting || flags?.reactionStarted || flags?.gasEvolving || effRate > 0);
   const showPop = Boolean(popEffect || flags?.popSoundHeard);
 
   // Liquid geometry
@@ -817,13 +894,32 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
       setTimeout(() => setEmptyWarning(false), 2500);
       return;
     }
-    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
+    let nextOpen: number;
+    if (stopcockOpen === 0) {
+      nextOpen = 0.25;
+    } else if (stopcockOpen < 0.45) {
+      nextOpen = 0.50;
+    } else if (stopcockOpen < 0.70) {
+      nextOpen = 0.75;
+    } else {
+      nextOpen = 1.00;
+    }
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
-    handleSetOpen(0);
-  }, [handleSetOpen]);
+    let nextOpen: number;
+    if (stopcockOpen > 0.85) {
+      nextOpen = 0.75;
+    } else if (stopcockOpen > 0.60) {
+      nextOpen = 0.50;
+    } else if (stopcockOpen > 0.30) {
+      nextOpen = 0.25;
+    } else {
+      nextOpen = 0;
+    }
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -1174,7 +1270,7 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.40);
+            stepUpFlow();
           }}
         >
           <rect
@@ -1189,22 +1285,22 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
             filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
           />
           <text x="29" y="-0.5" textAnchor="middle" fill="#2563eb" fontSize="5.2" fontWeight={800} fontFamily="var(--font-sans)">
-            ↻ Click to Open
+            ↻ Right: Open | Left: Close
           </text>
           <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
-            Controlled Flow
+            Click Wings to Adjust
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
+      {/* Active Flow Rate Badge when open (Clickable to slow down/step down flow) */}
       {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 22}, ${buretteBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0);
+            stepDownFlow();
           }}
         >
           <rect x="-2" y="-7" width="62" height="14" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
@@ -1733,13 +1829,32 @@ const BuretteStand: React.FC<ApparatusProps> = ({
       setTimeout(() => setEmptyWarning(false), 2500);
       return;
     }
-    const nextOpen = stopcockOpen > 0 ? 0 : 0.40;
+    let nextOpen: number;
+    if (stopcockOpen === 0) {
+      nextOpen = 0.25;
+    } else if (stopcockOpen < 0.45) {
+      nextOpen = 0.50;
+    } else if (stopcockOpen < 0.70) {
+      nextOpen = 0.75;
+    } else {
+      nextOpen = 1.00;
+    }
     handleSetOpen(nextOpen);
   }, [stopcockOpen, handleSetOpen, isBuretteFilled]);
 
   const stepDownFlow = React.useCallback(() => {
-    handleSetOpen(0);
-  }, [handleSetOpen]);
+    let nextOpen: number;
+    if (stopcockOpen > 0.85) {
+      nextOpen = 0.75;
+    } else if (stopcockOpen > 0.60) {
+      nextOpen = 0.50;
+    } else if (stopcockOpen > 0.30) {
+      nextOpen = 0.25;
+    } else {
+      nextOpen = 0;
+    }
+    handleSetOpen(nextOpen);
+  }, [stopcockOpen, handleSetOpen]);
 
   const handlePointerDown = React.useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -2155,7 +2270,7 @@ const BuretteStand: React.FC<ApparatusProps> = ({
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0.40);
+            stepUpFlow();
           }}
         >
           <rect
@@ -2170,22 +2285,22 @@ const BuretteStand: React.FC<ApparatusProps> = ({
             filter="drop-shadow(0 2px 4px rgba(0,0,0,0.12))"
           />
           <text x="29" y="-0.5" textAnchor="middle" fill="#2563eb" fontSize="5.2" fontWeight={800} fontFamily="var(--font-sans)">
-            ↻ Click to Open
+            ↻ Right: Open | Left: Close
           </text>
           <text x="29" y="6.5" textAnchor="middle" fill="#64748b" fontSize="4.2" fontFamily="var(--font-sans)" fontWeight={600}>
-            Controlled Flow
+            Click Wings to Adjust
           </text>
         </g>
       )}
 
-      {/* Active Flow Rate Badge when open (Clickable to stop flow) */}
+      {/* Active Flow Rate Badge when open (Clickable to slow down/step down flow) */}
       {stopcockOpen > 0 && (
         <g
           transform={`translate(${buretteX + 26}, ${tubeBottom - 12})`}
           style={{ cursor: 'pointer', pointerEvents: 'all' }}
           onClick={(e) => {
             e.stopPropagation();
-            handleSetOpen(0);
+            stepDownFlow();
           }}
         >
           <rect x="-2" y="-7" width="62" height="15" rx="3.5" fill="#ffffff" stroke="#2563eb" strokeWidth="0.8" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />

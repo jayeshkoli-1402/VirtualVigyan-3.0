@@ -30,7 +30,7 @@ import {
 /** Helper to detect if a dropped item or ID represents a chemical reagent addition */
 export function detectChemicalAddition(
   itemId: string,
-  _config?: ExperimentConfig,
+  config?: ExperimentConfig,
   state?: ExperimentState,
 ): ChemicalAddition | null {
   const norm = itemId.toLowerCase();
@@ -62,15 +62,19 @@ export function detectChemicalAddition(
 
   // Mineral & Organic Acids
   if (norm.includes('hcl')) {
-    return { substanceId: 'hcl', volumeMl: 10, molarity: state?.variables['molarityHCl'] ?? 0.1 };
+    const molarity = (config?.chemistry?.constants?.acidMolarity as number | undefined) ?? (state?.variables['molarityHCl'] as number | undefined) ?? 0.1;
+    const volumeMl = (config?.chemistry?.constants?.acidVolume as number | undefined) ?? 10;
+    return { substanceId: 'hcl', volumeMl, molarity };
   }
   if (norm.includes('h2so4') || norm.includes('sulfuric')) {
-    return { substanceId: 'h2so4', volumeMl: 10, molarity: 0.1 };
+    const molarity = (config?.chemistry?.constants?.acidMolarity as number | undefined) ?? (state?.variables['molarityH2SO4'] as number | undefined) ?? 0.1;
+    const volumeMl = (config?.chemistry?.constants?.acidVolume as number | undefined) ?? 10;
+    return { substanceId: 'h2so4', volumeMl, molarity };
   }
   if (norm.includes('hno3') || norm.includes('nitric')) {
     return { substanceId: 'hno3', volumeMl: 10, molarity: 0.1 };
   }
-  if (norm.includes('acetic') || norm.includes('ch3cooh')) {
+  if (norm.includes('acetic') || norm.includes('ch3cooh') || norm.includes('vinegar')) {
     return { substanceId: 'ch3cooh', volumeMl: 10, molarity: 0.1 };
   }
   if (norm.includes('oxalic')) {
@@ -89,11 +93,14 @@ export function detectChemicalAddition(
   }
 
   // Carbonates & Bicarbonates
-  if (norm.includes('na2co3') || (norm.includes('sodium') && norm.includes('carbonate'))) {
+  if (norm.includes('na2co3') || (norm.includes('sodium') && norm.includes('carbonate')) || norm.includes('washing-soda')) {
     return { substanceId: 'na2co3', volumeMl: 10, molarity: 0.05 };
   }
-  if (norm.includes('nahco3') || norm.includes('bicarbonate')) {
+  if (norm.includes('nahco3') || norm.includes('bicarbonate') || norm.includes('baking-soda')) {
     return { substanceId: 'nahco3', volumeMl: 10, molarity: 0.1 };
+  }
+  if (norm.includes('caco3') || norm.includes('marble') || (norm.includes('calcium') && norm.includes('carbonate'))) {
+    return { substanceId: 'caco3', massGrams: 2.0 };
   }
 
   // Salts & Analytical Reagents
@@ -133,7 +140,8 @@ export function detectChemicalAddition(
 
   // Metals
   if (norm.includes('zinc') || norm === 'zn') {
-    return { substanceId: 'zn', massGrams: 2.0 };
+    const massGrams = (config?.chemistry?.constants?.zincMass as number | undefined) ?? 2.0;
+    return { substanceId: 'zn', massGrams };
   }
   if (norm.includes('copper-turnings') || norm === 'cu' || norm.includes('copper-metal')) {
     return { substanceId: 'cu', massGrams: 2.0 };
@@ -143,6 +151,9 @@ export function detectChemicalAddition(
   }
   if (norm.includes('magnesium') || norm === 'mg') {
     return { substanceId: 'mg', massGrams: 0.5 };
+  }
+  if (norm.includes('aluminium') || norm.includes('aluminum') || norm === 'al') {
+    return { substanceId: 'al', massGrams: 1.0 };
   }
 
   // Indicators & Complexation
@@ -410,12 +421,24 @@ function applyEffects(
         };
         break;
 
-      case 'setVariable':
+      case 'setVariable': {
+        const existingVal = newState.variables[effect.key];
+        const isTitrationVol = typeof existingVal === 'number' && typeof effect.value === 'number' && [
+          'stdEdtaVolume', 'sampleEdtaVolume', 'kohVolume', 'thiosulphateVolume',
+          'volumeA', 'volumeB', 'volumeY', 'volumeZ', 'naohVolume', 'buretteReading', 'volumeAdded'
+        ].includes(effect.key);
+
+        if (isTitrationVol && existingVal > (effect.value as number) + 0.05) {
+          // Preserve the student's actual overshot reading!
+          break;
+        }
+
         newState = {
           ...newState,
           variables: { ...newState.variables, [effect.key]: effect.value },
         };
         break;
+      }
 
       case 'incrementVariable': {
         const currentVal = newState.variables[effect.key] ?? 0;
@@ -636,6 +659,15 @@ export function createExperimentReducer(
 
       case 'RESET':
         return createInitialState(config);
+
+      case 'SET_FLAG':
+        return {
+          ...state,
+          flags: {
+            ...state.flags,
+            [action.payload.flag]: action.payload.value,
+          },
+        };
 
       // ── Drag & Drop ──
       case 'DROP_ITEM': {
@@ -1040,6 +1072,21 @@ export function createExperimentReducer(
           flags: { ...state.flags, isDropAnimating: stopcockOpen > 0 },
         };
 
+        // Track unswirled titrant addition during flow
+        const isCurrentlySwirling = Boolean(newStateResult.flags['swirling'] || newStateResult.flags['stirring']);
+        if (stopcockOpen > 0 && !isCurrentlySwirling) {
+          const prevUnswirled = (newStateResult.variables['unswirledVolume'] as number) ?? 0;
+          const newUnswirled = prevUnswirled + flowAmount;
+          newVariables['unswirledVolume'] = newUnswirled;
+          if (newUnswirled > 1.2 && !newStateResult.flags['titratedWithoutSwirling']) {
+            newStateResult.flags['titratedWithoutSwirling'] = true;
+            const swirlPenaltyMsg = 'Titration performed without continuous swirling: Flask was not agitated while dispensing titrant, leading to localized concentration errors.';
+            if (!newStateResult.mistakes.includes(swirlPenaltyMsg)) {
+              newStateResult.mistakes = [...newStateResult.mistakes, swirlPenaltyMsg];
+            }
+          }
+        }
+
         // Check if any burette-driven titration interactions (e.g. endpoint color transitions) have their conditions met
         for (const inter of config.interactions) {
           if (
@@ -1051,9 +1098,68 @@ export function createExperimentReducer(
             const conditionsMet = !inter.conditions || inter.conditions.every(c => evaluateCondition(c, newStateResult));
             const guardTriggered = inter.guard && evaluateCondition(inter.guard.condition, newStateResult);
             if (conditionsMet && !guardTriggered) {
+              const isFastFlow = stopcockOpen >= 0.75;
+              const notSwirled = !newStateResult.flags['swirling'] && !newStateResult.flags['stirring'];
+
+              // Detect overshoot against condition target
+              const varCondition = inter.conditions?.find(c => c.type === 'variable' && (c.op === '>=' || c.op === '>'));
+              let overshootMl = 0;
+              if (varCondition && varCondition.type === 'variable') {
+                const actualVal = (newStateResult.variables[varCondition.key] as number) ?? 0;
+                const idealVal = varCondition.value;
+                if (actualVal > idealVal + 0.08 || isFastFlow) {
+                  overshootMl = Math.max(0.15, Math.round((actualVal - idealVal) * 100) / 100);
+                }
+              }
+
               newStateResult = applyEffects(newStateResult, inter.effects);
+              let updatedMistakes = [...newStateResult.mistakes];
+              let updatedFlags = { ...newStateResult.flags };
+              let updatedVars = { ...newStateResult.variables };
+
+              if (overshootMl > 0 || isFastFlow) {
+                const finalOvershoot = overshootMl || 0.25;
+                updatedFlags['titrationOvershot'] = true;
+                updatedVars['titrationOvershootMl'] = finalOvershoot;
+                const overshootMsg = `Rapid titrant addition (overshot by +${finalOvershoot.toFixed(2)} mL): Burette stopcock was open at high flow without dropwise control, missing the perfect endpoint.`;
+                if (!updatedMistakes.includes(overshootMsg)) {
+                  updatedMistakes.push(overshootMsg);
+                }
+
+                // Visual consequence: solution color shifts to intense over-titrated shade
+                if (receivingVesselId && newStateResult.apparatusProps[receivingVesselId]?.liquidColor) {
+                  const currCol = String(newStateResult.apparatusProps[receivingVesselId].liquidColor);
+                  const isPinkish = currCol.includes('244, 114, 182') || currCol.includes('pink') || currCol.includes('245, 158, 11');
+                  const isBluish = currCol.includes('14, 165, 233') || currCol.includes('56, 189, 248') || currCol.includes('blue');
+
+                  const overColor = isPinkish
+                    ? 'rgba(190, 24, 93, 0.96)' // Deep over-titrated magenta
+                    : isBluish
+                      ? 'rgba(91, 33, 182, 0.95)' // Deep over-titrated purple-indigo
+                      : currCol;
+
+                  const existingLabel = newStateResult.apparatusProps[receivingVesselId].label || 'Endpoint';
+                  newStateResult.apparatusProps[receivingVesselId] = {
+                    ...newStateResult.apparatusProps[receivingVesselId],
+                    liquidColor: overColor,
+                    label: `${existingLabel} (Overshot +${finalOvershoot.toFixed(2)} mL)`,
+                  };
+                }
+              }
+
+              if (notSwirled && !updatedFlags['titratedWithoutSwirling']) {
+                updatedFlags['titratedWithoutSwirling'] = true;
+                const swirlPenaltyMsg = 'Titration performed without continuous swirling: Flask was not agitated while dispensing titrant, leading to localized concentration errors.';
+                if (!updatedMistakes.includes(swirlPenaltyMsg)) {
+                  updatedMistakes.push(swirlPenaltyMsg);
+                }
+              }
+
               newStateResult = {
                 ...newStateResult,
+                variables: updatedVars,
+                flags: updatedFlags,
+                mistakes: updatedMistakes,
                 completedActions: [...newStateResult.completedActions, inter.completesAction],
               };
             }

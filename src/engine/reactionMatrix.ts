@@ -173,6 +173,120 @@ export const REACTION_RULES: ReactionRule[] = [
       return `Vigorous foaming reaction! Baking soda (NaHCO₃) met acid, releasing rapid carbon dioxide gas bubbles that fizzed vigorously.`;
     },
   },
+  {
+    id: 'na2co3_h2so4_effervescence',
+    name: 'Sodium Carbonate & Dilute Sulfuric Acid (CO₂ Evolution)',
+    equation: 'Na₂CO₃ + H₂SO₄ → Na₂SO₄ + H₂O + CO₂(g)↑',
+    category: 'gas_evolution',
+    reactants: [
+      { substanceId: 'na2co3', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'na2so4', coeff: 1 },
+      { substanceId: 'h2o', coeff: 1 },
+      { substanceId: 'co2', coeff: 1 },
+    ],
+    deltaH: -28.0,
+    gasSubstanceId: 'co2',
+    gasName: 'Carbon Dioxide Gas',
+    explanation: (ctx) => {
+      const co2M = ctx.productsFormed.find(p => p.name.includes('Carbon Dioxide') || p.name.includes('CO₂'))?.moles ?? 0;
+      const co2Ml = (co2M * 24450).toFixed(1);
+      return `Brisk effervescence! Dilute sulfuric acid reacted with sodium carbonate, producing ~${co2Ml} mL of carbon dioxide gas bubbles (CO₂↑).`;
+    },
+  },
+  {
+    id: 'nahco3_h2so4_effervescence',
+    name: 'Sodium Bicarbonate & Dilute Sulfuric Acid (CO₂ Foaming)',
+    equation: '2NaHCO₃ + H₂SO₄ → Na₂SO₄ + 2H₂O + 2CO₂(g)↑',
+    category: 'gas_evolution',
+    reactants: [
+      { substanceId: 'nahco3', coeff: 2 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'na2so4', coeff: 1 },
+      { substanceId: 'h2o', coeff: 2 },
+      { substanceId: 'co2', coeff: 2 },
+    ],
+    deltaH: -28.4,
+    gasSubstanceId: 'co2',
+    gasName: 'Carbon Dioxide Gas',
+    explanation: (ctx) => {
+      const co2M = ctx.productsFormed.find(p => p.name.includes('Carbon Dioxide') || p.name.includes('CO₂'))?.moles ?? 0;
+      const co2Ml = (co2M * 24450).toFixed(1);
+      return `Vigorous foaming reaction! Baking soda (NaHCO₃) reacted with sulfuric acid, liberating ~${co2Ml} mL of CO₂ gas bubbles.`;
+    },
+  },
+  {
+    id: 'caco3_hcl_effervescence',
+    name: 'Calcium Carbonate & Hydrochloric Acid (CO₂ Evolution)',
+    equation: 'CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂(g)↑',
+    category: 'gas_evolution',
+    reactants: [
+      { substanceId: 'caco3', coeff: 1 },
+      { substanceId: 'hcl', coeff: 2 },
+    ],
+    products: [
+      { substanceId: 'cacl2', coeff: 1 },
+      { substanceId: 'h2o', coeff: 1 },
+      { substanceId: 'co2', coeff: 1 },
+    ],
+    deltaH: -15.0,
+    gasSubstanceId: 'co2',
+    gasName: 'Carbon Dioxide Gas',
+    explanation: (ctx) => {
+      const co2M = ctx.productsFormed.find(p => p.name.includes('Carbon Dioxide') || p.name.includes('CO₂'))?.moles ?? 0;
+      const co2Ml = (co2M * 24450).toFixed(1);
+      return `Calcium carbonate reacted with HCl with active effervescence, producing ~${co2Ml} mL of carbon dioxide gas bubbles (CO₂↑).`;
+    },
+  },
+  {
+    id: 'caco3_h2so4_effervescence',
+    name: 'Calcium Carbonate & Sulfuric Acid (CO₂ & CaSO₄ Precipitate)',
+    equation: 'CaCO₃ + H₂SO₄ → CaSO₄(s)↓ + H₂O + CO₂(g)↑',
+    category: 'gas_evolution',
+    reactants: [
+      { substanceId: 'caco3', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'caso4', coeff: 1 },
+      { substanceId: 'h2o', coeff: 1 },
+      { substanceId: 'co2', coeff: 1 },
+    ],
+    deltaH: -15.0,
+    precipitateSubstanceId: 'caso4',
+    gasSubstanceId: 'co2',
+    gasName: 'Carbon Dioxide Gas',
+    explanation: (_ctx) => {
+      return `Reaction formed white CaSO₄ precipitate with brisk evolution of CO₂ gas bubbles.`;
+    },
+  },
+  {
+    id: 'nahco3_ch3cooh_effervescence',
+    name: 'Baking Soda & Acetic Acid / Vinegar (CO₂ Foaming)',
+    equation: 'NaHCO₃ + CH₃COOH → CH₃COONa + H₂O + CO₂(g)↑',
+    category: 'gas_evolution',
+    reactants: [
+      { substanceId: 'nahco3', coeff: 1 },
+      { substanceId: 'ch3cooh', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'ch3coona', coeff: 1 },
+      { substanceId: 'h2o', coeff: 1 },
+      { substanceId: 'co2', coeff: 1 },
+    ],
+    deltaH: -12.5,
+    gasSubstanceId: 'co2',
+    gasName: 'Carbon Dioxide Gas',
+    explanation: (ctx) => {
+      const co2M = ctx.productsFormed.find(p => p.name.includes('Carbon Dioxide') || p.name.includes('CO₂'))?.moles ?? 0;
+      const co2Ml = (co2M * 24450).toFixed(1);
+      return `Rapid foaming effervescence! Baking soda reacted with acetic acid to generate ~${co2Ml} mL of carbon dioxide gas (CO₂↑).`;
+    },
+  },
 
   // ── Single Displacement Reactions (Metals with Acids & Salts) ──
   {
@@ -246,6 +360,121 @@ export const REACTION_RULES: ReactionRule[] = [
     hazardWarning: 'Extremely vigorous reaction with intense heat and rapid hydrogen gas burst!',
     explanation: (ctx) => {
       return `Violent exothermic reaction! Magnesium rapidly dissolved in HCl, releasing intense bursts of H₂ gas bubbles and surging vessel temperature by +${ctx.deltaT.toFixed(1)}°C!`;
+    },
+  },
+  {
+    id: 'mg_h2so4_displacement',
+    name: 'Magnesium Ribbon in Dilute Sulfuric Acid (Violent Fizzing)',
+    equation: 'Mg(s) + H₂SO₄ → MgSO₄ + H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'mg', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'mgso4', coeff: 1 },
+      { substanceId: 'h2', coeff: 1 },
+    ],
+    deltaH: -467.0,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Extremely vigorous reaction with intense heat and rapid hydrogen gas burst!',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      return `Violent exothermic reaction! Magnesium rapidly reacted with dilute sulfuric acid, generating ~${h2Ml} mL of hydrogen gas (H₂↑) and heating the solution by +${ctx.deltaT.toFixed(1)}°C!`;
+    },
+  },
+  {
+    id: 'fe_hcl_displacement',
+    name: 'Iron Metal in Hydrochloric Acid (Hydrogen Evolution)',
+    equation: 'Fe(s) + 2HCl → FeCl₂ + H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'fe', coeff: 1 },
+      { substanceId: 'hcl', coeff: 2 },
+    ],
+    products: [
+      { substanceId: 'fecl2', coeff: 1 },
+      { substanceId: 'h2', coeff: 1 },
+    ],
+    deltaH: -87.9,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Hydrogen gas is flammable. Avoid open flames.',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      return `Iron metal slowly dissolved in hydrochloric acid forming pale green FeCl₂ and evolving ~${h2Ml} mL of hydrogen gas (H₂↑).`;
+    },
+  },
+  {
+    id: 'fe_h2so4_displacement',
+    name: 'Iron Metal in Dilute Sulfuric Acid (Hydrogen Evolution)',
+    equation: 'Fe(s) + H₂SO₄ → FeSO₄ + H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'fe', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'feso4', coeff: 1 },
+      { substanceId: 'h2', coeff: 1 },
+    ],
+    deltaH: -87.9,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Hydrogen gas is flammable. Avoid open flames.',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      return `Iron reacted with dilute sulfuric acid, forming green FeSO₄ and releasing ~${h2Ml} mL of hydrogen gas (H₂↑).`;
+    },
+  },
+  {
+    id: 'al_hcl_displacement',
+    name: 'Aluminium Metal in Hydrochloric Acid (Hydrogen Evolution)',
+    equation: '2Al(s) + 6HCl → 2AlCl₃ + 3H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'al', coeff: 2 },
+      { substanceId: 'hcl', coeff: 6 },
+    ],
+    products: [
+      { substanceId: 'alcl3', coeff: 2 },
+      { substanceId: 'h2', coeff: 3 },
+    ],
+    deltaH: -1004.0,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Vigorous bubbling and exothermic heat upon breakdown of oxide layer!',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      return `Aluminium reacted vigorously with HCl, generating ~${h2Ml} mL of hydrogen gas (H₂↑) with strong bubbling.`;
+    },
+  },
+  {
+    id: 'al_h2so4_displacement',
+    name: 'Aluminium Metal in Dilute Sulfuric Acid (Hydrogen Evolution)',
+    equation: '2Al(s) + 3H₂SO₄ → Al₂(SO₄)₃ + 3H₂(g)↑',
+    category: 'displacement',
+    reactants: [
+      { substanceId: 'al', coeff: 2 },
+      { substanceId: 'h2so4', coeff: 3 },
+    ],
+    products: [
+      { substanceId: 'al2so43', coeff: 1 },
+      { substanceId: 'h2', coeff: 3 },
+    ],
+    deltaH: -1004.0,
+    gasSubstanceId: 'h2',
+    gasName: 'Hydrogen Gas',
+    hazardWarning: 'Vigorous bubbling and exothermic heat!',
+    explanation: (ctx) => {
+      const h2M = ctx.productsFormed.find(p => p.name.includes('Hydrogen') || p.name.includes('H₂'))?.moles ?? 0;
+      const h2Ml = (h2M * 24450).toFixed(1);
+      return `Aluminium dissolved in dilute sulfuric acid, releasing ~${h2Ml} mL of hydrogen gas (H₂↑).`;
     },
   },
   {
@@ -446,6 +675,31 @@ export const REACTION_RULES: ReactionRule[] = [
     hazardWarning: 'Produces choking sulfur dioxide gas (SO₂). Ensure good ventilation.',
     explanation: (_ctx) => {
       return `Chemical kinetics / Turbidity reaction: Thiosulfate decomposed in acid to liberate finely dispersed colloidal sulfur (S↓), clouding the solution to opaque milky-yellow while releasing pungent SO₂ gas.`;
+    },
+  },
+  {
+    id: 'na2s2o3_h2so4_decomposition',
+    name: 'Sodium Thiosulfate & Sulfuric Acid Turbidity Reaction',
+    equation: 'Na₂S₂O₃ + H₂SO₄ → Na₂SO₄ + H₂O + SO₂(g)↑ + S(s)↓',
+    category: 'precipitation',
+    reactants: [
+      { substanceId: 'na2s2o3', coeff: 1 },
+      { substanceId: 'h2so4', coeff: 1 },
+    ],
+    products: [
+      { substanceId: 'na2so4', coeff: 1 },
+      { substanceId: 'h2o', coeff: 1 },
+      { substanceId: 'so2', coeff: 1 },
+      { substanceId: 's_solid', coeff: 1 },
+    ],
+    deltaH: -42.0,
+    precipitateSubstanceId: 's_solid',
+    gasSubstanceId: 'so2',
+    gasName: 'Sulfur Dioxide Gas',
+    colorShift: 'Gradually turns turbid yellow-white colloidal milk',
+    hazardWarning: 'Produces choking sulfur dioxide gas (SO₂). Ensure good ventilation.',
+    explanation: (_ctx) => {
+      return `Thiosulfate decomposed in dilute sulfuric acid, releasing sulfur dioxide gas (SO₂↑) and forming milky-yellow colloidal sulfur precipitate.`;
     },
   },
 ];

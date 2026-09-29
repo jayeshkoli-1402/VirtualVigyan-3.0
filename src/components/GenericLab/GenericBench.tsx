@@ -40,27 +40,20 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     }
   }, [state.variables.stopcockOpen]);
 
-  // Connect titration flow to shaking/swirling:
-  // - When stopcock opens (>0), automatically start shaking/swirling.
-  // - When stopcock is closed (===0), automatically stop shaking/swirling.
-  // - User can still manually toggle Shake/Swirl when stopcock is 0.
-  const prevStopcockOpenRef = React.useRef(stopcockOpen);
-  React.useEffect(() => {
-    const prev = prevStopcockOpenRef.current;
-    if (stopcockOpen > 0 && prev === 0) {
-      setIsSwirling(true);
-    } else if (stopcockOpen === 0 && prev > 0) {
-      setIsSwirling(false);
-    }
-    prevStopcockOpenRef.current = stopcockOpen;
-  }, [stopcockOpen]);
+  // Sync swirling state to global experiment state flags so engine tracks mixing technique
+  const handleToggleSwirling = React.useCallback(() => {
+    setIsSwirling(prev => {
+      const next = !prev;
+      dispatch({ type: 'SET_FLAG', payload: { flag: 'swirling', value: next } });
+      return next;
+    });
+  }, [dispatch]);
 
-  // Reset swirling on step transitions if stopcock is closed
+  // Reset swirling on step transitions
   React.useEffect(() => {
-    if (stopcockOpen === 0) {
-      setIsSwirling(false);
-    }
-  }, [state.currentStepIndex]);
+    setIsSwirling(false);
+    dispatch({ type: 'SET_FLAG', payload: { flag: 'swirling', value: false } });
+  }, [state.currentStepIndex, dispatch]);
 
   // Pre-titration swirl guidance prompt condition
   const currentStep = config.steps[state.currentStepIndex];
@@ -942,12 +935,57 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           </div>
         )}
 
+        {/* Real-time titration technique guidance banners */}
+        {stopcockOpen >= 0.75 && (
+          <div
+            id="titration-fast-flow-warning"
+            className="animate-fade-in"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              background: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              color: '#dc2626',
+            }}
+          >
+            <span>⚠️</span>
+            <span>Fast Flow: Reduce rate near endpoint to avoid overshooting!</span>
+          </div>
+        )}
+
+        {stopcockOpen > 0 && !isSwirling && (
+          <div
+            id="titration-unswirled-warning"
+            className="animate-fade-in"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '5px 10px',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              background: 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              color: '#b45309',
+            }}
+          >
+            <span>💡</span>
+            <span>Swirl flask continuously while dispensing!</span>
+          </div>
+        )}
+
         {/* Shake / Swirl Flask button (Only for experiments with swirlable glassware or active titrations) */}
         {hasSwirlableApparatus && (
           <button
             type="button"
             id="btn-generic-shake-flask"
-            onClick={() => setIsSwirling(prev => !prev)}
+            onClick={handleToggleSwirling}
             title="Continuously shake & swirl the conical flask for thorough mixing"
             style={{
               display: 'flex',

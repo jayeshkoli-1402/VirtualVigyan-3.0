@@ -105,6 +105,42 @@ const pbi2G = goldenVessel.precipitateGrams['pbi2'] ?? 0;
 assert(Math.abs(pbi2G - 0.461) < 0.05, `Golden rain PbI2 precipitate formed (${pbi2G.toFixed(3)} g)`);
 assert(goldenVessel.dominantColor.includes('234, 179, 8'), `Color turned golden yellow (${goldenVessel.dominantColor})`);
 
+// ── Test 8: Zinc + Dilute Sulfuric Acid (Zn + H2SO4 -> ZnSO4 + H2) ──
+console.log('\n--- Test Suite 8: Zinc + Dilute H2SO4 Hydrogen Evolution ---');
+let znH2so4Vessel = createEmptyMixture('test-tube', 0);
+znH2so4Vessel = mixChemicals(znH2so4Vessel, { substanceId: 'zn', massGrams: 0.5 }); // ~7.65 mmol Zn
+znH2so4Vessel = mixChemicals(znH2so4Vessel, { substanceId: 'h2so4', volumeMl: 10, molarity: 0.1 }); // 1.0 mmol H2SO4 (limiting)
+
+assert(znH2so4Vessel.recentEvents.length > 0, 'Zn + H2SO4 displacement reaction executed');
+const znEvent = znH2so4Vessel.recentEvents[0];
+assert(znEvent.reactionName.includes('Sulfuric Acid'), 'Reaction name matches sulfuric acid');
+assert(znEvent.gasName === 'Hydrogen Gas', 'Gas identified as Hydrogen Gas');
+assert(znEvent.gasEvolvedMl !== undefined && znEvent.gasEvolvedMl > 20, `~${znEvent.gasEvolvedMl?.toFixed(1)} mL H2 evolved`);
+assert(znH2so4Vessel.effervescenceRate > 0, `Active effervescence rate: ${znH2so4Vessel.effervescenceRate.toFixed(2)}`);
+assert(znH2so4Vessel.effervescenceGas === 'Hydrogen Gas', 'Effervescence gas property set to Hydrogen Gas');
+assert(znH2so4Vessel.moles['h2so4'] < 1e-6, 'H2SO4 limiting reagent fully consumed');
+assert((znH2so4Vessel.moles['znso4'] ?? 0) > 0.0009, 'ZnSO4 product formed');
+
+// ── Test 9: Carbonates + H2SO4 (CO2 Evolution) ──
+console.log('\n--- Test Suite 9: Na2CO3 & NaHCO3 with H2SO4 (CO2 Evolution) ---');
+let carbVessel = createEmptyMixture('conical-flask', 20);
+carbVessel = mixChemicals(carbVessel, { substanceId: 'na2co3', volumeMl: 10, molarity: 0.1 }); // 1 mmol Na2CO3
+carbVessel = mixChemicals(carbVessel, { substanceId: 'h2so4', volumeMl: 10, molarity: 0.1 }); // 1 mmol H2SO4
+assert(carbVessel.recentEvents.length > 0, 'Na2CO3 + H2SO4 effervescence fired');
+const carbEvent = carbVessel.recentEvents[0];
+assert(carbEvent.gasName === 'Carbon Dioxide Gas', 'CO2 gas evolved from Na2CO3 + H2SO4');
+assert(carbVessel.effervescenceGas === 'Carbon Dioxide Gas', 'Mixture gas set to Carbon Dioxide Gas');
+
+// ── Test 10: Magnesium + H2SO4 Violent Effervescence ──
+console.log('\n--- Test Suite 10: Mg + H2SO4 Violent Reaction ---');
+let mgVessel = createEmptyMixture('test-tube-2', 10);
+mgVessel = mixChemicals(mgVessel, { substanceId: 'mg', massGrams: 0.1 }); // ~4.11 mmol Mg
+mgVessel = mixChemicals(mgVessel, { substanceId: 'h2so4', volumeMl: 20, molarity: 0.2 }); // 4 mmol H2SO4
+assert(mgVessel.recentEvents.length > 0, 'Mg + H2SO4 reaction occurred');
+const mgEvent = mgVessel.recentEvents[0];
+assert(mgEvent.gasName === 'Hydrogen Gas', 'H2 gas liberated by Mg in H2SO4');
+assert(mgVessel.temperatureC > 25.0, `Significant exothermic surge: ${mgVessel.temperatureC}°C`);
+
 console.log(`\n=============================================`);
 console.log(`✨ Suite Complete: ${passedTests} / ${totalTests} assertions PASSED!`);
 console.log(`=============================================\n`);

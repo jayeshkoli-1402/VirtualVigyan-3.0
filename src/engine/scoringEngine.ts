@@ -22,8 +22,13 @@ import { computeFormula } from './chemistryLib';
 
 // ── Score Result ─────────────────────────────────────────────────
 
+export type TechniquePenalty = {
+  reason: string;
+  pointsLost: number;
+};
+
 export type ScoreResult = {
-  /** Total score (sum of all categories, capped at 100) */
+  /** Total score (sum of all categories, minus penalties, clamped 0 to 100) */
   totalScore: number;
 
   /** Max possible score */
@@ -31,6 +36,9 @@ export type ScoreResult = {
 
   /** Breakdown by category */
   breakdown: CategoryResult[];
+
+  /** Technique penalties applied (e.g. fast flow over-titration, lack of swirling) */
+  penalties?: TechniquePenalty[];
 
   /** Overall grade label */
   grade: 'Excellent' | 'Good' | 'Satisfactory' | 'Needs Practice';
@@ -67,16 +75,61 @@ export function computeScore(
     evaluateCategory(category, state, config)
   );
 
-  const totalScore = Math.min(
-    100,
-    breakdown.reduce((sum, c) => sum + c.points, 0)
-  );
+  // Evaluate real-world laboratory technique penalties:
+  const penalties: TechniquePenalty[] = [];
+
+  const isOvershot = Boolean(state.flags['titrationOvershot']);
+  const isUnswirled = Boolean(state.flags['titratedWithoutSwirling']);
+  const overshootMl = (state.variables['titrationOvershootMl'] as number) || 0;
+
+  if (isOvershot) {
+    penalties.push({
+      reason: `Over-titration penalty: Added titrant too fast without dropwise control near endpoint (+${(overshootMl || 0.25).toFixed(2)} mL overshoot)`,
+      pointsLost: 10,
+    });
+  }
+
+  if (isUnswirled) {
+    penalties.push({
+      reason: 'Titration technique penalty: Dispensed titrant without continuously swirling the conical flask',
+      pointsLost: 10,
+    });
+  }
+
+  // Check state.mistakes for any other logged technique infractions
+  if (state.mistakes && state.mistakes.length > 0) {
+    for (const m of state.mistakes) {
+      const lower = m.toLowerCase();
+      if ((lower.includes('overshot') || lower.includes('rapid titrant') || lower.includes('over-titrat')) &&
+          !penalties.some(p => p.reason.toLowerCase().includes('over-titration'))) {
+        penalties.push({ reason: m, pointsLost: 10 });
+      } else if (lower.includes('swirling') && !penalties.some(p => p.reason.toLowerCase().includes('swirling'))) {
+        penalties.push({ reason: m, pointsLost: 10 });
+      }
+    }
+  }
+
+  const totalPenalties = penalties.reduce((sum, p) => sum + p.pointsLost, 0);
+  const rawScore = breakdown.reduce((sum, c) => sum + c.points, 0);
+  const totalScore = Math.max(0, Math.min(100, rawScore - totalPenalties));
   const maxScore = breakdown.reduce((sum, c) => sum + c.maxPoints, 0);
 
-  const grade = getGrade(totalScore);
-  const feedback = generateFeedback(totalScore, breakdown);
+  if (penalties.length > 0) {
+    breakdown.push({
+      name: 'Practical Technique & Titration Precision',
+      points: -totalPenalties,
+      maxPoints: 0,
+      explanation: `⚠️ Technique Penalties Applied (-${totalPenalties} marks): ${penalties.map(p => `${p.reason} (-${p.pointsLost} pts)`).join('; ')}`,
+    });
+  }
 
-  return { totalScore, maxScore, breakdown, grade, feedback };
+  const grade = getGrade(totalScore);
+  let feedback = generateFeedback(totalScore, breakdown);
+  if (penalties.length > 0) {
+    feedback += ` Note: ${totalPenalties} marks were deducted for titration speed and mixing technique errors.`;
+  }
+
+  return { totalScore, maxScore, breakdown, penalties, grade, feedback };
 }
 
 

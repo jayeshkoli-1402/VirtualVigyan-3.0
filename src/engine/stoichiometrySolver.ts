@@ -506,6 +506,15 @@ export function mixChemicals(
   // 4. Compute final visual appearance
   const appearance = computeMixtureAppearance(updatedMoles, updatedPpt, pH, totalVolumeMl);
 
+  // Smooth decay for effervescence rate across subsequent steps/actions
+  const finalEffervescenceRate = effervescenceRate > 0
+    ? effervescenceRate
+    : (current.effervescenceRate > 0.02 ? Math.round(current.effervescenceRate * 0.75 * 100) / 100 : 0);
+
+  const finalEffervescenceGas = effervescenceGas
+    ?? (finalEffervescenceRate > 0 ? current.effervescenceGas : undefined)
+    ?? eventLogs.find(e => Boolean(e.gasName))?.gasName;
+
   return {
     vesselId: current.vesselId,
     volumeMl: Math.round(totalVolumeMl * 1000) / 1000,
@@ -516,8 +525,8 @@ export function mixChemicals(
     recentEvents: eventLogs.slice(0, 10), // keep latest 10 events
     dominantColor: appearance.color,
     opacity: appearance.opacity,
-    effervescenceRate,
-    effervescenceGas,
+    effervescenceRate: finalEffervescenceRate,
+    effervescenceGas: finalEffervescenceGas,
     activeHazards: Array.from(new Set(activeHazards)),
   };
 }

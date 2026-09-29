@@ -701,4 +701,5 @@ export type ExperimentAction =
   | { type: 'ADD_MISTAKE'; payload: { message: string } }
   | { type: 'INSPECT_VESSEL'; payload: { vesselId: string | null } }
   | { type: 'MIX_CHEMICAL'; payload: { vesselId: string; addition: ChemicalAddition } }
+  | { type: 'SET_FLAG'; payload: { flag: string; value: boolean } }
   | { type: 'RESET' };

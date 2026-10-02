@@ -46,8 +46,9 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
     { label: t('landing.nav.home', 'Home'), id: 'hero' },
     { label: t('landing.nav.experiments', 'Experiments'), id: 'experiments' },
     { label: t('landing.nav.howItWorks', 'How It Works'), id: 'how-it-works' },
-    { label: t('landing.nav.forStudents', 'For Students'), id: 'student-role' },
-    { label: t('landing.nav.forTeachers', 'For Teachers'), id: 'teacher-role' },
+    { label: t('landing.nav.forStudents', 'Students'), id: 'student-role' },
+    { label: t('landing.nav.forTeachers', 'Teachers'), id: 'teacher-role' },
+    { label: t('landing.nav.fieldTrial', 'Pilot Trial'), id: 'pilot-study' },
     { label: t('landing.nav.about', 'About'), id: 'about' },
   ];
 

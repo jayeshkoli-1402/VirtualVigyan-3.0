@@ -8,6 +8,7 @@ import HowItWorksSection from './HowItWorksSection';
 import ExperimentShowcase from './ExperimentShowcase';
 import LabPreview from './LabPreview';
 import LearningSection from './LearningSection';
+import PilotStudySection from './PilotStudySection';
 import StudentTeacherSection from './StudentTeacherSection';
 import AboutSection from './AboutSection';
 import FinalCTA from './FinalCTA';
@@ -112,7 +113,10 @@ const LandingPage: React.FC<LandingPageProps> = ({
       {/* 7. Mistake → Feedback → Retry */}
       <LearningSection />
 
-      {/* 8. Student + Teacher */}
+      {/* 8. Field Trial & Academic Mentorship Pilot */}
+      <PilotStudySection />
+
+      {/* 9. Student + Teacher */}
       <StudentTeacherSection
         onStartExperiment={handleStart}
         onOpenTeacherPortal={() => {

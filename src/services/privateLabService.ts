@@ -33,83 +33,84 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// Pre-seeded pilot trial lab and demo private labs
+const PILOT_STUDENTS: PrivateLabEnrolledStudent[] = [
+  { studentId: 'stu_01', studentName: 'Kirti Mukesh Chaudhari', studentEmail: 'kirtichaudhari1506@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:15:00.000Z' },
+  { studentId: 'stu_02', studentName: 'Diptanshu Sunil Bagul', studentEmail: 'diptanshusb@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:16:00.000Z' },
+  { studentId: 'stu_03', studentName: 'Ghanshyam Mali', studentEmail: 'ghanshyam2323@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:17:00.000Z' },
+  { studentId: 'stu_04', studentName: 'Rohan Verma', studentEmail: 'roshan1234@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:18:00.000Z' },
+  { studentId: 'stu_05', studentName: 'Ruchita Borse', studentEmail: 'ruchitaborse676@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:19:00.000Z' },
+  { studentId: 'stu_06', studentName: 'Alice Smith', studentEmail: 'yamela1652@hudzer.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:20:00.000Z' },
+  { studentId: 'stu_07', studentName: 'Aishwarya Patil', studentEmail: 'aishwarya2006patil@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:21:00.000Z' },
+  { studentId: 'stu_08', studentName: 'Soham Pradip Chikorde', studentEmail: 'master.sohamchikorde2006@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:22:00.000Z' },
+  { studentId: 'stu_09', studentName: 'Kalyani Chaudhari', studentEmail: 'ckalyani721@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:23:00.000Z' },
+  { studentId: 'stu_10', studentName: 'Shreyash Bhat', studentEmail: 'shreyashbhat1111@gmai.lcom', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:24:00.000Z' },
+  { studentId: 'stu_11', studentName: 'Chavan Pratik Dipak', studentEmail: 'pratikch3518@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:25:00.000Z' },
+  { studentId: 'stu_12', studentName: 'Tejal Bhadane', studentEmail: 'pankaj28.com@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:26:00.000Z' },
+  { studentId: 'stu_13', studentName: 'Yashodeep Anilsing Girase', studentEmail: 'yashgirase101@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:27:00.000Z' },
+  { studentId: 'stu_14', studentName: 'Bharati Badgujar', studentEmail: 'bharatibadgujar743@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:28:00.000Z' },
+  { studentId: 'stu_15', studentName: 'Piyush Rakesh Borse', studentEmail: 'borsepiyush389@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:29:00.000Z' },
+  { studentId: 'stu_16', studentName: 'Dipali Ishi', studentEmail: 'abc@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:30:00.000Z' },
+  { studentId: 'stu_17', studentName: 'Patil Siddhi Jitendra', studentEmail: 'siddhipatil911@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:31:00.000Z' },
+  { studentId: 'stu_18', studentName: 'Kunal Chaudhari', studentEmail: 'kunalchaudhari919@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:32:00.000Z' },
+  { studentId: 'stu_19', studentName: 'Pavan Wadile', studentEmail: 'pavanwadile777@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:33:00.000Z' },
+  { studentId: 'stu_20', studentName: 'Raj Borase', studentEmail: 'borase.raj11@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:34:00.000Z' },
+  { studentId: 'stu_21', studentName: 'Mohit Chaudhari', studentEmail: 'rajmali@gmail.com', avatar: '👨‍🎓', joinedAt: '2026-10-01T09:35:00.000Z' },
+  { studentId: 'stu_22', studentName: 'Sanskruti Yogesh Bhalerao', studentEmail: 'sanskrutibhalerao44@gmail.com', avatar: '👩‍🎓', joinedAt: '2026-10-01T09:36:00.000Z' },
+];
+
+const PILOT_SUBMISSIONS: PrivateLabSubmission[] = [
+  { id: 'sub_p01', labId: 'lab_seed_chem101', studentId: 'stu_01', studentName: 'Kirti Mukesh Chaudhari', studentEmail: 'kirtichaudhari1506@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 92, maxScore: 100, percentage: 92, attemptNumber: 1, completedAt: '2026-10-01T11:15:32.000Z', timeSpentSeconds: 540, mistakes: ['None — accurate endpoint & stoichiometry'] },
+  { id: 'sub_p02', labId: 'lab_seed_chem101', studentId: 'stu_02', studentName: 'Diptanshu Sunil Bagul', studentEmail: 'diptanshusb@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 88, maxScore: 100, percentage: 88, attemptNumber: 1, completedAt: '2026-10-01T11:22:10.000Z', timeSpentSeconds: 620, mistakes: ['Slight overshoot near endpoint (25.8 mL)'] },
+  { id: 'sub_p03', labId: 'lab_seed_chem101', studentId: 'stu_03', studentName: 'Ghanshyam Mali', studentEmail: 'ghanshyam2323@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 95, maxScore: 100, percentage: 95, attemptNumber: 1, completedAt: '2026-10-01T11:34:45.000Z', timeSpentSeconds: 480, mistakes: ['Calculated molarity within 1.2% tolerance'] },
+  { id: 'sub_p04', labId: 'lab_seed_chem101', studentId: 'stu_04', studentName: 'Rohan Verma', studentEmail: 'roshan1234@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 82, maxScore: 100, percentage: 82, attemptNumber: 1, completedAt: '2026-10-01T11:45:18.000Z', timeSpentSeconds: 710, mistakes: ['Rapid titrant dispensing initially; corrected dropwise'] },
+  { id: 'sub_p05', labId: 'lab_seed_chem101', studentId: 'stu_05', studentName: 'Ruchita Borse', studentEmail: 'ruchitaborse676@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 90, maxScore: 100, percentage: 90, attemptNumber: 1, completedAt: '2026-10-01T11:52:04.000Z', timeSpentSeconds: 560, mistakes: ['Minor meniscus parallax reading discrepancy'] },
+  { id: 'sub_p06', labId: 'lab_seed_chem101', studentId: 'stu_06', studentName: 'Alice Smith', studentEmail: 'yamela1652@hudzer.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 85, maxScore: 100, percentage: 85, attemptNumber: 1, completedAt: '2026-10-01T12:01:29.000Z', timeSpentSeconds: 630, mistakes: ['Added indicator after partial titration began'] },
+  { id: 'sub_p07', labId: 'lab_seed_chem101', studentId: 'stu_07', studentName: 'Aishwarya Patil', studentEmail: 'aishwarya2006patil@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 94, maxScore: 100, percentage: 94, attemptNumber: 1, completedAt: '2026-10-01T12:08:50.000Z', timeSpentSeconds: 510, mistakes: ['None — clean sharp faint-pink endpoint'] },
+  { id: 'sub_p08', labId: 'lab_seed_chem101', studentId: 'stu_08', studentName: 'Soham Pradip Chikorde', studentEmail: 'master.sohamchikorde2006@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 89, maxScore: 100, percentage: 89, attemptNumber: 1, completedAt: '2026-10-01T12:15:33.000Z', timeSpentSeconds: 580, mistakes: ['Titrated slightly past pale pink to deep magenta'] },
+  { id: 'sub_p09', labId: 'lab_seed_chem101', studentId: 'stu_09', studentName: 'Kalyani Chaudhari', studentEmail: 'ckalyani721@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 91, maxScore: 100, percentage: 91, attemptNumber: 1, completedAt: '2026-10-01T12:22:15.000Z', timeSpentSeconds: 525, mistakes: ['Flask swirling paused during reagent addition'] },
+  { id: 'sub_p10', labId: 'lab_seed_chem101', studentId: 'stu_10', studentName: 'Shreyash Bhat', studentEmail: 'shreyashbhat1111@gmai.lcom', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 78, maxScore: 100, percentage: 78, attemptNumber: 2, completedAt: '2026-10-01T12:31:02.000Z', timeSpentSeconds: 760, mistakes: ['Endpoint overshot on 1st attempt (28.4 mL); improved on retry (25.4 mL)'] },
+  { id: 'sub_p11', labId: 'lab_seed_chem101', studentId: 'stu_11', studentName: 'Chavan Pratik Dipak', studentEmail: 'pratikch3518@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 87, maxScore: 100, percentage: 87, attemptNumber: 1, completedAt: '2026-10-01T12:38:40.000Z', timeSpentSeconds: 640, mistakes: ['Burette air bubble trapped near tip initially'] },
+  { id: 'sub_p12', labId: 'lab_seed_chem101', studentId: 'stu_12', studentName: 'Tejal Bhadane', studentEmail: 'pankaj28.com@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 93, maxScore: 100, percentage: 93, attemptNumber: 1, completedAt: '2026-10-01T12:44:12.000Z', timeSpentSeconds: 495, mistakes: ['None — excellent stoichiometric calculation'] },
+  { id: 'sub_p13', labId: 'lab_seed_chem101', studentId: 'stu_13', studentName: 'Yashodeep Anilsing Girase', studentEmail: 'yashgirase101@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 96, maxScore: 100, percentage: 96, attemptNumber: 1, completedAt: '2026-10-01T12:49:55.000Z', timeSpentSeconds: 450, mistakes: ['None — perfect concordant titer value'] },
+  { id: 'sub_p14', labId: 'lab_seed_chem101', studentId: 'stu_14', studentName: 'Bharati Badgujar', studentEmail: 'bharatibadgujar743@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 86, maxScore: 100, percentage: 86, attemptNumber: 1, completedAt: '2026-10-01T12:55:20.000Z', timeSpentSeconds: 615, mistakes: ['Overfilled burette past 0.00 mL mark before zeroing'] },
+  { id: 'sub_p15', labId: 'lab_seed_chem101', studentId: 'stu_15', studentName: 'Piyush Rakesh Borse', studentEmail: 'borsepiyush389@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 84, maxScore: 100, percentage: 84, attemptNumber: 1, completedAt: '2026-10-01T13:02:11.000Z', timeSpentSeconds: 680, mistakes: ['Pipetted slightly excess analyte volume; re-leveled'] },
+  { id: 'sub_p16', labId: 'lab_seed_chem101', studentId: 'stu_16', studentName: 'Dipali Ishi', studentEmail: 'abc@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 90, maxScore: 100, percentage: 90, attemptNumber: 1, completedAt: '2026-10-01T13:08:44.000Z', timeSpentSeconds: 530, mistakes: ['Slight overshoot of endpoint (25.9 mL)'] },
+  { id: 'sub_p17', labId: 'lab_seed_chem101', studentId: 'stu_17', studentName: 'Patil Siddhi Jitendra', studentEmail: 'siddhipatil911@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 95, maxScore: 100, percentage: 95, attemptNumber: 1, completedAt: '2026-10-01T13:14:02.000Z', timeSpentSeconds: 470, mistakes: ['None — ideal faint pink persistence (>30s)'] },
+  { id: 'sub_p18', labId: 'lab_seed_chem101', studentId: 'stu_18', studentName: 'Kunal Chaudhari', studentEmail: 'kunalchaudhari919@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 83, maxScore: 100, percentage: 83, attemptNumber: 1, completedAt: '2026-10-01T13:19:30.000Z', timeSpentSeconds: 690, mistakes: ['Dispensed continuous stream instead of drops near 24 mL'] },
+  { id: 'sub_p19', labId: 'lab_seed_chem101', studentId: 'stu_19', studentName: 'Pavan Wadile', studentEmail: 'pavanwadile777@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 88, maxScore: 100, percentage: 88, attemptNumber: 1, completedAt: '2026-10-01T13:24:55.000Z', timeSpentSeconds: 590, mistakes: ['Molarity calculation rounded prematurely'] },
+  { id: 'sub_p20', labId: 'lab_seed_chem101', studentId: 'stu_20', studentName: 'Raj Borase', studentEmail: 'borase.raj11@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 92, maxScore: 100, percentage: 92, attemptNumber: 1, completedAt: '2026-10-01T13:29:40.000Z', timeSpentSeconds: 515, mistakes: ['None — precise burette control & accurate titer'] },
+  { id: 'sub_p21', labId: 'lab_seed_chem101', studentId: 'stu_21', studentName: 'Mohit Chaudhari', studentEmail: 'rajmali@gmail.com', avatar: '👨‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 81, maxScore: 100, percentage: 81, attemptNumber: 2, completedAt: '2026-10-01T13:35:10.000Z', timeSpentSeconds: 730, mistakes: ['Forgot wash bottle rinse of flask walls; corrected on attempt 2'] },
+  { id: 'sub_p22', labId: 'lab_seed_chem101', studentId: 'stu_22', studentName: 'Sanskruti Yogesh Bhalerao', studentEmail: 'sanskrutibhalerao44@gmail.com', avatar: '👩‍🎓', experimentId: 'titration', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', score: 94, maxScore: 100, percentage: 94, attemptNumber: 1, completedAt: '2026-10-01T13:40:22.000Z', timeSpentSeconds: 505, mistakes: ['None — excellent observation and calculation'] },
+];
+
 // Sample pre-seeded demo private lab for immediate exploration
 const PRESEEDED_LABS: PrivateLab[] = [
   {
     id: 'lab_seed_chem101',
     code: 'CHEM-101',
-    title: 'Mid-Term Volumetric & Gas Assessment',
-    description: 'Complete the determination of water acidity and zinc-acid reaction under exam assessment conditions.',
+    title: 'Pilot Assessment: Water Acidity Titration',
+    description: 'College laboratory field trial testing volumetric analysis, endpoint titration, and stoichiometric calculation accuracy.',
     teacherId: 'usr_teacher_01',
-    teacherName: 'Prof. Rajesh Sharma',
+    teacherName: 'SIH Mentor & Faculty Guide',
     teacherEmail: 'teacher@virtualvigyan.in',
-    institution: 'DBATU Lonere / Kendriya Vidyalaya',
+    institution: 'DBATU Engineering Campus / College Chemistry Lab',
     department: 'Department of Chemistry',
-    targetClass: 'Class 11 - Science (Batch A)',
+    targetClass: 'First Year B.Tech (Pilot Batch 01)',
     experimentIds: ['titration-water-acidity', 'zinc-acid-reaction'],
     restrictions: {
-      hideProcedure: true,
-      hideFormulas: true,
+      hideProcedure: false,
+      hideFormulas: false,
       timeLimitMinutes: 30,
-      maxAttempts: 2,
+      maxAttempts: 3,
       strictSafety: true,
-      hideHints: true,
+      hideHints: false,
     },
     status: 'active',
-    createdAt: '2026-03-01T10:00:00.000Z',
-    dueDate: '2026-04-15',
-    enrolledStudents: [
-      {
-        studentId: 'usr_student_01',
-        studentName: 'Aarav Patel',
-        studentEmail: 'student@virtualvigyan.in',
-        avatar: '🎓',
-        joinedAt: '2026-03-02T11:20:00.000Z',
-      },
-      {
-        studentId: 'usr_student_02',
-        studentName: 'Priya Deshmukh',
-        studentEmail: 'priya.deshmukh@school.edu',
-        avatar: '👩‍🎓',
-        joinedAt: '2026-03-03T14:15:00.000Z',
-      },
-    ],
-    submissions: [
-      {
-        id: 'sub_seed_01',
-        labId: 'lab_seed_chem101',
-        studentId: 'usr_student_01',
-        studentName: 'Aarav Patel',
-        studentEmail: 'student@virtualvigyan.in',
-        avatar: '🎓',
-        experimentId: 'titration-water-acidity',
-        experimentTitle: 'Acidity of Water Sample (Titration with NaOH)',
-        score: 95,
-        maxScore: 100,
-        percentage: 95,
-        attemptNumber: 1,
-        completedAt: '2026-03-05T15:30:00.000Z',
-        timeSpentSeconds: 742,
-        mistakes: ['Minor burette meniscus parallax error'],
-      },
-      {
-        id: 'sub_seed_02',
-        labId: 'lab_seed_chem101',
-        studentId: 'usr_student_02',
-        studentName: 'Priya Deshmukh',
-        studentEmail: 'priya.deshmukh@school.edu',
-        avatar: '👩‍🎓',
-        experimentId: 'titration-water-acidity',
-        experimentTitle: 'Acidity of Water Sample (Titration with NaOH)',
-        score: 88,
-        maxScore: 100,
-        percentage: 88,
-        attemptNumber: 1,
-        completedAt: '2026-03-06T12:10:00.000Z',
-        timeSpentSeconds: 890,
-        mistakes: ['Titrant added slightly too quickly near endpoint'],
-      },
-    ],
+    createdAt: '2026-10-01T09:00:00.000Z',
+    dueDate: '2026-10-31',
+    enrolledStudents: PILOT_STUDENTS,
+    submissions: PILOT_SUBMISSIONS,
   },
 ];
 
@@ -123,8 +124,20 @@ export function getAllPrivateLabs(): PrivateLab[] {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(PRESEEDED_LABS));
       return PRESEEDED_LABS;
     }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : PRESEEDED_LABS;
+    const parsed: PrivateLab[] = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return PRESEEDED_LABS;
+    }
+    // Seamless migration: If stored lab has outdated dummy submissions or 0 submissions, update to real pilot cohort data
+    const chem101 = parsed.find((l) => l.code === 'CHEM-101' || l.id === 'lab_seed_chem101');
+    if (chem101 && (chem101.enrolledStudents.length <= 2 || chem101.submissions.length <= 2 || chem101.teacherName !== 'SIH Mentor & Faculty Guide')) {
+      chem101.enrolledStudents = PILOT_STUDENTS;
+      chem101.submissions = PILOT_SUBMISSIONS;
+      chem101.title = 'Pilot Assessment: Water Acidity Titration';
+      chem101.teacherName = 'SIH Mentor & Faculty Guide';
+      savePrivateLabs(parsed);
+    }
+    return parsed;
   } catch (err) {
     console.warn('[PrivateLab] Failed to load private labs from localStorage:', err);
     return PRESEEDED_LABS;
@@ -730,7 +743,9 @@ export function exportGradebookCSV(labId: string): void {
       ]);
     });
   } else {
+    const submittedEmails = new Set<string>();
     lab.submissions.forEach((sub) => {
+      if (sub.studentEmail) submittedEmails.add(sub.studentEmail.toLowerCase());
       const student = lab.enrolledStudents.find(
         (e) => e.studentEmail?.toLowerCase() === sub.studentEmail?.toLowerCase()
       );
@@ -747,6 +762,25 @@ export function exportGradebookCSV(labId: string): void {
         escapeCSV(new Date(sub.completedAt).toLocaleString()),
         escapeCSV(sub.mistakes.join('; ')),
       ]);
+    });
+
+    // Also include any enrolled students who haven't completed a submission yet
+    lab.enrolledStudents.forEach((st) => {
+      if (!submittedEmails.has(st.studentEmail.toLowerCase())) {
+        rows.push([
+          escapeCSV(st.studentName),
+          escapeCSV(st.studentEmail),
+          escapeCSV(new Date(st.joinedAt).toLocaleDateString()),
+          escapeCSV('Not Attempted'),
+          '0',
+          '100',
+          '0',
+          '0',
+          '0',
+          escapeCSV('N/A'),
+          escapeCSV('None'),
+        ]);
+      }
     });
   }
 

@@ -670,7 +670,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onLaunchExperiment, onViewAsStu
                 </div>
               </div>
               <button
-                onClick={() => onLaunchExperiment('conservation')}
+                onClick={() => onLaunchExperiment('conservation-of-mass')}
                 className="clay-btn clay-btn-emerald"
                 style={{
                   padding: '8px 16px',

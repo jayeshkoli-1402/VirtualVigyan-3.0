@@ -3,6 +3,7 @@ import type { ConservationState } from './conservationState';
 
 /**
  * Deterministic, rule-based mistake detection for the Conservation of Mass experiment.
+ * CBSE Class 9 Science — Atoms and Molecules
  */
 
 export type ValidationResult = {
@@ -45,19 +46,19 @@ export function canPourIntoFlask(state: ConservationState): ValidationResult {
 }
 
 /**
- * Rule: Ignition tube must be filled before suspending it.
+ * Rule: Ignition tube must be filled with BaCl2 and Na2SO4 must be poured before suspending.
  */
 export function canSuspendTube(state: ConservationState): ValidationResult {
-  if (!state.tubeFilled) {
-    return {
-      allowed: false,
-      message: 'Fill the Ignition Tube with BaCl₂ solution first before placing it in the flask.',
-    };
-  }
   if (!state.na2so4Poured) {
     return {
       allowed: false,
       message: 'Pour Na₂SO₄ solution into the flask first before suspending the tube.',
+    };
+  }
+  if (!state.tubeFilled) {
+    return {
+      allowed: false,
+      message: 'Fill the Ignition Tube with BaCl₂ solution first before placing it in the flask.',
     };
   }
   return { allowed: true, message: null };
@@ -70,58 +71,95 @@ export function canSealFlask(state: ConservationState): ValidationResult {
   if (!state.tubeSuspended) {
     return {
       allowed: false,
-      message: 'Suspend the filled Ignition Tube inside the flask before sealing.',
+      message: 'Place the test tube inside the flask without allowing the solutions to mix.',
     };
   }
   return { allowed: true, message: null };
 }
 
 /**
- * Rule: Flask must be sealed before formal initial weighing.
+ * Rule: Validate whether placing the conical flask on the digital balance pan is procedurally valid.
+ * Prevents premature weighing before the complete closed system is assembled or while mixing is pending.
  */
-export function canWeigh(state: ConservationState): ValidationResult {
+export function canPlaceOnBalance(state: ConservationState): ValidationResult {
+  if (!state.flaskPlaced) {
+    return {
+      allowed: false,
+      message: 'Place the Conical Flask on the bench first before placing it on the balance.',
+    };
+  }
+  if (!state.na2so4Poured) {
+    return {
+      allowed: false,
+      message: 'Pour the Na₂SO₄ solution into the flask before weighing.',
+    };
+  }
+  if (!state.tubeFilled || !state.tubeSuspended) {
+    return {
+      allowed: false,
+      message: 'Place the test tube inside the flask without allowing the solutions to mix.',
+    };
+  }
   if (!state.flaskSealed) {
     return {
       allowed: false,
       message: 'Seal the flask with the Rubber Cork before recording M₁. The system must be closed to verify mass conservation.',
     };
   }
+  if (state.initialMass !== null && !state.reactantsMixed) {
+    return {
+      allowed: false,
+      message: 'Initial mass M₁ is already recorded. Keep the flask on the bench and tilt to mix reactants.',
+    };
+  }
+  if (state.reactantsMixed && !state.hasObserved) {
+    return {
+      allowed: false,
+      message: 'Observe the white precipitate formation before taking the final mass reading.',
+    };
+  }
   return { allowed: true, message: null };
 }
 
 /**
- * Rule: SEQUENCE — Cannot mix before recording initial mass M1.
+ * Rule: SEQUENCE — Cannot mix before recording initial mass M1 and sealing flask.
  */
 export function canMixReactants(state: ConservationState): ValidationResult {
+  if (state.flaskOnBalance) {
+    return {
+      allowed: false,
+      message: 'Move the flask off the balance pan to the bench before mixing the reactants.',
+    };
+  }
   if (!state.flaskSealed) {
     return {
       allowed: false,
-      message: 'Open System Warning: Flask must be hermetically corked to prevent mass exchange.',
+      message: 'Seal the flask with the Rubber Cork before recording M₁. The system must be closed to verify mass conservation.',
     };
   }
   if (state.initialMass === null) {
     return {
       allowed: false,
-      message: 'Record the initial mass (M₁) of the sealed flask before inverting or mixing the solutions.',
+      message: 'Record the initial mass before mixing the solutions.',
     };
   }
   return { allowed: true, message: null };
 }
 
 /**
- * Rule: Cannot weigh final mass before mixing.
+ * Rule: Cannot weigh final mass before mixing and observing.
  */
 export function canWeighFinal(state: ConservationState): ValidationResult {
   if (!state.reactantsMixed) {
     return {
       allowed: false,
-      message: 'Mix the reactants by inverting the flask before recording final mass M₂.',
+      message: 'Complete the reaction before taking the final mass.',
     };
   }
   if (!state.hasObserved) {
     return {
       allowed: false,
-      message: 'Observe the white precipitate formation before proceeding to record M₂.',
+      message: 'Observe the white precipitate formation before taking the final mass reading.',
     };
   }
   return { allowed: true, message: null };
@@ -222,3 +260,4 @@ export function computeScore(state: ConservationState): number {
 
   return Math.min(100, score);
 }
+

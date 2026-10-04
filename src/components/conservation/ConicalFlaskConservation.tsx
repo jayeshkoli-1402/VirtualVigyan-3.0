@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface ConicalFlaskConservationProps {
   liquidColor: string;
@@ -27,6 +28,7 @@ const ConicalFlaskConservation: React.FC<ConicalFlaskConservationProps> = ({
   onPlaceOnBalance,
   onMoveToBench,
 }) => {
+  const { language } = useLanguage();
   const [isHovered, setIsHovered] = useState(false);
 
   // Center coordinates:
@@ -47,18 +49,42 @@ const ConicalFlaskConservation: React.FC<ConicalFlaskConservationProps> = ({
   const liquidTop = flaskBodyBottom - (precipitateFormed ? 26 : 20);
   const liquidRadiusX = getWidthAtY(liquidTop, flaskNeckWidth, flaskBodyWidth, flaskBodyTop, flaskBodyBottom) / 2 - 1;
 
-  // Tooltip content on hover
-  const tooltipText = effectiveOnBalance
-    ? 'On Scale (Double-click to return to table)'
-    : precipitateFormed
-      ? 'BaSO₄(s) + 2NaCl(aq) [Double-click to weigh]'
-      : flaskSealed
-        ? 'Sealed Conical Flask (Double-click to weigh on scale)'
-        : tubeSuspended
-          ? 'Flask with BaCl₂ Tube (Double-click to weigh)'
-          : na2so4Poured
-            ? '10 mL Na₂SO₄ in Flask (Double-click to weigh)'
-            : 'Conical Flask (Double-click to weigh)';
+  // Tooltip content on hover (localized in English, Hindi, and Marathi)
+  const tooltipText = language === 'hi'
+    ? (effectiveOnBalance
+        ? 'तराजू पर (टेबल पर वापस लाने के लिए क्लिक करें)'
+        : precipitateFormed
+          ? 'BaSO₄(s) + 2NaCl(aq) [तोलने के लिए क्लिक करें]'
+          : flaskSealed
+            ? 'सीलबंद शंक्वाकार फ्लास्क (तराजू पर तोलने के लिए क्लिक करें)'
+            : tubeSuspended
+              ? 'BaCl₂ नली युक्त फ्लास्क (तोलने के लिए क्लिक करें)'
+              : na2so4Poured
+                ? 'फ्लास्क में 5 mL Na₂SO₄ (तोलने के लिए क्लिक करें)'
+                : 'शंक्वाकार फ्लास्क (तोलने के लिए क्लिक करें)')
+    : language === 'mr'
+      ? (effectiveOnBalance
+          ? 'काट्यावर (टेबलावर परत आणण्यासाठी क्लिक करा)'
+          : precipitateFormed
+            ? 'BaSO₄(s) + 2NaCl(aq) [वजन करण्यासाठी क्लिक करा]'
+            : flaskSealed
+              ? 'हवाबंद शंकूपात्र (काट्यावर वजन करण्यासाठी क्लिक करा)'
+              : tubeSuspended
+                ? 'BaCl₂ नळी असलेले पात्र (वजन करण्यासाठी क्लिक करा)'
+                : na2so4Poured
+                  ? 'पात्रात 5 mL Na₂SO₄ (वजन करण्यासाठी क्लिक करा)'
+                  : 'शंकूपात्र (वजन करण्यासाठी क्लिक करा)')
+      : (effectiveOnBalance
+          ? 'On Scale (Click or double-click to return to table)'
+          : precipitateFormed
+            ? 'BaSO₄(s) + 2NaCl(aq) [Click to weigh]'
+            : flaskSealed
+              ? 'Sealed Conical Flask (Click to weigh on scale)'
+              : tubeSuspended
+                ? 'Flask with BaCl₂ Tube (Click to weigh)'
+                : na2so4Poured
+                  ? '5 mL Na₂SO₄ in Flask (Click to weigh)'
+                  : 'Conical Flask (Click to weigh)');
 
   return (
     <g

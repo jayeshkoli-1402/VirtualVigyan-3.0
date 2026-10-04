@@ -22,11 +22,11 @@ export const conservationOfMass: ExperimentConfig = {
   subject: 'Chemistry',
   chapter: 'Atoms and Molecules',
   difficulty: 'medium',
-  themeColor: '#7c3aed',
+  themeColor: '#059669',
   icon: '⚖️',
   estimatedMinutes: 30,
-  underDevelopment: true,
-  adminOnly: true,
+  underDevelopment: false,
+  adminOnly: false,
 
   // ── Apparatus ──
   apparatus: [
@@ -119,7 +119,7 @@ export const conservationOfMass: ExperimentConfig = {
     {
       id: 'add-solutions',
       label: 'Add Na₂SO₄ & Hang BaCl₂',
-      instruction: 'Pour 20 mL Na₂SO₄ solution into the flask, then hang the BaCl₂ ignition tube inside by thread without mixing.',
+      instruction: 'Pour 5 mL Na₂SO₄ solution into the flask, then hang the 5 mL BaCl₂ ignition tube inside by thread without mixing.',
       requiredActions: ['added-na2so4', 'hung-bacl2'],
       type: 'lab',
     },
@@ -184,7 +184,7 @@ export const conservationOfMass: ExperimentConfig = {
         { type: 'setFlag', key: 'hasNa2SO4', value: true },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidLevel', value: 0.35 },
         { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.45)' },
-        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: '20 mL Na₂SO₄ Sol' },
+        { type: 'setApparatusProp', apparatusId: 'conical-flask', prop: 'label', value: '5 mL Na₂SO₄ Sol' },
       ],
       completesAction: 'added-na2so4',
     },

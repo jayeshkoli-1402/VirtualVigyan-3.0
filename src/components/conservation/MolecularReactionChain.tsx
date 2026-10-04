@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ConservationState } from '../../engine/conservationState';
 import { ConservationStep } from '../../engine/conservationState';
+import { useLanguage } from '../../i18n/LanguageContext';
 
 interface MolecularReactionChainProps {
   state: ConservationState;
@@ -11,6 +12,7 @@ interface MolecularReactionChainProps {
  * Clean, responsive design that never overlaps with controls.
  */
 const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }) => {
+  const { language } = useLanguage();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'ions' | 'equation' | 'spectator'>('ions');
 
@@ -63,7 +65,7 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
             }}
           />
           <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#f8fafc' }}>
-            🔬 Live Ion Exchange Chamber
+            🔬 {language === 'hi' ? 'आयन विनिमय कक्ष' : language === 'mr' ? 'आयन देवाणघेवाण कक्ष' : 'Live Ion Exchange Chamber'}
           </span>
           <span
             style={{
@@ -76,7 +78,11 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
               border: `1px solid ${isPostReaction ? '#059669' : isReacting ? '#d97706' : '#0284c7'}`,
             }}
           >
-            {isPostReaction ? 'BaSO₄↓ Precipitate Formed' : isReacting ? '⚡ Reacting...' : 'Hydrated Reactants Ready'}
+            {isPostReaction
+              ? (language === 'hi' ? 'BaSO₄↓ अवक्षेप निर्मित' : language === 'mr' ? 'BaSO₄↓ अवक्षेप तयार झाला' : 'BaSO₄↓ Precipitate Formed')
+              : isReacting
+                ? (language === 'hi' ? '⚡ अभिक्रिया जारी...' : language === 'mr' ? '⚡ अभिक्रिया सुरू आहे...' : '⚡ Reacting...')
+                : (language === 'hi' ? 'जलयोजित अभिकारक तैयार' : language === 'mr' ? 'जलयोजित अभिकारक तयार' : 'Hydrated Reactants Ready')}
           </span>
         </div>
 
@@ -95,7 +101,9 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
             borderRadius: '4px',
           }}
         >
-          {isCollapsed ? '▼ Show Reaction' : '▲ Minimize'}
+          {isCollapsed
+            ? (language === 'hi' ? '▼ अभिक्रिया दिखाएं' : language === 'mr' ? '▼ अभिक्रिया दाखवा' : '▼ Show Reaction')
+            : (language === 'hi' ? '▲ छोटा करें' : language === 'mr' ? '▲ लहान करा' : '▲ Minimize')}
         </button>
       </div>
 
@@ -144,7 +152,7 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
                   color: activeTab === 'ions' ? '#ffffff' : '#94a3b8',
                 }}
               >
-                ⚛️ Ions
+                ⚛️ {language === 'hi' ? 'आयन' : language === 'mr' ? 'आयन' : 'Ions'}
               </button>
               <button
                 onClick={() => setActiveTab('equation')}
@@ -159,7 +167,7 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
                   color: activeTab === 'equation' ? '#ffffff' : '#94a3b8',
                 }}
               >
-                📝 Net Ionic
+                📝 {language === 'hi' ? 'शुद्ध आयनिक' : language === 'mr' ? 'निव्वळ आयनिक' : 'Net Ionic'}
               </button>
               <button
                 onClick={() => setActiveTab('spectator')}
@@ -174,7 +182,7 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
                   color: activeTab === 'spectator' ? '#ffffff' : '#94a3b8',
                 }}
               >
-                👀 Spectators
+                👀 {language === 'hi' ? 'दर्शक आयन' : language === 'mr' ? 'प्रेक्षक आयन' : 'Spectators'}
               </button>
             </div>
           </div>
@@ -257,7 +265,7 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
                     SO₄²⁻
                   </span>
                   <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: 600 }}>
-                    Insoluble BaSO₄ lattice bonding
+                    {language === 'hi' ? 'अघुलनशील BaSO₄ जालक बंधन' : language === 'mr' ? 'अद्राव्य BaSO₄ जाळीदार बंधन' : 'Insoluble BaSO₄ lattice bonding'}
                   </span>
                 </div>
               )}
@@ -268,11 +276,15 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: '#0284c7', color: '#fff', fontSize: '0.55rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ba²⁺</span>
                     <span style={{ width: 8, height: 3, background: '#fff', borderRadius: 1 }} />
                     <span style={{ width: 24, height: 24, borderRadius: '50%', background: '#d97706', color: '#fff', fontSize: '0.52rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>SO₄²⁻</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#ffffff' }}>BaSO₄(s) ↓ Precipitate</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#ffffff' }}>
+                      BaSO₄(s) ↓ {language === 'hi' ? 'अवक्षेप' : language === 'mr' ? 'अवक्षेप' : 'Precipitate'}
+                    </span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(167, 139, 250, 0.05)', border: '1px solid #475569', borderRadius: 6, padding: '4px 8px' }}>
-                    <span style={{ fontSize: '0.62rem', color: '#a78bfa', fontWeight: 700 }}>Spectators:</span>
+                    <span style={{ fontSize: '0.62rem', color: '#a78bfa', fontWeight: 700 }}>
+                      {language === 'hi' ? 'दर्शक आयन:' : language === 'mr' ? 'प्रेक्षक आयन:' : 'Spectators:'}
+                    </span>
                     <span style={{ padding: '1px 5px', borderRadius: 3, background: '#7c3aed', color: '#fff', fontSize: '0.58rem', fontWeight: 700 }}>Na⁺</span>
                     <span style={{ padding: '1px 5px', borderRadius: 3, background: '#16a34a', color: '#fff', fontSize: '0.58rem', fontWeight: 700 }}>Cl⁻</span>
                   </div>
@@ -284,18 +296,28 @@ const MolecularReactionChain: React.FC<MolecularReactionChainProps> = ({ state }
           {/* TAB 2: Net Ionic */}
           {activeTab === 'equation' && (
             <div style={{ background: '#050a17', border: '1px solid #1e293b', borderRadius: '6px', padding: '6px 10px', fontSize: '0.68rem' }}>
-              <div style={{ color: '#94a3b8', marginBottom: 2 }}>Complete Ionic:</div>
+              <div style={{ color: '#94a3b8', marginBottom: 2 }}>
+                {language === 'hi' ? 'पूर्ण आयनिक समीकरण:' : language === 'mr' ? 'पूर्ण आयनिक समीकरण:' : 'Complete Ionic:'}
+              </div>
               <div style={{ fontFamily: 'var(--font-mono)', color: '#e2e8f0', marginBottom: 4 }}>
                 Ba²⁺(aq) + 2Cl⁻(aq) + 2Na⁺(aq) + SO₄²⁻(aq) ⟶ BaSO₄(s)↓ + 2Na⁺(aq) + 2Cl⁻(aq)
               </div>
-              <div style={{ color: '#4ade80', fontWeight: 700 }}>Net Ionic Equation: Ba²⁺(aq) + SO₄²⁻(aq) ⟶ BaSO₄(s)↓</div>
+              <div style={{ color: '#4ade80', fontWeight: 700 }}>
+                {language === 'hi' ? 'शुद्ध आयनिक समीकरण:' : language === 'mr' ? 'निव्वळ आयनिक समीकरण:' : 'Net Ionic Equation:'} Ba²⁺(aq) + SO₄²⁻(aq) ⟶ BaSO₄(s)↓
+              </div>
             </div>
           )}
 
           {/* TAB 3: Spectators */}
           {activeTab === 'spectator' && (
             <div style={{ background: '#050a17', border: '1px solid #1e293b', borderRadius: '6px', padding: '6px 10px', fontSize: '0.64rem', color: '#cbd5e1', lineHeight: 1.3 }}>
-              Spectator ions (<span style={{ color: '#a78bfa', fontWeight: 700 }}>Na⁺</span> and <span style={{ color: '#4ade80', fontWeight: 700 }}>Cl⁻</span>) do not participate in precipitate formation and remain unchanged in solution, proving mass is conserved.
+              {language === 'hi' ? (
+                <>दर्शक आयन (<span style={{ color: '#a78bfa', fontWeight: 700 }}>Na⁺</span> और <span style={{ color: '#4ade80', fontWeight: 700 }}>Cl⁻</span>) अवक्षेप निर्माण में भाग नहीं लेते हैं और विलयन में अपरिवर्तित रहते हैं, जिससे सिद्ध होता है कि द्रव्यमान संरक्षित रहता है।</>
+              ) : language === 'mr' ? (
+                <>प्रेक्षक आयन (<span style={{ color: '#a78bfa', fontWeight: 700 }}>Na⁺</span> आणि <span style={{ color: '#4ade80', fontWeight: 700 }}>Cl⁻</span>) अवक्षेप तयार होण्यात भाग घेत नाहीत आणि द्रावणात अपरिवर्तित राहतात, ज्यामुळे वस्तुमान संरक्षित राहते हे सिद्ध होते.</>
+              ) : (
+                <>Spectator ions (<span style={{ color: '#a78bfa', fontWeight: 700 }}>Na⁺</span> and <span style={{ color: '#4ade80', fontWeight: 700 }}>Cl⁻</span>) do not participate in precipitate formation and remain unchanged in solution, proving mass is conserved.</>
+              )}
             </div>
           )}
         </div>

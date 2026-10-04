@@ -559,7 +559,7 @@ export function getStepWhyExplanation(
   stepId: string,
   lang: Language
 ): StepWhyExplanation | null {
-  const expData = EXPERIMENT_WHY_DATA[experimentId];
+  const expData = EXPERIMENT_WHY_DATA[experimentId] || (experimentId === 'conservation-of-mass' ? EXPERIMENT_WHY_DATA['conservation'] : undefined);
   if (!expData) return null;
 
   const stepData = expData[stepId];

@@ -64,7 +64,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           studentName: effectiveUser.name || 'Student',
           studentEmail: effectiveUser.email,
           avatar: effectiveUser.avatar || '🎓',
-          experimentId: 'conservation',
+          experimentId: 'conservation-of-mass',
           experimentTitle: 'Law of Conservation of Mass',
           score,
           maxScore: 100,
@@ -82,7 +82,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           studentName: effectiveUser.name || 'Student',
           studentEmail: effectiveUser.email,
           avatar: effectiveUser.avatar || '🎓',
-          experimentId: 'conservation',
+          experimentId: 'conservation-of-mass',
           experimentTitle: 'Law of Conservation of Mass',
           type: 'practice',
           score,
@@ -180,7 +180,36 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
         </p>
       </div>
 
-      {/* Mass Conservation Summary */}
+      {/* Scientific Observation */}
+      <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
+        <h3
+          style={{
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            color: 'var(--text-primary)',
+            marginBottom: 8,
+          }}
+        >
+          👁️ {t('conservation.observationTitle', 'Scientific Observation')}
+        </h3>
+        <div
+          style={{
+            padding: '10px 14px',
+            background: '#f8fafc',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            fontSize: '0.8rem',
+            color: 'var(--text-primary)',
+            lineHeight: 1.5,
+          }}
+        >
+          {state.precipitateFormed
+            ? t('conservation.observationRecorded', 'A white precipitate of barium sulphate is formed when barium chloride reacts with sodium sulphate.')
+            : t('conservation.noObservation', 'Reaction not completed.')}
+        </div>
+      </div>
+
+      {/* Mass Conservation Summary (Result & Comparison) */}
       <div className="glass-card" style={{ padding: 20, marginBottom: 16 }}>
         <h3
           style={{
@@ -215,6 +244,9 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           </div>
         </div>
 
+        <div style={{ marginBottom: 6, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+          {t('conservation.conclusionTitle', 'Conclusion')}
+        </div>
         <div
           style={{
             padding: '10px 14px',
@@ -227,7 +259,7 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({ state, dispat
           }}
         >
           {expectedDeltaM <= 0.02
-            ? t('conservation.massConserved', { deltaM: expectedDeltaM.toFixed(2) })
+            ? t('conservation.conclusionVerified', 'The total mass remains conserved before and after the chemical reaction, within the precision of the simulated balance. Hence, the law of conservation of mass is verified.')
             : t('conservation.massNotConserved', { deltaM: expectedDeltaM.toFixed(2) })}
         </div>
       </div>

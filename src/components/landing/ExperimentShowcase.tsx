@@ -29,7 +29,7 @@ const ExperimentShowcase: React.FC<ExperimentShowcaseProps> = ({
   // Curate balanced representation across classes for the initial "All" view
   const defaultShowcaseIds = [
     'titration',
-    'conservation',
+    'conservation-of-mass',
     'viscosity-ostwald',
     'ph-metric-titration',
     'zinc-acid-reaction',

@@ -56,7 +56,7 @@ export const ClassesView: React.FC<ClassesViewProps> = ({
       syllabus: 'Matter, Chemical Reactions & Fundamental Laws',
       tag: 'Secondary',
       experiments: [
-        { id: 'conservation', title: 'Law of Conservation of Mass (Double Displacement)', time: '15 mins', diff: 'Beginner' },
+        { id: 'conservation-of-mass', title: 'Law of Conservation of Mass (Double Displacement)', time: '15 mins', diff: 'Beginner' },
       ],
     },
   ];

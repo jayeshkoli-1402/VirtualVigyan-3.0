@@ -33,14 +33,14 @@ export const CONSERVATION_STEP_LABELS: Record<ConservationStep, string> = {
 
 export const CONSERVATION_STEP_INSTRUCTIONS: Record<ConservationStep, string> = {
   [ConservationStep.SELECT]: 'Select the Conservation of Mass experiment to begin.',
-  [ConservationStep.SETUP_FLASK]: 'Place the Conical Flask on the bench, then pour Na₂SO₄ solution into it.',
+  [ConservationStep.SETUP_FLASK]: 'Place the Conical Flask on the bench, then pour 5 mL of Na₂SO₄ solution into it.',
   [ConservationStep.PLACE_TUBE_ON_STAND]: 'Drag the Ignition Tube from the toolbox onto the Test Tube Stand.',
-  [ConservationStep.FILL_TUBE]: 'Drag the BaCl₂ bottle onto the Ignition Tube to fill it with BaCl₂ solution.',
+  [ConservationStep.FILL_TUBE]: 'Drag the BaCl₂ bottle onto the Ignition Tube to fill it with 5 mL of BaCl₂ solution.',
   [ConservationStep.SUSPEND_TUBE]: 'Drag the filled Ignition Tube into the Conical Flask to suspend it inside.',
   [ConservationStep.SEAL_FLASK]: 'Drag the Rubber Cork onto the Conical Flask to seal it airtight.',
   [ConservationStep.WEIGH_INITIAL]: 'Click or drag the sealed flask onto the Digital Balance to record the initial mass M₁.',
   [ConservationStep.MIX_REACTANTS]: 'Click "Invert Flask to Mix" to tilt the flask and mix BaCl₂ with Na₂SO₄.',
-  [ConservationStep.OBSERVE]: 'Observe the white precipitate of BaSO₄ forming. Click "Continue" when done.',
+  [ConservationStep.OBSERVE]: 'A white precipitate of barium sulphate is formed when barium chloride reacts with sodium sulphate. Click "Continue" when done.',
   [ConservationStep.WEIGH_FINAL]: 'Click or drag the flask onto the Digital Balance to record the final mass M₂.',
   [ConservationStep.CALCULATION]: 'Use your recorded M₁ and M₂ values to calculate ΔM and Deviation %.',
   [ConservationStep.RESULTS]: 'Review your score and feedback.',
@@ -55,7 +55,7 @@ export function getConservationStepInstruction(state: ConservationState): string
       return 'Drag the Conical Flask from the toolbox onto the lab bench.';
     }
     if (!state.na2so4Poured) {
-      return 'Drag the Na₂SO₄ bottle onto the flask to pour 10 mL of sodium sulfate solution.';
+      return 'Drag the Na₂SO₄ bottle onto the flask to pour 5 mL of sodium sulfate solution.';
     }
   }
   return CONSERVATION_STEP_INSTRUCTIONS[state.step];
@@ -112,8 +112,11 @@ export type ConservationState = {
 
 // Generate realistic masses
 function generateSimulatedMasses(): { m1: number; m2: number } {
-  const m1 = 125.40 + (Math.random() - 0.5) * 1.0; // 124.90 – 125.90 g
-  const m2 = m1 + (Math.random() - 0.5) * 0.02;     // within ±0.01 g (balance precision)
+  // Base mass of fully assembled 100 mL borosilicate system: 100.00 + 10.30 + 5.00 + 5.10 + 5.00 = 125.40 g
+  const jitter = (Math.random() - 0.5) * 0.20; // 125.30 – 125.50 g
+  const m1 = 125.40 + jitter;
+  const balanceDrift = (Math.random() - 0.5) * 0.02; // within ±0.01 g (balance precision)
+  const m2 = m1 + balanceDrift;
   return {
     m1: Math.round(m1 * 100) / 100,
     m2: Math.round(m2 * 100) / 100,

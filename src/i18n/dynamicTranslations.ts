@@ -101,6 +101,58 @@ const DYNAMIC_MESSAGES: Record<string, Record<Exclude<Language, 'en'>, string>> 
     hi: 'गणना पर आगे बढ़ने से पहले तराजू पर अंतिम द्रव्यमान रिकॉर्ड करें।',
     mr: 'गणनेकडे जाण्यापूर्वी डिजिटल काट्यावर अंतिम वस्तुमान नोंदवा.',
   },
+  'Record the initial mass before mixing the solutions.': {
+    hi: 'विलयनों को मिलाने से पहले प्रारंभिक द्रव्यमान रिकॉर्ड करें।',
+    mr: 'द्रावणे मिसळण्यापूर्वी सुरुवातीचे वस्तुमान नोंदवा.',
+  },
+  'Place the test tube inside the flask without allowing the solutions to mix.': {
+    hi: 'परखनली को फ्लास्क के अंदर इस प्रकार रखें कि विलयन आपस में न मिलें।',
+    mr: 'द्रावणे एकमेकांत न मिसळता परीक्षानळी शंकूपात्रात काळजीपूर्वक ठेवा.',
+  },
+  'Complete the reaction before taking the final mass.': {
+    hi: 'अंतिम द्रव्यमान लेने से पहले अभिक्रिया पूरी करें।',
+    mr: 'अंतिम वस्तुमान मोजण्यापूर्वी रासायनिक अभिक्रिया पूर्ण करा.',
+  },
+  'Tilt the flask gently so the two solutions mix.': {
+    hi: 'फ्लास्क को धीरे से झुकाएं ताकि दोनों विलयन आपस में मिल जाएं।',
+    mr: 'दोन्ही द्रावणे मिसळण्यासाठी शंकूपात्र हळुवारपणे तिरपे करा.',
+  },
+  'Move the flask off the balance pan to the bench before mixing the reactants.': {
+    hi: 'अभिकारकों को मिलाने से पहले फ्लास्क को तराजू से हटाकर बेंच पर रखें।',
+    mr: 'अभिकारक मिसळण्यापूर्वी शंकूपात्र वजनकाट्यावरून लॅब बेंचवर आणा.',
+  },
+  'Observe the white precipitate formation before taking the final mass reading.': {
+    hi: 'अंतिम द्रव्यमान दर्ज करने से पहले सफेद अवक्षेप बनने का अवलोकन करें।',
+    mr: 'अंतिम वस्तुमान नोंदवण्यापूर्वी पांढरा अवक्षेप तयार झाल्याचे निरीक्षण करा.',
+  },
+  'Place the Conical Flask on the lab bench here.': {
+    hi: 'शंक्वाकार फ्लास्क को यहां लैब बेंच पर रखें।',
+    mr: 'शंकूपात्र येथे लॅब बेंचवर ठेवा.',
+  },
+  'Place the Ignition Tube on the test tube stand here.': {
+    hi: 'ज्वलन नली को यहां परखनली स्टैंड पर रखें।',
+    mr: 'ज्वलन नळी येथे परीक्षानळी स्टँडवर ठेवा.',
+  },
+  'Only the Na₂SO₄ bottle, Ignition Tube, or Rubber Cork can be used on the flask.': {
+    hi: 'फ्लास्क पर केवल Na₂SO₄ बोतल, ज्वलन नली या रबर कॉर्क का उपयोग किया जा सकता है।',
+    mr: 'शंकूपात्रावर फक्त Na₂SO₄ बाटली, ज्वलन नळी किंवा रबरी बुच वापरले जाऊ शकते.',
+  },
+  'Drag the BaCl₂ bottle here to fill the ignition tube.': {
+    hi: 'ज्वलन नली भरने के लिए BaCl₂ बोतल को यहां खींचें।',
+    mr: 'ज्वलन नळी भरण्यासाठी BaCl₂ बाटली येथे ओढा.',
+  },
+  'Place the flask on the digital balance weighing pan.': {
+    hi: 'फ्लास्क को डिजिटल तराजू के पैन पर रखें।',
+    mr: 'शंकूपात्र डिजिटल वजनकाट्याच्या तबकडीवर ठेवा.',
+  },
+  'Place the Conical Flask on the bench first before placing it on the balance.': {
+    hi: 'तराजू पर रखने से पहले शंक्वाकार फ्लास्क को लैब बेंच पर रखें।',
+    mr: 'काट्यावर ठेवण्यापूर्वी शंकूपात्र आधी लॅब बेंचवर ठेवा.',
+  },
+  'Pour the Na₂SO₄ solution into the flask before weighing.': {
+    hi: 'तोलने से पहले फ्लास्क में Na₂SO₄ का विलयन डालें।',
+    mr: 'वजन करण्यापूर्वी शंकूपात्रात Na₂SO₄ चे द्रावण ओता.',
+  },
   'This item cannot be placed here.': {
     hi: 'इस वस्तु को यहां नहीं रखा जा सकता।',
     mr: 'ही वस्तू येथे ठेवता येत नाही.',

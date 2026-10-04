@@ -19,13 +19,13 @@ import {
   canDropOnZone,
   canSuspendTube,
   canSealFlask,
+  canPlaceOnBalance,
 } from '../../engine/conservationValidation';
 import ConservationToolbox from './ConservationToolbox';
 import ConservationLabBench from './ConservationLabBench';
 import ConservationInstructions from './ConservationInstructions';
 import ConservationCalculation from './ConservationCalculation';
 import ConservationResults from './ConservationResults';
-import LabSafetyModal from './LabSafetyModal';
 import ChemicalHazardWarningToast from './ChemicalHazardWarningToast';
 import type { HazardWarningData } from './ChemicalHazardWarningToast';
 import ConservationVRLab from './vr/ConservationVRLab';
@@ -51,8 +51,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
 
-  // Safety Briefing Modal & Hazard Toasts
-  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(true);
+  // Chemical Hazard Toasts
   const [hazardWarning, setHazardWarning] = useState<HazardWarningData | null>(null);
 
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -141,6 +140,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
       const validation = canDropOnZone(itemId, zoneId);
       if (!validation.allowed) {
         setMistakeMessage(validation.message);
+        if (validation.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: validation.message } });
         return;
       }
 
@@ -155,7 +155,9 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
       // Na₂SO₄ → flask
       if (zoneId === CONSERVATION_DROP_ZONES.FLASK_ZONE && itemId === CONSERVATION_DRAG_ITEMS.NA2SO4_BOTTLE) {
         if (!state.flaskPlaced) {
-          setMistakeMessage('Place the Conical Flask on the bench first before pouring solutions.');
+          const msg = 'Place the Conical Flask on the bench first before pouring solutions.';
+          setMistakeMessage(msg);
+          dispatch({ type: 'ADD_MISTAKE', payload: { message: msg } });
           return;
         }
         dispatch({ type: 'POUR_NA2SO4_START' });
@@ -181,6 +183,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
         const check = canSuspendTube(state);
         if (!check.allowed) {
           setMistakeMessage(check.message);
+          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
           return;
         }
         dispatch({ type: 'SUSPEND_TUBE' });
@@ -192,6 +195,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
         const check = canSealFlask(state);
         if (!check.allowed) {
           setMistakeMessage(check.message);
+          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
           return;
         }
         dispatch({ type: 'SEAL_FLASK' });
@@ -200,6 +204,12 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
 
       // Flask → balance (weigh at any phase)
       if (zoneId === CONSERVATION_DROP_ZONES.BALANCE_ZONE && itemId === CONSERVATION_DRAG_ITEMS.FLASK) {
+        const check = canPlaceOnBalance(state);
+        if (!check.allowed) {
+          setMistakeMessage(check.message);
+          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+          return;
+        }
         dispatch({ type: 'PLACE_ON_BALANCE' });
         return;
       }
@@ -233,12 +243,6 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      {/* ── Mandatory Lab Safety PPE Briefing Modal ── */}
-      <LabSafetyModal
-        isOpen={safetyModalOpen}
-        onAcknowledge={() => setSafetyModalOpen(false)}
-      />
-
       {/* ── Contextual Chemical Hazard Alert Toast ── */}
       <ChemicalHazardWarningToast
         warning={hazardWarning}
@@ -279,7 +283,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
               display: 'grid',
               gridTemplateColumns: isMobile
                 ? '1fr'
-                : `${leftCollapsed ? '52px' : '200px'} 1fr ${rightCollapsed ? '52px' : '260px'}`,
+                : `${leftCollapsed ? '48px' : '210px'} 1fr ${rightCollapsed ? '48px' : '260px'}`,
               gap: 0,
               minHeight: 0,
               transition: 'grid-template-columns 0.2s ease',

@@ -16,7 +16,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
   const { user, allUsers } = useAuth();
   const { t, language } = useLanguage();
   const [activeTeacherTab, setActiveTeacherTab] = useState<'private-labs' | 'cohort'>('private-labs');
-  const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation', 'titration', 'exp-ostwald-viscometer']);
+  const [assignedLabs, setAssignedLabs] = useState<string[]>(['conservation-of-mass', 'titration', 'exp-ostwald-viscometer']);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
@@ -367,7 +367,7 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
             >
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.88rem' }}>
-                  ⚖️ {EXPERIMENT_TRANSLATIONS['conservation']?.[language]?.title || 'Conservation of Mass'}
+                  ⚖️ {EXPERIMENT_TRANSLATIONS['conservation-of-mass']?.[language]?.title || EXPERIMENT_TRANSLATIONS['conservation']?.[language]?.title || 'Conservation of Mass'}
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                   {language === 'hi' ? 'कक्षा 9' : language === 'mr' ? 'इयत्ता ९ वी' : 'Class 9'} • BaCl₂ + Na₂SO₄
@@ -375,20 +375,20 @@ const TeacherDashboard: React.FC<TeacherDashboardProps> = ({ onLaunchExperiment,
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
-                  onClick={() => toggleAssign('conservation')}
-                  className={`clay-btn ${assignedLabs.includes('conservation') ? 'clay-btn-emerald' : 'clay-btn-neutral'}`}
+                  onClick={() => toggleAssign('conservation-of-mass')}
+                  className={`clay-btn ${assignedLabs.includes('conservation-of-mass') ? 'clay-btn-emerald' : 'clay-btn-neutral'}`}
                   style={{
                     padding: '6px 14px',
                     borderRadius: 12,
                     fontSize: '0.74rem',
                   }}
                 >
-                  {assignedLabs.includes('conservation')
+                  {assignedLabs.includes('conservation-of-mass')
                     ? t('teacher.assigned', '✓ Assigned')
                     : t('teacher.assign', '+ Assign')}
                 </button>
                 <button
-                  onClick={() => onLaunchExperiment('conservation')}
+                  onClick={() => onLaunchExperiment('conservation-of-mass')}
                   className="clay-btn clay-btn-neutral"
                   style={{
                     padding: '6px 14px',

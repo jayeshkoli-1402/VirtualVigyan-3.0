@@ -334,16 +334,20 @@ const AppContent: React.FC = () => {
       setActiveExperiment('titration');
       dispatch({ type: 'RESET' });
       dispatch({ type: 'START_EXPERIMENT' });
-    } else if (experimentId === 'conservation') {
-      setActiveExperiment('conservation');
+    } else if (experimentId === 'conservation' || experimentId === 'conservation-of-mass') {
+      setActiveExperiment('conservation-of-mass');
     } else {
       setActiveExperiment(experimentId);
     }
   };
 
-  const handleSelectExperiment = (id: 'titration' | 'conservation') => {
+  const handleSelectExperiment = (id: 'titration' | 'conservation' | 'conservation-of-mass') => {
     setActivePrivateLabContext(null);
-    setActiveExperiment(id);
+    if (id === 'conservation') {
+      setActiveExperiment('conservation-of-mass');
+    } else {
+      setActiveExperiment(id);
+    }
     if (id === 'titration') {
       dispatch({ type: 'RESET' });
       dispatch({ type: 'START_EXPERIMENT' });
@@ -388,7 +392,7 @@ const AppContent: React.FC = () => {
     if (activeExperiment === 'teacher') {
       return { subtitle: t('nav.teacherPortal', '👨‍🏫 Teacher & Faculty Portal'), color: '#0284c7' };
     }
-    if (activeExperiment === 'conservation') {
+    if (activeExperiment === 'conservation' || activeExperiment === 'conservation-of-mass') {
       return { subtitle: getLocalizedExperimentTitle('conservation-of-mass', language, 'Conservation of Mass'), color: '#059669' };
     }
     if (activeExperiment === 'conservation-vr') {
@@ -601,7 +605,7 @@ const AppContent: React.FC = () => {
                 onBackToHome={() => setActiveTab('experiments')}
                 onLaunchExperiment={(id) => {
                   if (id === 'titration') handleSelectExperiment('titration');
-                  else if (id === 'conservation') handleSelectExperiment('conservation');
+                  else if (id === 'conservation' || id === 'conservation-of-mass') setActiveExperiment('conservation-of-mass');
                   else setActiveExperiment(id);
                 }}
               />
@@ -610,7 +614,7 @@ const AppContent: React.FC = () => {
                 onBackToHome={() => setActiveTab('experiments')}
                 onLaunchExperiment={(id) => {
                   if (id === 'titration') handleSelectExperiment('titration');
-                  else if (id === 'conservation') handleSelectExperiment('conservation');
+                  else if (id === 'conservation' || id === 'conservation-of-mass') setActiveExperiment('conservation-of-mass');
                   else setActiveExperiment(id);
                 }}
               />
@@ -867,7 +871,7 @@ const AppContent: React.FC = () => {
         )}
 
         {/* Engine-driven Experiments (New Architecture) */}
-        {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-vr' && (() => {
+        {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'titration' && activeExperiment !== 'conservation' && activeExperiment !== 'conservation-of-mass' && activeExperiment !== 'conservation-vr' && (() => {
           const engineConfig = getExperimentById(activeExperiment);
           return engineConfig ? (
             <GenericLab
@@ -879,7 +883,7 @@ const AppContent: React.FC = () => {
         })()}
 
         {/* Conservation Experiment (2D Lab) */}
-        {activeExperiment === 'conservation' && (
+        {(activeExperiment === 'conservation' || activeExperiment === 'conservation-of-mass') && (
           <ConservationExperiment
             onBackToSelector={handleBackToSelector}
             privateLabContext={activePrivateLabContext || undefined}
@@ -1052,7 +1056,7 @@ const AppContent: React.FC = () => {
       <ExperimentSafetyModal
         isOpen={headerSafetyModalOpen}
         onClose={() => setHeaderSafetyModalOpen(false)}
-        experimentId={activeExperiment === 'conservation-vr' ? 'conservation' : activeExperiment}
+        experimentId={activeExperiment === 'conservation-vr' || activeExperiment === 'conservation-of-mass' ? 'conservation-of-mass' : activeExperiment}
         experimentTitle={headerInfo.subtitle}
       />
     </div>

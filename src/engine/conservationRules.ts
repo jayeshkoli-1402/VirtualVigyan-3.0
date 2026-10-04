@@ -9,8 +9,8 @@ export const REACTION_TYPE = 'Double Displacement (Metathesis)';
 // Chemicals
 export const BACL2_CONCENTRATION = '5% w/v';
 export const NA2SO4_CONCENTRATION = '5% w/v';
-export const BACL2_VOLUME_ML = 10;
-export const NA2SO4_VOLUME_ML = 10;
+export const BACL2_VOLUME_ML = 5;
+export const NA2SO4_VOLUME_ML = 5;
 export const BACL2_MOLAR_MASS = 244.26; // g/mol (BaCl₂·2H₂O)
 export const NA2SO4_MOLAR_MASS = 142.04; // g/mol
 export const BASO4_MOLAR_MASS = 233.39; // g/mol
@@ -27,7 +27,7 @@ export function calculateLiveMass(state: ConservationState): number {
   if (!state.flaskOnBalance) return 0.00;
 
   // If full sealed assembly is formed, use exact simulated M1 (before reaction) or M2 (after reaction)
-  if (state.flaskSealed && state.tubeSuspended && state.tubeFilled) {
+  if (state.flaskSealed && state.tubeSuspended && state.tubeFilled && state.na2so4Poured) {
     return state.reactantsMixed ? state.simulatedM2 : state.simulatedM1;
   }
 
@@ -36,7 +36,7 @@ export function calculateLiveMass(state: ConservationState): number {
   if (state.na2so4Poured) mass += 10.30; // 10 mL 5% Na2SO4 solution (density ~1.03 g/mL)
   if (state.tubeSuspended) {
     mass += 5.00; // Borosilicate Ignition Tube (10x75 mm) + cotton thread
-    if (state.tubeFilled) mass += 10.10; // 10 mL 5% BaCl2 solution (density ~1.01 g/mL)
+    if (state.tubeFilled) mass += 5.10; // 5 mL 5% BaCl2 solution (density ~1.02 g/mL)
   }
   if (state.flaskSealed) mass += 5.00; // Solid airtight rubber cork
 
@@ -87,8 +87,8 @@ export function getObservationDescription(
 ): string {
   if (!na2so4Poured) return 'Empty flask';
   if (isMixing) return 'Reactants are mixing...';
-  if (precipitateFormed) return 'Dense white precipitate of BaSO₄ formed';
-  return 'Colorless Na₂SO₄ solution';
+  if (precipitateFormed) return 'A white precipitate of barium sulphate is formed when barium chloride reacts with sodium sulphate.';
+  return 'Colorless Na₂SO₄ solution with suspended BaCl₂ tube';
 }
 
 /**

@@ -142,15 +142,16 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     thumbnailType: 'water-hardness-edta',
     order: 11,
   },
+  // ── CBSE Class 9 Canonical Practical ──
   {
-    id: 'conservation',
-    type: 'legacy-conservation',
-    title: 'Law of Conservation of Mass (Legacy 3D Lab)',
-    description: 'Verify mass invariance during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
+    id: 'conservation-of-mass',
+    type: 'generic',
+    title: 'Law of Conservation of Mass',
+    description: 'Verify mass invariance (m₁ = m₂) during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Chemical Reactions',
-    difficulty: 'Easy',
-    thumbnailType: 'water-acidity',
+    categoryTag: 'Class 9 • Atoms and Molecules',
+    difficulty: 'Medium',
+    thumbnailType: 'water-alkalinity',
     order: 12,
   },
   // ── CBSE Class 9 Practicals (Admin Preview Only / Under Development) ──
@@ -190,19 +191,6 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     difficulty: 'Easy',
     thumbnailType: 'water-acidity',
     order: 15,
-    underDevelopment: true,
-    adminOnly: true,
-  },
-  {
-    id: 'conservation-of-mass',
-    type: 'generic',
-    title: 'Law of Conservation of Mass (Engine)',
-    description: 'Verify mass invariance (m₁ = m₂) during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
-    classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Atoms and Molecules',
-    difficulty: 'Medium',
-    thumbnailType: 'water-alkalinity',
-    order: 16,
     underDevelopment: true,
     adminOnly: true,
   },
@@ -302,8 +290,12 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
   const handleCardClick = (item: ExperimentItem) => {
     if (item.type === 'legacy-titration') {
       onSelectExperiment('titration');
-    } else if (item.type === 'legacy-conservation') {
-      onSelectExperiment('conservation');
+    } else if (item.id === 'conservation-of-mass' || item.type === 'legacy-conservation') {
+      if (onSelectEngineExperiment) {
+        onSelectEngineExperiment('conservation-of-mass');
+      } else {
+        onSelectExperiment('conservation');
+      }
     } else if (onSelectEngineExperiment) {
       onSelectEngineExperiment(item.id);
     }

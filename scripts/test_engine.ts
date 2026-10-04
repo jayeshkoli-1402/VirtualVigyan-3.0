@@ -23,6 +23,18 @@ import {
   conservationInitialState,
   ConservationStep,
 } from '../src/engine/conservationState';
+import {
+  canSuspendTube,
+  canSealFlask,
+  canPlaceOnBalance,
+  canMixReactants,
+  canWeighFinal,
+  computeScore,
+} from '../src/engine/conservationValidation';
+import {
+  calculateLiveMass,
+  getObservationDescription,
+} from '../src/engine/conservationRules';
 
 console.log('🧪 Starting VirtualVigyan Engine Unit Tests...\n');
 
@@ -180,6 +192,226 @@ test('RESET resets to initial state with fresh masses', () => {
   assert.strictEqual(reset.step, ConservationStep.SELECT);
   assert.strictEqual(reset.flaskPlaced, false);
   assert.ok(reset.simulatedM1 > 0);
+});
+
+// ── 5. CBSE Class 9 Conservation of Mass Specific Validation & Rules ──
+console.log('\n--- Test Suite 5: Conservation of Mass Guard Rules & Full Sequence ---');
+
+test('Guard Rule: canSuspendTube requires Na2SO4 and filled BaCl2 tube', () => {
+  let state = { ...conservationInitialState, flaskPlaced: true };
+  assert.strictEqual(canSuspendTube(state).allowed, false);
+  assert.strictEqual(canSuspendTube(state).message, 'Pour Na₂SO₄ solution into the flask first before suspending the tube.');
+
+  state = { ...state, na2so4Poured: true, tubeFilled: false };
+  assert.strictEqual(canSuspendTube(state).allowed, false);
+  assert.strictEqual(canSuspendTube(state).message, 'Fill the Ignition Tube with BaCl₂ solution first before placing it in the flask.');
+
+  state = { ...state, tubeFilled: true };
+  assert.strictEqual(canSuspendTube(state).allowed, true);
+});
+
+test('Guard Rule: canSealFlask requires tube suspended inside flask', () => {
+  let state = { ...conservationInitialState, flaskPlaced: true, na2so4Poured: true, tubeFilled: true, tubeSuspended: false };
+  assert.strictEqual(canSealFlask(state).allowed, false);
+  assert.strictEqual(canSealFlask(state).message, 'Place the test tube inside the flask without allowing the solutions to mix.');
+
+  state = { ...state, tubeSuspended: true };
+  assert.strictEqual(canSealFlask(state).allowed, true);
+});
+
+test('Guard Rule: canPlaceOnBalance blocks premature weighing before sealed assembly', () => {
+  let state = { ...conservationInitialState };
+  assert.strictEqual(canPlaceOnBalance(state).allowed, false);
+
+  state = { ...state, flaskPlaced: true };
+  assert.strictEqual(canPlaceOnBalance(state).allowed, false);
+  assert.strictEqual(canPlaceOnBalance(state).message, 'Pour the Na₂SO₄ solution into the flask before weighing.');
+
+  state = { ...state, na2so4Poured: true, tubeFilled: true, tubeSuspended: false };
+  assert.strictEqual(canPlaceOnBalance(state).allowed, false);
+  assert.strictEqual(canPlaceOnBalance(state).message, 'Place the test tube inside the flask without allowing the solutions to mix.');
+
+  state = { ...state, tubeSuspended: true, flaskSealed: false };
+  assert.strictEqual(canPlaceOnBalance(state).allowed, false);
+  assert.strictEqual(canPlaceOnBalance(state).message, 'Seal the flask with the Rubber Cork before recording M₁. The system must be closed to verify mass conservation.');
+
+  state = { ...state, flaskSealed: true };
+  assert.strictEqual(canPlaceOnBalance(state).allowed, true);
+});
+
+test('Guard Rule: canMixReactants prevents mixing before initial weighing or while on balance', () => {
+  // Sealed but not weighed
+  let state = {
+    ...conservationInitialState,
+    flaskPlaced: true,
+    na2so4Poured: true,
+    tubeFilled: true,
+    tubeSuspended: true,
+    flaskSealed: true,
+    initialMass: null,
+  };
+  assert.strictEqual(canMixReactants(state).allowed, false);
+  assert.strictEqual(canMixReactants(state).message, 'Record the initial mass before mixing the solutions.');
+
+  // Initial mass recorded, but flask is on balance
+  state = { ...state, initialMass: 125.42, flaskOnBalance: true };
+  assert.strictEqual(canMixReactants(state).allowed, false);
+  assert.strictEqual(canMixReactants(state).message, 'Move the flask off the balance pan to the bench before mixing the reactants.');
+
+  // Flask moved to bench
+  state = { ...state, flaskOnBalance: false };
+  assert.strictEqual(canMixReactants(state).allowed, true);
+});
+
+test('Guard Rule: canWeighFinal blocks premature final weighing before reaction and observation', () => {
+  let state = {
+    ...conservationInitialState,
+    flaskPlaced: true,
+    na2so4Poured: true,
+    tubeFilled: true,
+    tubeSuspended: true,
+    flaskSealed: true,
+    initialMass: 125.42,
+    reactantsMixed: false,
+    hasObserved: false,
+  };
+  assert.strictEqual(canWeighFinal(state).allowed, false);
+  assert.strictEqual(canWeighFinal(state).message, 'Complete the reaction before taking the final mass.');
+
+  state = { ...state, reactantsMixed: true, hasObserved: false };
+  assert.strictEqual(canWeighFinal(state).allowed, false);
+  assert.strictEqual(canWeighFinal(state).message, 'Observe the white precipitate formation before taking the final mass reading.');
+
+  state = { ...state, hasObserved: true };
+  assert.strictEqual(canWeighFinal(state).allowed, true);
+});
+
+test('Observation Description returns scientific BaSO4 precipitate message', () => {
+  const empty = getObservationDescription(false, false, false);
+  assert.strictEqual(empty, 'Empty flask');
+
+  const reacting = getObservationDescription(false, true, true);
+  assert.strictEqual(reacting, 'Reactants are mixing...');
+
+  const formed = getObservationDescription(true, true, false);
+  assert.strictEqual(formed, 'A white precipitate of barium sulphate is formed when barium chloride reacts with sodium sulphate.');
+});
+
+test('Full Verified Experiment Sequence from Start to Completion', () => {
+  // 1. Start experiment
+  let state = conservationReducer(conservationInitialState, { type: 'START_EXPERIMENT' });
+  assert.strictEqual(state.step, ConservationStep.SETUP_FLASK);
+
+  // 2. Place flask on bench
+  state = conservationReducer(state, { type: 'PLACE_FLASK' });
+  assert.strictEqual(state.flaskPlaced, true);
+
+  // 3. Pour Na2SO4 into flask
+  state = conservationReducer(state, { type: 'POUR_NA2SO4_START' });
+  state = conservationReducer(state, { type: 'POUR_NA2SO4_END' });
+  assert.strictEqual(state.na2so4Poured, true);
+  assert.strictEqual(state.step, ConservationStep.PLACE_TUBE_ON_STAND);
+
+  // 4. Place Ignition Tube on Stand
+  state = conservationReducer(state, { type: 'PLACE_TUBE_ON_STAND' });
+  assert.strictEqual(state.tubePlacedOnStand, true);
+  assert.strictEqual(state.step, ConservationStep.FILL_TUBE);
+
+  // 5. Fill tube with BaCl2
+  state = conservationReducer(state, { type: 'FILL_TUBE_START' });
+  state = conservationReducer(state, { type: 'FILL_TUBE_END' });
+  assert.strictEqual(state.tubeFilled, true);
+  assert.strictEqual(state.step, ConservationStep.SUSPEND_TUBE);
+
+  // 6. Suspend tube inside flask
+  assert.strictEqual(canSuspendTube(state).allowed, true);
+  state = conservationReducer(state, { type: 'SUSPEND_TUBE' });
+  assert.strictEqual(state.tubeSuspended, true);
+  assert.strictEqual(state.step, ConservationStep.SEAL_FLASK);
+
+  // 7. Seal flask with cork
+  assert.strictEqual(canSealFlask(state).allowed, true);
+  state = conservationReducer(state, { type: 'SEAL_FLASK' });
+  assert.strictEqual(state.flaskSealed, true);
+  assert.strictEqual(state.step, ConservationStep.WEIGH_INITIAL);
+
+  // 8. Weigh complete closed system (M1)
+  assert.strictEqual(canPlaceOnBalance(state).allowed, true);
+  state = conservationReducer(state, { type: 'PLACE_ON_BALANCE' });
+  assert.ok(state.initialMass !== null && state.initialMass > 124.0);
+  assert.strictEqual(state.step, ConservationStep.MIX_REACTANTS);
+
+  // 9. Remove flask from balance to bench
+  state = conservationReducer(state, { type: 'REMOVE_FROM_BALANCE' });
+  assert.strictEqual(state.flaskOnBalance, false);
+
+  // 10. Mix reactants
+  assert.strictEqual(canMixReactants(state).allowed, true);
+  state = conservationReducer(state, { type: 'MIX_REACTANTS_START' });
+  assert.strictEqual(state.isMixing, true);
+  state = conservationReducer(state, { type: 'MIX_REACTANTS_END' });
+  assert.strictEqual(state.reactantsMixed, true);
+  assert.strictEqual(state.precipitateFormed, true);
+  assert.strictEqual(state.step, ConservationStep.OBSERVE);
+
+  // 11. Observe white precipitate
+  state = conservationReducer(state, { type: 'FINISH_OBSERVE' });
+  assert.strictEqual(state.hasObserved, true);
+  assert.strictEqual(state.step, ConservationStep.WEIGH_FINAL);
+
+  // 12. Weigh complete closed system again (M2)
+  assert.strictEqual(canPlaceOnBalance(state).allowed, true);
+  state = conservationReducer(state, { type: 'PLACE_ON_BALANCE' });
+  assert.ok(state.finalMass !== null && state.finalMass > 124.0);
+  // Verify mass conservation within balance precision
+  const deltaM = Math.abs(state.finalMass - state.initialMass!);
+  assert.ok(deltaM <= 0.02, `ΔM ${deltaM} must be within ±0.02 g balance precision`);
+
+  // 13. Proceed to calculation
+  state = conservationReducer(state, { type: 'PROCEED_TO_CALCULATION' });
+  assert.strictEqual(state.step, ConservationStep.CALCULATION);
+
+  // 14. Submit student calculation
+  const devPercent = (deltaM / state.initialMass!) * 100;
+  state = conservationReducer(state, {
+    type: 'SUBMIT_CALCULATION',
+    payload: { deltaM: Math.round(deltaM * 100) / 100, deviationPercent: Math.round(devPercent * 1000) / 1000, correct: true },
+  });
+  assert.strictEqual(state.step, ConservationStep.RESULTS);
+
+  // 15. Check score computation
+  const score = computeScore(state);
+  assert.strictEqual(score, 100, 'Flawless procedure should achieve score 100');
+});
+
+// ── 6. Canonical Conservation-of-Mass Consolidation & Translations ──
+console.log('\n--- Test Suite 6: Canonical Conservation-of-Mass Consolidation ---');
+test('getExperimentById returns canonical conservation-of-mass with correct metadata', async () => {
+  const { getExperimentById } = await import('../src/experiments');
+  const exp = getExperimentById('conservation-of-mass');
+  assert.ok(exp, 'conservation-of-mass must exist in experiment registry');
+  assert.strictEqual(exp.id, 'conservation-of-mass');
+  assert.strictEqual(exp.title, 'Law of Conservation of Mass');
+  assert.strictEqual(exp.class, 9);
+  assert.strictEqual(exp.themeColor, '#059669');
+  assert.strictEqual(Boolean(exp.underDevelopment), false, 'Canonical experiment must not be underDevelopment');
+  assert.strictEqual(Boolean(exp.adminOnly), false, 'Canonical experiment must not be adminOnly');
+});
+
+test('EXPERIMENT_TRANSLATIONS has comprehensive en, hi, mr entries for conservation-of-mass', async () => {
+  const { EXPERIMENT_TRANSLATIONS } = await import('../src/i18n/experimentTranslations');
+  const trans = EXPERIMENT_TRANSLATIONS['conservation-of-mass'];
+  assert.ok(trans, 'conservation-of-mass must exist in EXPERIMENT_TRANSLATIONS');
+  for (const lang of ['en', 'hi', 'mr'] as const) {
+    const l = trans[lang];
+    assert.ok(l, `Translation for ${lang} must exist`);
+    assert.ok(l.title, `Title for ${lang} must exist`);
+    assert.ok(l.steps['SETUP_FLASK'], `SETUP_FLASK for ${lang} must exist`);
+    assert.ok(l.steps['WEIGH_INITIAL'], `WEIGH_INITIAL for ${lang} must exist`);
+    assert.ok(l.steps['MIX_REACTANTS'], `MIX_REACTANTS for ${lang} must exist`);
+    assert.ok(l.steps['WEIGH_FINAL'], `WEIGH_FINAL for ${lang} must exist`);
+    assert.ok(l.steps['CALCULATION'], `CALCULATION for ${lang} must exist`);
+  }
 });
 
 console.log(`\n=============================================`);

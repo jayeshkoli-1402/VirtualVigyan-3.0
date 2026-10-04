@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { ConservationState, ConservationAction } from '../../engine/conservationState';
 import { ConservationStep, CONSERVATION_DROP_ZONES } from '../../engine/conservationState';
 import { getConservationFlaskColor, calculateLiveMass } from '../../engine/conservationRules';
+import { canPlaceOnBalance, canSuspendTube, canMixReactants } from '../../engine/conservationValidation';
 import { useLanguage } from '../../i18n/LanguageContext';
 import ConicalFlaskConservation from './ConicalFlaskConservation';
 import DigitalBalance from './DigitalBalance';
@@ -44,7 +45,19 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
   });
 
   const [tubeHovered, setTubeHovered] = useState<boolean>(false);
+  const [showInspection, setShowInspection] = useState<boolean>(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Reset positions on experiment reset
+  useEffect(() => {
+    if (!state.flaskPlaced) {
+      setFlaskPosX(90);
+    }
+    if (!state.tubePlacedOnStand) {
+      setTubePosX(29);
+      setTubePosY(320);
+    }
+  }, [state.flaskPlaced, state.tubePlacedOnStand]);
 
   const flaskColor = getConservationFlaskColor(
     state.precipitateFormed,
@@ -73,6 +86,11 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
       setFlaskPosX(90);
       dispatch({ type: 'REMOVE_FROM_BALANCE' });
     } else {
+      const check = canPlaceOnBalance(state);
+      if (!check.allowed) {
+        if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+        return;
+      }
       setFlaskPosX(220);
       dispatch({ type: 'PLACE_ON_BALANCE' });
     }
@@ -115,8 +133,15 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
     if (isDraggingFlask) {
       setIsDraggingFlask(false);
       if (flaskPosX >= 155) {
-        setFlaskPosX(220);
-        dispatch({ type: 'PLACE_ON_BALANCE' });
+        const check = canPlaceOnBalance(state);
+        if (!check.allowed) {
+          setFlaskPosX(90);
+          dispatch({ type: 'REMOVE_FROM_BALANCE' });
+          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+        } else {
+          setFlaskPosX(220);
+          dispatch({ type: 'PLACE_ON_BALANCE' });
+        }
       } else {
         setFlaskPosX(90);
         dispatch({ type: 'REMOVE_FROM_BALANCE' });
@@ -126,7 +151,12 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
     if (isDraggingTube) {
       setIsDraggingTube(false);
       if (tubePosX >= 55 || Math.abs(tubePosX - flaskPosX) < 50) {
-        dispatch({ type: 'SUSPEND_TUBE' });
+        const check = canSuspendTube(state);
+        if (!check.allowed) {
+          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+        } else {
+          dispatch({ type: 'SUSPEND_TUBE' });
+        }
       }
       setTubePosX(29);
       setTubePosY(320);
@@ -161,170 +191,336 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
   return (
     <div
       id="conservation-lab-bench"
-      className="glass-card"
       style={{
-        padding: '10px 12px',
-        overflow: 'hidden',
         flex: 1,
         position: 'relative',
+        borderRadius: 'var(--radius-lg, 12px)',
+        background: 'radial-gradient(ellipse at 50% 30%, var(--bg-card) 0%, var(--bg-inset, #f8fafc) 60%, var(--bg-secondary, #f1f5f9) 100%)',
+        border: '1px solid var(--border)',
+        overflow: 'hidden',
+        minHeight: 520,
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* ── Top Unified Lab Toolbar (Tip + Zoom/Pan Controls in ONE tidy row) ── */}
+      {/* ── Realistic Lab Workbench Table Surface (HTML Backdrop) ── */}
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 8,
-          marginBottom: '8px',
-          padding: '4px 8px',
-          background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border)',
-          boxShadow: 'var(--shadow-card)',
-          flexShrink: 0,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '22%',
+          background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+          borderTop: '2px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: 'inset 0 8px 16px rgba(0, 0, 0, 0.4)',
+          zIndex: 1,
+          pointerEvents: 'none',
         }}
       >
-        {/* Left: Tip badge */}
+        {/* Tabletop depth / glossy reflection plane */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '18px',
+            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.4)',
+          }}
+        />
+
+        {/* Specular front edge highlight */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 95%)',
+          }}
+        />
+
+        {/* Cabinet / Drawer Grooves on table apron */}
         <div
           style={{
             display: 'flex',
+            justifyContent: 'space-around',
             alignItems: 'center',
-            gap: 6,
-            fontSize: '0.68rem',
-            color: 'var(--text-secondary)',
-            fontWeight: 500,
+            height: '100%',
+            paddingTop: '18px',
+            opacity: 0.25,
           }}
         >
-          <span>💡</span>
-          <span>
-            {t('conservation.doubleClickTip', 'Double-click flask to move on/off scale')}
-          </span>
-        </div>
-
-        {/* Right: Inline Zoom & Pan Controls + 3D VR Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {onLaunchVR && (
-            <button
-              id="btn-launch-3d-vr"
-              onClick={onLaunchVR}
-              title="Switch to 3D Virtual Reality Lab (Google Cardboard & WebXR Headsets)"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                padding: '4px 10px',
-                borderRadius: 6,
-                background: 'linear-gradient(135deg, #059669, #0284c7)',
-                color: '#ffffff',
-                border: 'none',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <span>🥽</span>
-              <span>{t('conservation.vrLab', '3D VR Lab')}</span>
-            </button>
-          )}
-
-          {/* Zoom buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
-            <button
-              onClick={handleZoomOut}
-              title="Zoom Out"
-              disabled={zoomLevel <= 0.7}
-              style={{
-                all: 'unset',
-                cursor: zoomLevel <= 0.7 ? 'not-allowed' : 'pointer',
-                padding: '2px 6px',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                color: 'var(--text-secondary)',
-                borderRadius: 4,
-                opacity: zoomLevel <= 0.7 ? 0.4 : 1,
-              }}
-            >
-              −
-            </button>
-            <button
-              onClick={handleZoomReset}
-              title="Reset Zoom & Pan"
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                padding: '2px 6px',
-                fontSize: '0.62rem',
-                fontWeight: 700,
-                fontFamily: 'var(--font-mono)',
-                color: '#059669',
-                borderRadius: 4,
-                background: 'var(--bg-card)',
-                border: '1px solid #a7f3d0',
-              }}
-            >
-              {Math.round(zoomLevel * 100)}%
-            </button>
-            <button
-              onClick={handleZoomIn}
-              title="Zoom In"
-              disabled={zoomLevel >= 1.8}
-              style={{
-                all: 'unset',
-                cursor: zoomLevel >= 1.8 ? 'not-allowed' : 'pointer',
-                padding: '2px 6px',
-                fontSize: '0.8rem',
-                fontWeight: 800,
-                color: 'var(--text-secondary)',
-                borderRadius: 4,
-                opacity: zoomLevel >= 1.8 ? 0.4 : 1,
-              }}
-            >
-              +
-            </button>
+          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
           </div>
-
-          {/* Pan directional buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
-            <button
-              onClick={handlePanLeft}
-              title="Pan Left"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
-            >
-              ←
-            </button>
-            <button
-              onClick={handlePanUp}
-              title="Pan Up"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
-            >
-              ↑
-            </button>
-            <button
-              onClick={handlePanDown}
-              title="Pan Down"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
-            >
-              ↓
-            </button>
-            <button
-              onClick={handlePanRight}
-              title="Pan Right"
-              style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}
-            >
-              →
-            </button>
+          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
+          </div>
+          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
           </div>
         </div>
       </div>
 
-      {/* ── Live High-Definition Molecular Reaction & Ion Exchange HUD Chamber ── */}
-      <MolecularReactionChain state={state} />
+      {/* ── Top-Left Subtle Tip Pill ── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          left: 12,
+          zIndex: 25,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '4px 10px',
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: 'var(--radius-md, 8px)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06))',
+          fontSize: '0.68rem',
+          color: 'var(--text-secondary)',
+          fontWeight: 500,
+          pointerEvents: 'none',
+        }}
+      >
+        <span>💡</span>
+        <span>
+          {t('conservation.doubleClickTip', 'Double-click flask to move on/off scale')}
+        </span>
+      </div>
+
+      {/* ── Top-Right Floating Controls (VR + Zoom & Pan) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          zIndex: 25,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          background: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(10px)',
+          padding: '3px 8px',
+          borderRadius: 'var(--radius-md, 8px)',
+          border: '1px solid var(--border)',
+          boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06))',
+        }}
+      >
+        {onLaunchVR && (
+          <button
+            id="btn-launch-3d-vr"
+            onClick={onLaunchVR}
+            title="Switch to 3D Virtual Reality Lab (Google Cardboard & WebXR Headsets)"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '4px 10px',
+              borderRadius: 6,
+              background: 'linear-gradient(135deg, #059669, #0284c7)',
+              color: '#ffffff',
+              border: 'none',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <span>🥽</span>
+            <span>{t('conservation.vrLab', '3D VR Lab')}</span>
+          </button>
+        )}
+
+        {/* Zoom controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
+          <button
+            onClick={handleZoomOut}
+            title="Zoom Out"
+            disabled={zoomLevel <= 0.7}
+            style={{
+              all: 'unset',
+              cursor: zoomLevel <= 0.7 ? 'not-allowed' : 'pointer',
+              padding: '2px 6px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              color: 'var(--text-secondary)',
+              borderRadius: 4,
+              opacity: zoomLevel <= 0.7 ? 0.4 : 1,
+            }}
+          >
+            −
+          </button>
+          <button
+            onClick={handleZoomReset}
+            title="Reset Zoom & Pan"
+            style={{
+              all: 'unset',
+              cursor: 'pointer',
+              padding: '2px 6px',
+              fontSize: '0.62rem',
+              fontWeight: 700,
+              fontFamily: 'var(--font-mono)',
+              color: '#059669',
+              borderRadius: 4,
+              background: 'var(--bg-card)',
+              border: '1px solid #a7f3d0',
+            }}
+          >
+            {Math.round(zoomLevel * 100)}%
+          </button>
+          <button
+            onClick={handleZoomIn}
+            title="Zoom In"
+            disabled={zoomLevel >= 1.8}
+            style={{
+              all: 'unset',
+              cursor: zoomLevel >= 1.8 ? 'not-allowed' : 'pointer',
+              padding: '2px 6px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              color: 'var(--text-secondary)',
+              borderRadius: 4,
+              opacity: zoomLevel >= 1.8 ? 0.4 : 1,
+            }}
+          >
+            +
+          </button>
+        </div>
+
+        {/* Pan directional buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 6 }}>
+          <button onClick={handlePanLeft} title="Pan Left" style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}>←</button>
+          <button onClick={handlePanUp} title="Pan Up" style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}>↑</button>
+          <button onClick={handlePanDown} title="Pan Down" style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}>↓</button>
+          <button onClick={handlePanRight} title="Pan Right" style={{ all: 'unset', cursor: 'pointer', padding: '2px 5px', fontSize: '0.65rem', color: 'var(--text-secondary)', background: '#fff', borderRadius: 3, border: '1px solid var(--border)' }}>→</button>
+        </div>
+      </div>
+
+      {/* ── Bottom-Left Action Bar (Inspect Reaction Button) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          left: 12,
+          zIndex: 35,
+          display: 'flex',
+          gap: 6,
+          background: 'var(--bg-card, rgba(255, 255, 255, 0.95))',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg, 10px)',
+          padding: '4px 6px',
+          boxShadow: 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1))',
+        }}
+      >
+        <button
+          type="button"
+          id="btn-inspect-reaction"
+          onClick={() => setShowInspection(true)}
+          title="Inspect live molecular concentrations, ion exchange, and precipitates"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '5px 12px',
+            borderRadius: 'var(--radius-md, 8px)',
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            border: '1px solid #6366f1',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(79, 70, 229, 0.22))',
+            color: '#4f46e5',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <span style={{ fontSize: '0.85rem' }}>🧪</span>
+          <span>{language === 'hi' ? 'अभिक्रिया का निरीक्षण' : language === 'mr' ? 'अभिक्रियेचे निरीक्षण' : 'Inspect Reaction'}</span>
+        </button>
+      </div>
+
+      {/* ── Real-Time Reaction & Stoichiometry Inspector Modal ── */}
+      {showInspection && (
+        <div
+          id="reaction-inspection-modal"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowInspection(false);
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '820px',
+              maxHeight: '90vh',
+              backgroundColor: 'var(--bg-card, #ffffff)',
+              color: 'var(--text-primary, #0f172a)',
+              borderRadius: '16px',
+              border: '1px solid var(--border, #cbd5e1)',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 18px',
+                borderBottom: '1px solid var(--border, #e2e8f0)',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(79, 70, 229, 0.04))',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: '1.2rem' }}>🧪</span>
+                <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#4338ca' }}>
+                  {language === 'hi' ? 'आणविक अभिक्रिया और आयन विनिमय कक्ष' : language === 'mr' ? 'रेण्वीय अभिक्रिया आणि आयन देवाणघेवाण कक्ष' : 'Molecular Reaction & Ion Exchange Chamber'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInspection(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  color: 'var(--text-secondary)',
+                  padding: '2px 8px',
+                  borderRadius: 6,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ padding: '14px 18px', overflowY: 'auto' }}>
+              <MolecularReactionChain state={state} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── SVG Lab Scene with Root Pointer Tracking & Double Click Support ── */}
       <div
@@ -335,18 +531,26 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           justifyContent: 'center',
           overflow: 'hidden',
           userSelect: 'none',
-          minHeight: '280px',
+          minHeight: '300px',
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          zIndex: 2,
         }}
         onPointerMove={handlePointerMoveRoot}
         onPointerUp={handlePointerUpRoot}
       >
         <svg
           ref={svgRef}
-          viewBox="0 0 310 420"
+          viewBox="-75 100 460 330"
           width="100%"
           height="100%"
+          preserveAspectRatio="xMidYMid meet"
           style={{
-            maxHeight: '68vh',
+            width: '100%',
+            height: '100%',
+            maxWidth: '920px',
+            maxHeight: '560px',
             display: 'block',
             margin: '0 auto',
             touchAction: 'none',
@@ -354,10 +558,17 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           aria-label="Conservation of Mass lab bench"
         >
           <defs>
-            {/* Lab bench wood surface gradient */}
-            <linearGradient id="benchWoodGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(120, 90, 60, 0.45)" />
-              <stop offset="100%" stopColor="rgba(80, 55, 35, 0.6)" />
+            {/* Realistic Slate Bench Gradients */}
+            <linearGradient id="benchSlateGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1e293b" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </linearGradient>
+            <linearGradient id="benchHighlightGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="transparent" />
+              <stop offset="25%" stopColor="rgba(255, 255, 255, 0.3)" />
+              <stop offset="50%" stopColor="rgba(255, 255, 255, 0.7)" />
+              <stop offset="75%" stopColor="rgba(255, 255, 255, 0.3)" />
+              <stop offset="100%" stopColor="transparent" />
             </linearGradient>
 
             {/* Reagent Bottle Amber Glass Gradient */}
@@ -373,19 +584,31 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
           <g
             style={{
               transform: `translate(${panX}px, ${panY}px) scale(${zoomLevel})`,
-              transformOrigin: '155px 330px',
+              transformOrigin: '155px 265px',
               transition: isDraggingFlask || isDraggingTube ? 'none' : 'transform 0.15s ease-out',
             }}
           >
-            {/* Wooden Lab Table Worktop (Locked underneath apparatuses) */}
-            <rect x={-50} y={390} width={410} height={60} rx={4} fill="url(#benchWoodGrad)" stroke="rgba(148, 163, 184, 0.2)" strokeWidth={0.5} />
-            <rect x={-50} y={390} width={410} height={2} rx={1} fill="rgba(255, 255, 255, 0.12)" />
+            {/* Realistic Dark Slate Lab Table Worktop (Locked underneath apparatuses) */}
+            <rect x={-150} y={388} width={610} height={100} fill="url(#benchSlateGrad)" stroke="#334155" strokeWidth={0.8} />
+            <rect x={-150} y={388} width={610} height={6} fill="rgba(255, 255, 255, 0.08)" />
+            <rect x={-150} y={388} width={610} height={1.5} fill="url(#benchHighlightGrad)" />
+            <rect x={-150} y={398} width={610} height={0.6} fill="rgba(0, 0, 0, 0.5)" />
+            <g opacity={0.3}>
+              <rect x={-35} y={403} width={75} height={25} rx={2} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+              <rect x={-8} y={407} width={20} height={2} rx={1} fill="#94a3b8" />
+              <rect x={55} y={403} width={75} height={25} rx={2} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+              <rect x={82} y={407} width={20} height={2} rx={1} fill="#94a3b8" />
+              <rect x={145} y={403} width={75} height={25} rx={2} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+              <rect x={172} y={407} width={20} height={2} rx={1} fill="#94a3b8" />
+              <rect x={235} y={403} width={75} height={25} rx={2} fill="none" stroke="#94a3b8" strokeWidth={0.8} />
+              <rect x={262} y={407} width={20} height={2} rx={1} fill="#94a3b8" />
+            </g>
 
             {/* ── Drop Zone: Bench (Initial Flask placement) ── */}
             {!state.flaskPlaced && state.step === ConservationStep.SETUP_FLASK && (
               <DropZoneOverlay
                 zoneId={CONSERVATION_DROP_ZONES.BENCH_ZONE}
-                x={45} y={280} width={90} height={110}
+                x={48} y={290} width={84} height={98}
                 label={t('apparatus.flask', 'Conical Flask')}
                 isActive={activeDropZone === CONSERVATION_DROP_ZONES.BENCH_ZONE}
                 step={state.step}
@@ -397,7 +620,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
             {state.flaskPlaced && !state.flaskSealed && !state.flaskOnBalance && (
               <DropZoneOverlay
                 zoneId={CONSERVATION_DROP_ZONES.FLASK_ZONE}
-                x={flaskPosX - 35} y={280} width={70} height={110}
+                x={flaskPosX - 35} y={280} width={70} height={105}
                 label={
                   !state.na2so4Poured
                     ? t('apparatus.na2so4Bottle', 'Na₂SO₄ Bottle')
@@ -451,12 +674,22 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                     onPointerDown={handleTubePointerDown}
                     onDoubleClick={() => {
                       if (state.tubeFilled && !state.tubeSuspended) {
-                        dispatch({ type: 'SUSPEND_TUBE' });
+                        const check = canSuspendTube(state);
+                        if (!check.allowed) {
+                          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+                        } else {
+                          dispatch({ type: 'SUSPEND_TUBE' });
+                        }
                       }
                     }}
                     onClick={() => {
                       if (state.tubeFilled && !state.tubeSuspended) {
-                        dispatch({ type: 'SUSPEND_TUBE' });
+                        const check = canSuspendTube(state);
+                        if (!check.allowed) {
+                          if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+                        } else {
+                          dispatch({ type: 'SUSPEND_TUBE' });
+                        }
                       }
                     }}
                     style={{
@@ -482,7 +715,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                             d="M 24 332 L 24 367 Q 24 374 29 374 Q 34 374 34 367 L 34 332 Z"
                             fill="rgba(224, 242, 254, 0.55)"
                           />
-                          <ellipse cx={29} cy={332} rx={5} ry={1.5} fill="none" stroke="rgba(148, 163, 184, 0.7)" strokeWidth={0.6} />
+                          <ellipse cx={29} cy={332} rx={5} ry={1.5} fill="none" stroke="rgba(148, 163, 184, 0.7)" strokeWidth={0.5} />
                         </g>
                       )}
 
@@ -504,7 +737,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                       <DropZoneOverlay
                         zoneId={CONSERVATION_DROP_ZONES.TUBE_FILL_ZONE}
                         x={10} y={290} width={40} height={100}
-                        label="BaCl₂ Bottle"
+                        label={language === 'hi' ? 'BaCl₂ बोतल' : language === 'mr' ? 'BaCl₂ बाटली' : 'BaCl₂ Bottle'}
                         isActive={activeDropZone === CONSERVATION_DROP_ZONES.TUBE_FILL_ZONE}
                         step={state.step}
                         targetStep={ConservationStep.FILL_TUBE}
@@ -520,9 +753,19 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                     <text x={72} y={302} textAnchor="middle" fill="#ffffff" fontSize="5.2" fontFamily="var(--font-sans)" fontWeight={600}>
                       {state.tubePlacedOnStand
                         ? state.tubeFilled
-                          ? 'Click or Drag Tube into Conical Flask'
-                          : 'Empty Ignition Tube on Stand'
-                        : 'Test Tube Stand'}
+                          ? (language === 'hi' ? 'शंक्वाकार फ्लास्क में नली को क्लिक करें या खींचें' : language === 'mr' ? 'शंकूपात्रात नळी क्लिक करा किंवा ओढा' : 'Click or Drag Tube into Conical Flask')
+                          : (language === 'hi' ? 'स्टैंड पर खाली इग्निशन ट्यूब' : language === 'mr' ? 'स्टँडवर रिकामी ज्वलन नळी' : 'Empty Ignition Tube on Stand')
+                        : (language === 'hi' ? 'परखनली स्टैंड' : language === 'mr' ? 'परीक्षानळी स्टँड' : 'Test Tube Stand')}
+                    </text>
+                  </g>
+                )}
+
+                {/* ── Apparatus Label: Ignition Tube Stand ── */}
+                {state.tubePlacedOnStand && !state.tubeSuspended && (
+                  <g transform="translate(29, 396)" style={{ pointerEvents: 'none' }}>
+                    <rect x={-24} y={-8} width={48} height={16} rx={8} fill="rgba(255, 255, 255, 0.96)" stroke="rgba(203, 213, 225, 0.8)" strokeWidth={0.8} />
+                    <text x={0} y={3.5} textAnchor="middle" fill="#334155" fontSize="4.6" fontFamily="var(--font-sans)" fontWeight={700}>
+                      {language === 'hi' ? 'परखनली स्टैंड' : language === 'mr' ? 'परीक्षानळी स्टँड' : 'Tube Stand'}
                     </text>
                   </g>
                 )}
@@ -542,12 +785,20 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
               />
             </g>
 
+            {/* ── Apparatus Label: Digital Electronic Balance ── */}
+            <g transform="translate(220, 396)" style={{ pointerEvents: 'none' }}>
+              <rect x={-42} y={-8} width={84} height={16} rx={8} fill="rgba(255, 255, 255, 0.96)" stroke="rgba(203, 213, 225, 0.8)" strokeWidth={0.8} />
+              <text x={0} y={3.5} textAnchor="middle" fill="#334155" fontSize="5.2" fontFamily="var(--font-sans)" fontWeight={700}>
+                {t('apparatus.balance', 'Digital Balance')}
+              </text>
+            </g>
+
             {/* ── Drop Zone: Digital Balance Pan (Active at ANY phase for weighing) ── */}
             {!state.flaskOnBalance && (
               <DropZoneOverlay
                 zoneId={CONSERVATION_DROP_ZONES.BALANCE_ZONE}
-                x={180} y={240} width={80} height={100}
-                label="Double-click to Weigh"
+                x={180} y={245} width={80} height={85}
+                label={language === 'hi' ? 'तोलने के लिए डबल-क्लिक करें' : language === 'mr' ? 'वजन करण्यासाठी डबल-क्लिक करा' : 'Double-click to Weigh'}
                 isActive={activeDropZone === CONSERVATION_DROP_ZONES.BALANCE_ZONE}
                 step={state.step}
                 targetStep={state.step}
@@ -570,6 +821,11 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                   onBalance={state.flaskOnBalance}
                   customX={isDraggingFlask ? flaskPosX : state.flaskOnBalance ? 220 : 90}
                   onPlaceOnBalance={() => {
+                    const check = canPlaceOnBalance(state);
+                    if (!check.allowed) {
+                      if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+                      return;
+                    }
                     setFlaskPosX(220);
                     dispatch({ type: 'PLACE_ON_BALANCE' });
                   }}
@@ -578,6 +834,16 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                     dispatch({ type: 'REMOVE_FROM_BALANCE' });
                   }}
                 />
+              </g>
+            )}
+
+            {/* ── Apparatus Label: Conical Flask ── */}
+            {state.flaskPlaced && !state.flaskOnBalance && (
+              <g transform={`translate(${flaskPosX}, 396)`} style={{ pointerEvents: 'none' }}>
+                <rect x={-36} y={-8} width={72} height={16} rx={8} fill="rgba(255, 255, 255, 0.96)" stroke="rgba(203, 213, 225, 0.8)" strokeWidth={0.8} />
+                <text x={0} y={3.5} textAnchor="middle" fill="#334155" fontSize="5.2" fontFamily="var(--font-sans)" fontWeight={700}>
+                  {t('apparatus.flask', 'Conical Flask')}
+                </text>
               </g>
             )}
 
@@ -596,7 +862,7 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                 </line>
                 <rect x={-8} y={-14} width={90} height={18} rx={4} fill="#ffffff" stroke="#059669" strokeWidth={0.8} />
                 <text x={37} y={-2} textAnchor="middle" fill="#059669" fontSize="6" fontFamily="var(--font-mono)" fontWeight={700}>
-                  Pouring 10 mL Na₂SO₄...
+                  {language === 'hi' ? '5 mL Na₂SO₄ डाला जा रहा है...' : language === 'mr' ? '5 mL Na₂SO₄ ओतले जात आहे...' : 'Pouring 5 mL Na₂SO₄...'}
                 </text>
               </g>
             )}
@@ -609,60 +875,93 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
                   <rect x={5} y={-7} width={14} height={7} rx={2} fill="#1e293b" />
                   <rect x={2} y={8} width={20} height={20} rx={2} fill="#ffffff" stroke="#dc2626" strokeWidth={0.6} />
                   <text x={12} y={18} textAnchor="middle" fill="#dc2626" fontSize="4.5" fontFamily="var(--font-mono)" fontWeight={700}>BaCl₂</text>
-                  <text x={12} y={25} textAnchor="middle" fill="#991b1b" fontSize="3.5" fontFamily="var(--font-sans)">⚠️ Toxic</text>
+                  <text x={12} y={25} textAnchor="middle" fill="#991b1b" fontSize="3.5" fontFamily="var(--font-sans)">{language === 'hi' ? '⚠️ विषैला' : language === 'mr' ? '⚠️ विषारी' : '⚠️ Toxic'}</text>
                 </g>
                 <line x1={-8} y1={25} x2={-16} y2={55} stroke="#3b82f6" strokeWidth={2} strokeLinecap="round">
                   <animate attributeName="strokeDasharray" values="1,3;4,2;2,2" dur="0.15s" repeatCount="indefinite" />
                 </line>
                 <rect x={-5} y={-15} width={85} height={18} rx={4} fill="#ffffff" stroke="#ef4444" strokeWidth={0.8} />
                 <text x={37.5} y={-3} textAnchor="middle" fill="#dc2626" fontSize="6" fontFamily="var(--font-mono)" fontWeight={700}>
-                  Filling with BaCl₂...
+                  {language === 'hi' ? 'BaCl₂ से भरा जा रहा है...' : language === 'mr' ? 'BaCl₂ ने भरले जात आहे...' : 'Filling with BaCl₂...'}
                 </text>
               </g>
             )}
 
-            {/* ── Mass Readings Live Ledger / Tag ── */}
-            {state.initialMass !== null && (
-              <foreignObject x={152} y={180} width={135} height={52}>
-                <div
+            {/* ── Interactive Invert/Mix Button on Bench during MIX_REACTANTS step ── */}
+            {state.step === ConservationStep.MIX_REACTANTS && !state.reactantsMixed && !state.isMixing && (
+              <foreignObject x={flaskPosX - 50} y={190} width={100} height={36}>
+                <button
+                  id="btn-mix-reactants-bench"
+                  className="btn-primary"
+                  onClick={() => {
+                    const check = canMixReactants(state);
+                    if (!check.allowed) {
+                      if (check.message) dispatch({ type: 'ADD_MISTAKE', payload: { message: check.message } });
+                      return;
+                    }
+                    dispatch({ type: 'MIX_REACTANTS_START' });
+                    setTimeout(() => dispatch({ type: 'MIX_REACTANTS_END' }), 2000);
+                  }}
                   style={{
-                    background: 'var(--bg-card)',
-                    border: '1.5px solid #059669',
-                    borderRadius: 8,
-                    padding: '6px 10px',
-                    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.08)',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.66rem',
+                    fontSize: '0.62rem',
+                    padding: '6px 8px',
+                    width: '100%',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <div style={{ color: '#059669', fontWeight: 800 }}>
-                    M₁ (Initial) = {state.initialMass.toFixed(2)} g
-                  </div>
-                  {state.finalMass !== null && (
-                    <div style={{ color: '#2563eb', fontWeight: 800, marginTop: 3 }}>
-                      M₂ (Final) = {state.finalMass.toFixed(2)} g
-                    </div>
-                  )}
-                </div>
+                  {language === 'hi' ? '🔄 फ्लास्क हिलाएं' : language === 'mr' ? '🔄 फ्लास्क हलवा' : '🔄 Tilt Flask'}
+                </button>
               </foreignObject>
             )}
 
-            {/* ── Proceed to Calculation button (when final mass M2 is recorded) ── */}
-            {state.finalMass !== null && (
-              <foreignObject x={152} y={135} width={135} height={38}>
+            {/* ── Interactive Observation Confirmation Button on Bench ── */}
+            {state.step === ConservationStep.OBSERVE && (
+              <foreignObject x={flaskPosX - 55} y={185} width={110} height={40}>
                 <button
-                  id="btn-proceed-calculation-conservation"
+                  id="btn-finish-observe-bench"
                   className="btn-primary"
-                  onClick={() => dispatch({ type: 'PROCEED_TO_CALCULATION' })}
+                  onClick={() => dispatch({ type: 'FINISH_OBSERVE' })}
                   style={{
-                    fontSize: '0.66rem',
-                    padding: '8px 10px',
+                    fontSize: '0.62rem',
+                    padding: '6px 8px',
                     width: '100%',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    background: '#059669',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  Proceed to Calculation →
+                  {language === 'hi' ? '✅ अवक्षेप देखा →' : language === 'mr' ? '✅ अवक्षेप पाहिला →' : '✅ Precipitate Seen →'}
                 </button>
+              </foreignObject>
+            )}
+
+            {/* ── Mass Readings Live Ledger / Tag ── */}
+            {state.initialMass !== null && (
+              <foreignObject x={152} y={170} width={136} height={54}>
+                <div
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.96)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1.2px solid rgba(5, 150, 105, 0.45)',
+                    borderRadius: 8,
+                    padding: '5px 8px',
+                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.64rem',
+                  }}
+                >
+                  <div style={{ color: '#059669', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ fontSize: '0.65rem' }}>⚖️</span>
+                    <span>{language === 'hi' ? 'M₁ (प्रारंभिक)' : language === 'mr' ? 'M₁ (सुरुवातीचे)' : 'M₁ (Initial)'} = {state.initialMass.toFixed(2)} g</span>
+                  </div>
+                  {state.finalMass !== null && (
+                    <div style={{ color: '#2563eb', fontWeight: 800, marginTop: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: '0.65rem' }}>⚖️</span>
+                      <span>{language === 'hi' ? 'M₂ (अंतिम)' : language === 'mr' ? 'M₂ (अंतिम)' : 'M₂ (Final)'} = {state.finalMass.toFixed(2)} g</span>
+                    </div>
+                  )}
+                </div>
               </foreignObject>
             )}
           </g>
@@ -691,16 +990,16 @@ const DropZoneOverlay: React.FC<{
 
   const isRelevant = step === targetStep;
   const borderColor = isOver
-    ? 'rgba(5, 150, 105, 0.9)'
+    ? '#2563eb'
     : isActive
-      ? 'rgba(5, 150, 105, 0.7)'
+      ? '#3b82f6'
       : isRelevant
-        ? 'rgba(5, 150, 105, 0.45)'
-        : 'rgba(148, 163, 184, 0.25)';
+        ? 'rgba(59, 130, 246, 0.45)'
+        : 'rgba(148, 163, 184, 0.22)';
   const bgColor = isOver
-    ? 'rgba(209, 250, 229, 0.55)'
+    ? 'rgba(37, 99, 235, 0.12)'
     : isRelevant
-      ? 'rgba(209, 250, 229, 0.25)'
+      ? 'rgba(59, 130, 246, 0.06)'
       : 'transparent';
 
   const badgeWidth = 115;
@@ -740,20 +1039,20 @@ const DropZoneOverlay: React.FC<{
             <span
               style={{
                 fontSize: '0.62rem',
-                color: isOver ? '#065f46' : '#059669',
+                color: '#1e40af',
                 textTransform: 'uppercase',
-                letterSpacing: '0.03em',
+                letterSpacing: '0.02em',
                 fontWeight: 800,
                 textAlign: 'center',
                 padding: '3px 8px',
-                background: 'var(--bg-card)',
-                borderRadius: 5,
-                border: '1.5px solid #059669',
-                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.12)',
+                background: 'rgba(255, 255, 255, 0.96)',
+                borderRadius: 12,
+                border: '1.2px solid rgba(59, 130, 246, 0.45)',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.12)',
                 whiteSpace: 'nowrap',
               }}
             >
-              {label}
+              📍 {label}
             </span>
           </div>
         </foreignObject>

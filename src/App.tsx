@@ -36,6 +36,8 @@ import { AppSidebar, type NavItem } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { MyClassesView } from './components/student/MyClassesView';
 import { JoinLabModal } from './components/student/JoinLabModal';
+import { LabFloatingHUD } from './components/leaderboard/LabFloatingHUD';
+import { LabLeaderboardModal } from './components/leaderboard/LabLeaderboardModal';
 import type { PrivateLab, PrivateLabContext } from './types/privateLab';
 import { TheoryNotesView } from './components/home/TheoryNotesView';
 import { ProgressView } from './components/home/ProgressView';
@@ -106,6 +108,8 @@ const AppContent: React.FC = () => {
   const [howItWorksModalOpen, setHowItWorksModalOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [joinLabModalOpen, setJoinLabModalOpen] = useState(false);
+  const [lockedLabNotice, setLockedLabNotice] = useState<string | null>(null);
+  const [hudLeaderboardModalOpen, setHudLeaderboardModalOpen] = useState(false);
   const [activePrivateLabContext, setActivePrivateLabContext] = useState<PrivateLabContext | null>(() => {
     try {
       const stored = sessionStorage.getItem('vv_active_private_lab_context');
@@ -349,6 +353,12 @@ const AppContent: React.FC = () => {
   }, [state.volumeAdded, dispatch]);
 
   const handleLaunchPrivateExperiment = (experimentId: string, lab: PrivateLab, attemptNumber: number) => {
+    if (lab.isLocked && user?.role !== 'teacher' && user?.role !== 'admin') {
+      setLockedLabNotice(
+        `This classroom lab (${lab.title}) is currently locked by your teacher. You can begin the practical once the teacher unlocks it.`
+      );
+      return;
+    }
     setActivePrivateLabContext({ lab, attemptNumber });
     if (experimentId === 'titration') {
       setActiveExperiment('titration');
@@ -1161,6 +1171,104 @@ const AppContent: React.FC = () => {
         onConfirm={handleConfirmReset}
         onCancel={() => setResetModalOpen(false)}
       />
+
+      {/* Floating Lab In-Session Leaderboard Status HUD */}
+      {activePrivateLabContext && !showLanding && activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'auth' && (
+        <LabFloatingHUD
+          lab={activePrivateLabContext.lab}
+          currentUserEmail={user?.email}
+          onOpenFullLeaderboard={() => setHudLeaderboardModalOpen(true)}
+        />
+      )}
+
+      {/* In-Session Lab Full Leaderboard Modal */}
+      {activePrivateLabContext && hudLeaderboardModalOpen && (
+        <LabLeaderboardModal
+          isOpen={hudLeaderboardModalOpen}
+          lab={activePrivateLabContext.lab}
+          onClose={() => setHudLeaderboardModalOpen(false)}
+          currentUserEmail={user?.email}
+          currentUserRole={user?.role}
+        />
+      )}
+
+      {/* Locked Lab Notification Modal */}
+      {lockedLabNotice && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+        >
+          <div
+            className="clay-card animate-scale-up"
+            style={{
+              maxWidth: 440,
+              width: '100%',
+              background: 'var(--bg-card)',
+              borderRadius: 18,
+              padding: '24px 28px',
+              border: '1.5px solid rgba(239, 68, 68, 0.4)',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.12)',
+                color: '#ef4444',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 32,
+                margin: '0 auto 16px',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              🔒
+            </div>
+
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+              Lab Locked by Teacher
+            </h3>
+
+            <p style={{ margin: '0 0 20px', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              {lockedLabNotice}
+            </p>
+
+            <button
+              onClick={() => setLockedLabNotice(null)}
+              style={{
+                width: '100%',
+                padding: '12px 18px',
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 700,
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+              }}
+            >
+              Understand & Return
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

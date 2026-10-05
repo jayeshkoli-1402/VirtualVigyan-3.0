@@ -5,6 +5,7 @@ import {
   getAllPrivateLabs,
   createPrivateLab,
   toggleLabStatus,
+  toggleLabLock,
   deletePrivateLab,
   exportGradebookCSV,
   updateSubmissionFeedback,
@@ -38,6 +39,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
   const [timeLimitMinutes, setTimeLimitMinutes] = useState(30);
   const [maxAttempts, setMaxAttempts] = useState(1);
   const [strictSafety, setStrictSafety] = useState(true);
+  const [startLocked, setStartLocked] = useState(true);
   const [customCode, setCustomCode] = useState('');
   const getFiveDaysLater = () => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const [dueDate, setDueDate] = useState(() => getFiveDaysLater());
@@ -137,6 +139,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
         strictSafety,
       },
       status: 'active',
+      isLocked: startLocked,
       dueDate: finalDueDate,
       customCode: customCode.trim() || undefined,
     });
@@ -152,6 +155,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
     setHideFormulas(true);
     setTimeLimitMinutes(30);
     setMaxAttempts(1);
+    setStartLocked(true);
     setCustomCode('');
     setDueDate(getFiveDaysLater());
     setFormError(null);
@@ -299,23 +303,49 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                       )}
                     </div>
 
-                    <button
-                      onClick={() => handleToggleStatus(lab.id)}
-                      title="Click to toggle session active/closed"
-                      style={{
-                        all: 'unset',
-                        cursor: 'pointer',
-                        fontSize: '0.7rem',
-                        fontWeight: 800,
-                        padding: '2px 8px',
-                        borderRadius: 6,
-                        background: lab.status === 'active' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.15)',
-                        color: lab.status === 'active' ? '#059669' : '#64748b',
-                        border: lab.status === 'active' ? '1px solid rgba(5, 150, 105, 0.3)' : '1px solid rgba(100, 116, 139, 0.3)',
-                      }}
-                    >
-                      {lab.status === 'active' ? '● Active' : '○ Closed'}
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button
+                        onClick={() => {
+                          toggleLabLock(lab.id);
+                          loadLabs();
+                        }}
+                        title={lab.isLocked ? 'Click to unlock lab for students' : 'Click to lock lab'}
+                        style={{
+                          all: 'unset',
+                          cursor: 'pointer',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          background: lab.isLocked ? 'rgba(239, 68, 68, 0.12)' : 'rgba(5, 150, 105, 0.12)',
+                          color: lab.isLocked ? '#ef4444' : '#059669',
+                          border: lab.isLocked ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(5, 150, 105, 0.3)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        <span>{lab.isLocked ? '🔒 Locked' : '🔓 Unlocked'}</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleToggleStatus(lab.id)}
+                        title="Click to toggle session active/closed"
+                        style={{
+                          all: 'unset',
+                          cursor: 'pointer',
+                          fontSize: '0.7rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          background: lab.status === 'active' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.15)',
+                          color: lab.status === 'active' ? '#059669' : '#64748b',
+                          border: lab.status === 'active' ? '1px solid rgba(5, 150, 105, 0.3)' : '1px solid rgba(100, 116, 139, 0.3)',
+                        }}
+                      >
+                        {lab.status === 'active' ? '● Active' : '○ Closed'}
+                      </button>
+                    </div>
                   </div>
 
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-primary)' }}>
@@ -432,6 +462,31 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                   </div>
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => {
+                        toggleLabLock(lab.id);
+                        loadLabs();
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: lab.isLocked ? 'linear-gradient(135deg, #059669, #10b981)' : 'rgba(239, 68, 68, 0.1)',
+                        border: lab.isLocked ? 'none' : '1px solid rgba(239, 68, 68, 0.3)',
+                        color: lab.isLocked ? '#ffffff' : '#ef4444',
+                        fontWeight: 800,
+                        fontSize: '0.78rem',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        boxShadow: lab.isLocked ? '0 2px 8px rgba(5, 150, 105, 0.3)' : 'none',
+                      }}
+                    >
+                      <span>{lab.isLocked ? '🔓 Unlock Lab' : '🔒 Lock Lab'}</span>
+                    </button>
+
                     <button
                       onClick={() => {
                         setDetailsLab(lab);
@@ -778,6 +833,18 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                     />
                     <span>⚠️ Strict Safety Mode</span>
                   </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.8rem', cursor: 'pointer', gridColumn: '1 / -1', paddingTop: 6, borderTop: '1px dashed rgba(239, 68, 68, 0.25)' }}>
+                    <input
+                      type="checkbox"
+                      checked={startLocked}
+                      onChange={(e) => setStartLocked(e.target.checked)}
+                      style={{ accentColor: '#ef4444' }}
+                    />
+                    <span style={{ fontWeight: 700, color: startLocked ? '#dc2626' : '#059669' }}>
+                      {startLocked ? '🔒 Start Lab Locked (Teacher must explicitly unlock before students can perform practical)' : '🔓 Start Lab Unlocked (Students can immediately start practical)'}
+                    </span>
+                  </label>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 4 }}>
@@ -1007,6 +1074,34 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                   />
                   <span>Live Auto-Sync Active</span>
                 </div>
+
+                {/* Lock/Unlock Toggle */}
+                <button
+                  onClick={() => {
+                    const nextLocked = toggleLabLock(detailsLab.id);
+                    setDetailsLab({ ...detailsLab, isLocked: nextLocked });
+                    loadLabs();
+                  }}
+                  title={detailsLab.isLocked ? 'Click to unlock this lab for students' : 'Click to lock this lab'}
+                  style={{
+                    all: 'unset',
+                    cursor: 'pointer',
+                    padding: '7px 14px',
+                    borderRadius: 8,
+                    background: detailsLab.isLocked ? 'linear-gradient(135deg, #059669, #10b981)' : 'rgba(239, 68, 68, 0.12)',
+                    border: detailsLab.isLocked ? 'none' : '1px solid rgba(239, 68, 68, 0.3)',
+                    color: detailsLab.isLocked ? '#ffffff' : '#ef4444',
+                    fontWeight: 800,
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    boxShadow: detailsLab.isLocked ? '0 2px 8px rgba(5, 150, 105, 0.3)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{detailsLab.isLocked ? '🔓 Unlock Lab' : '🔒 Lock Lab'}</span>
+                </button>
 
                 <button
                   onClick={() => exportGradebookCSV(detailsLab.id)}

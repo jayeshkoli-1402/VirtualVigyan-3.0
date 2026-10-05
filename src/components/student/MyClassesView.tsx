@@ -271,11 +271,15 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
                           fontWeight: 800,
                           padding: '2px 8px',
                           borderRadius: 6,
-                          background: lab.status === 'active' ? 'rgba(5, 150, 105, 0.12)' : 'rgba(100, 116, 139, 0.12)',
-                          color: lab.status === 'active' ? '#059669' : '#64748b',
+                          background: lab.isLocked
+                            ? 'rgba(239, 68, 68, 0.12)'
+                            : lab.status === 'active'
+                            ? 'rgba(5, 150, 105, 0.12)'
+                            : 'rgba(100, 116, 139, 0.12)',
+                          color: lab.isLocked ? '#ef4444' : lab.status === 'active' ? '#059669' : '#64748b',
                         }}
                       >
-                        {lab.status === 'active' ? '● Active Session' : 'Submissions Closed'}
+                        {lab.isLocked ? '🔒 Lab Locked' : lab.status === 'active' ? '● Active Session' : 'Submissions Closed'}
                       </span>
                       {lab.dueDate && (
                         <span
@@ -364,6 +368,31 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
                     </button>
                   </div>
                 </div>
+
+                {/* Lab Locked Academic Alert */}
+                {lab.isLocked && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 12,
+                      background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(220, 38, 38, 0.05))',
+                      border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                    }}
+                  >
+                    <span style={{ fontSize: 24 }}>🔒</span>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#dc2626' }}>
+                        Lab Locked by Instructor
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2 }}>
+                        Your teacher has not unlocked this lab yet. You can begin the practical once the teacher unlocks it.
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Active Restrictions Ribbon */}
                 <div
@@ -477,20 +506,22 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
 
                             <button
                               onClick={() => onLaunchPrivateExperiment(exp.id, lab, attemptsUsed + 1)}
-                              disabled={!canAttempt || lab.status === 'closed'}
+                              disabled={!canAttempt || lab.status === 'closed' || lab.isLocked}
                               style={{
                                 all: 'unset',
-                                cursor: canAttempt && lab.status === 'active' ? 'pointer' : 'not-allowed',
+                                cursor: canAttempt && lab.status === 'active' && !lab.isLocked ? 'pointer' : 'not-allowed',
                                 padding: '6px 14px',
                                 borderRadius: 8,
-                                background: canAttempt && lab.status === 'active' ? '#0284c7' : 'rgba(148, 163, 184, 0.2)',
-                                color: canAttempt && lab.status === 'active' ? '#ffffff' : 'var(--text-muted)',
+                                background: canAttempt && lab.status === 'active' && !lab.isLocked ? '#0284c7' : 'rgba(148, 163, 184, 0.2)',
+                                color: canAttempt && lab.status === 'active' && !lab.isLocked ? '#ffffff' : 'var(--text-muted)',
                                 fontWeight: 700,
                                 fontSize: '0.76rem',
                                 transition: 'all 0.15s ease',
                               }}
                             >
-                              {!canAttempt
+                              {lab.isLocked
+                                ? '🔒 Lab Locked'
+                                : !canAttempt
                                 ? 'Attempts Limit Reached'
                                 : lab.status === 'closed'
                                 ? 'Closed'

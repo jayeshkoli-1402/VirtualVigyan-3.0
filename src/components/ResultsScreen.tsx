@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext';
 import { recordPrivateLabSubmission } from '../services/privateLabService';
 import { recordStudentPerformance } from '../services/studentHistoryService';
 import type { PrivateLabContext } from '../types/privateLab';
+import { LabResultsLeaderboardCard } from './leaderboard/LabResultsLeaderboardCard';
 
 interface ResultsScreenProps {
   state: TitrationState;
@@ -249,6 +250,19 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch, privateL
           </p>
         </div>
       </div>
+
+      {/* Lab Leaderboard & Class Standing Card */}
+      {privateLabContext && (
+        <div style={{ marginBottom: 16 }}>
+          <LabResultsLeaderboardCard
+            lab={privateLabContext.lab}
+            currentUserEmail={user?.email}
+            currentUserRole={user?.role}
+            currentScore={totalScore}
+            onLaunchExperiment={() => dispatch({ type: 'RESET' })}
+          />
+        </div>
+      )}
 
       {/* Try Again */}
       <button

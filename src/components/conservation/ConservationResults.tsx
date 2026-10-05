@@ -9,6 +9,7 @@ import { recordStudentPerformance } from '../../services/studentHistoryService';
 import type { PrivateLabContext } from '../../types/privateLab';
 import { buildConservationReportData } from '../../services/reportService';
 import { LabReportModal } from '../report/LabReportModal';
+import { LabResultsLeaderboardCard } from '../leaderboard/LabResultsLeaderboardCard';
 
 interface ConservationResultsProps {
   state: ConservationState;
@@ -604,6 +605,19 @@ const ConservationResults: React.FC<ConservationResultsProps> = ({
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {/* Lab Leaderboard & Class Standing Card */}
+      {privateLabContext && (
+        <div style={{ marginBottom: 16 }}>
+          <LabResultsLeaderboardCard
+            lab={privateLabContext.lab}
+            currentUserEmail={user?.email}
+            currentUserRole={user?.role}
+            currentScore={score}
+            onLaunchExperiment={handleRepeatExperiment}
+          />
         </div>
       )}
 

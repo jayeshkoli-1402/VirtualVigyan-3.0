@@ -61,6 +61,8 @@ export interface PrivateLab {
   experimentIds: string[]; // IDs from getAllExperiments()
   restrictions: PrivateLabRestrictions;
   status: 'active' | 'closed';
+  /** Whether the teacher has locked the lab (preventing students from starting practical until unlocked) */
+  isLocked?: boolean;
   createdAt: string;
   dueDate?: string;
   enrolledStudents: PrivateLabEnrolledStudent[];

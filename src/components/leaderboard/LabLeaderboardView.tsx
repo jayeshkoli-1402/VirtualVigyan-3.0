@@ -5,6 +5,7 @@ import {
   exportLabLeaderboardCSV,
   canAccessLabLeaderboard,
 } from '../../services/labLeaderboardService';
+import { toggleLabLock } from '../../services/privateLabService';
 import { getAllExperiments } from '../../experiments';
 
 interface LabLeaderboardViewProps {
@@ -17,15 +18,23 @@ interface LabLeaderboardViewProps {
 }
 
 export const LabLeaderboardView: React.FC<LabLeaderboardViewProps> = ({
-  lab,
+  lab: initialLab,
   currentUserEmail,
   currentUserRole,
   isTeacherView = false,
   onLaunchExperiment,
   onClose,
 }) => {
+  const [lab, setLab] = useState<PrivateLab>(initialLab);
   const [selectedExpId, setSelectedExpId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const handleToggleLock = () => {
+    const nextLocked = toggleLabLock(lab.id);
+    setLab((prev) => ({ ...prev, isLocked: nextLocked }));
+  };
+
+  const isLocked = lab.isLocked ?? false;
 
   // Permission Check
   const access = useMemo(() => {
@@ -154,7 +163,51 @@ export const LabLeaderboardView: React.FC<LabLeaderboardViewProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {/* Lab Lock Status Badge */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              borderRadius: 8,
+              background: isLocked ? 'rgba(239, 68, 68, 0.12)' : 'rgba(5, 150, 105, 0.12)',
+              border: isLocked ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(5, 150, 105, 0.3)',
+              color: isLocked ? '#ef4444' : '#059669',
+              fontSize: '0.76rem',
+              fontWeight: 800,
+            }}
+          >
+            <span>{isLocked ? '🔒 Lab Locked' : '🔓 Lab Open'}</span>
+          </div>
+
+          {/* Teacher Lock/Unlock Toggle */}
+          {isTeacherView && (
+            <button
+              onClick={handleToggleLock}
+              title={isLocked ? 'Click to unlock lab for students' : 'Click to lock lab'}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                padding: '7px 14px',
+                borderRadius: 8,
+                background: isLocked ? 'linear-gradient(135deg, #059669, #10b981)' : 'rgba(239, 68, 68, 0.12)',
+                border: isLocked ? 'none' : '1px solid rgba(239, 68, 68, 0.3)',
+                color: isLocked ? '#ffffff' : '#ef4444',
+                fontWeight: 800,
+                fontSize: '0.76rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                boxShadow: isLocked ? '0 2px 8px rgba(5, 150, 105, 0.3)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{isLocked ? '🔓 Unlock Lab' : '🔒 Lock Lab'}</span>
+            </button>
+          )}
+
           {isTeacherView && (
             <button
               onClick={() => exportLabLeaderboardCSV(lab, selectedExpId)}

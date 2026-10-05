@@ -14,6 +14,7 @@ import { recordStudentPerformance } from '../../services/studentHistoryService';
 import type { PrivateLabContext } from '../../types/privateLab';
 import { buildReportData } from '../../services/reportService';
 import { LabReportModal } from '../report/LabReportModal';
+import { LabResultsLeaderboardCard } from '../leaderboard/LabResultsLeaderboardCard';
 
 type GenericResultsProps = {
   config: ExperimentConfig;
@@ -295,6 +296,17 @@ const GenericResults: React.FC<GenericResultsProps> = ({
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Lab Leaderboard & Class Standing Card */}
+      {privateLabContext && (
+        <LabResultsLeaderboardCard
+          lab={privateLabContext.lab}
+          currentUserEmail={user?.email}
+          currentUserRole={user?.role}
+          currentScore={scoreResult.totalScore}
+          onLaunchExperiment={onBackToSelector}
+        />
       )}
 
       {/* Report Button */}

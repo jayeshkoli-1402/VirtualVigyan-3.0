@@ -107,6 +107,7 @@ const PRESEEDED_LABS: PrivateLab[] = [
       hideHints: false,
     },
     status: 'active',
+    isLocked: false,
     createdAt: '2026-10-01T09:00:00.000Z',
     dueDate: '2026-10-31',
     enrolledStudents: PILOT_STUDENTS,
@@ -291,6 +292,7 @@ export function createPrivateLab(
     id,
     code,
     status: params.status || 'active',
+    isLocked: params.isLocked !== undefined ? params.isLocked : true,
     dueDate,
     createdAt: new Date().toISOString(),
     enrolledStudents: [],
@@ -670,6 +672,62 @@ export function toggleLabStatus(labId: string): boolean {
   });
   savePrivateLabs(updatedLabs);
   return nextStatus === 'active';
+}
+
+/**
+ * Toggle a private lab's locked/unlocked state
+ * When locked, students cannot enter or perform the practical.
+ * When unlocked, students can start and submit their experiment.
+ */
+export function toggleLabLock(labId: string): boolean {
+  const labs = getAllPrivateLabs();
+  let nextLocked = false;
+  let updatedLab: PrivateLab | undefined;
+
+  const updatedLabs = labs.map((l) => {
+    if (l.id === labId) {
+      nextLocked = !(l.isLocked ?? true);
+      updatedLab = { ...l, isLocked: nextLocked };
+      return updatedLab;
+    }
+    return l;
+  });
+
+  savePrivateLabs(updatedLabs);
+
+  if (updatedLab) {
+    savePrivateLabToFirestore(updatedLab).catch((err) => {
+      console.warn('[PrivateLab] Cloud lock sync notice:', err);
+    });
+  }
+
+  return nextLocked;
+}
+
+/**
+ * Explicitly set a private lab's locked state
+ */
+export function setLabLock(labId: string, isLocked: boolean): boolean {
+  const labs = getAllPrivateLabs();
+  let updatedLab: PrivateLab | undefined;
+
+  const updatedLabs = labs.map((l) => {
+    if (l.id === labId) {
+      updatedLab = { ...l, isLocked };
+      return updatedLab;
+    }
+    return l;
+  });
+
+  if (updatedLab) {
+    savePrivateLabs(updatedLabs);
+    savePrivateLabToFirestore(updatedLab).catch((err) => {
+      console.warn('[PrivateLab] Cloud lock sync notice:', err);
+    });
+    return true;
+  }
+
+  return false;
 }
 
 /**

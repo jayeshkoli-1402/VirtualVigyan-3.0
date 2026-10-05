@@ -11,6 +11,7 @@ import {
   syncPrivateLabsWithCloud,
 } from '../../services/privateLabService';
 import type { PrivateLab, PrivateLabSubmission } from '../../types/privateLab';
+import { LabLeaderboardView } from '../leaderboard/LabLeaderboardView';
 
 interface PrivateLabManagerProps {
   onLaunchExperiment?: (id: string) => void;
@@ -21,7 +22,7 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
   const [labs, setLabs] = useState<PrivateLab[]>([]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [detailsLab, setDetailsLab] = useState<PrivateLab | null>(null);
-  const [detailsTab, setDetailsTab] = useState<'submissions' | 'progress' | 'roster'>('submissions');
+  const [detailsTab, setDetailsTab] = useState<'submissions' | 'progress' | 'roster' | 'leaderboard'>('submissions');
   const [selectedSubForInspect, setSelectedSubForInspect] = useState<PrivateLabSubmission | null>(null);
   const [feedbackInput, setFeedbackInput] = useState('');
   const [feedbackSaved, setFeedbackSaved] = useState(false);
@@ -430,7 +431,32 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => {
+                        setDetailsLab(lab);
+                        setDetailsTab('leaderboard');
+                      }}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: 'rgba(234, 179, 8, 0.12)',
+                        border: '1px solid rgba(234, 179, 8, 0.35)',
+                        color: '#ca8a04',
+                        fontWeight: 700,
+                        fontSize: '0.78rem',
+                        textAlign: 'center',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <span>🏆</span>
+                      <span>Leaderboard</span>
+                    </button>
+
                     <button
                       onClick={() => {
                         setDetailsLab(lab);
@@ -1054,6 +1080,24 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
               >
                 👥 Enrolled Roster ({detailsLab.enrolledStudents.length})
               </button>
+              <button
+                onClick={() => setDetailsTab('leaderboard')}
+                style={{
+                  all: 'unset',
+                  cursor: 'pointer',
+                  padding: '12px 16px',
+                  fontWeight: 800,
+                  fontSize: '0.84rem',
+                  color: detailsTab === 'leaderboard' ? '#ca8a04' : 'var(--text-muted)',
+                  borderBottom: detailsTab === 'leaderboard' ? '2px solid #ca8a04' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>🏆</span>
+                <span>Lab Leaderboard</span>
+              </button>
             </div>
 
             {/* Content Area */}
@@ -1304,42 +1348,53 @@ export const PrivateLabManager: React.FC<PrivateLabManagerProps> = ({ onLaunchEx
                 )
               ) : (
                 /* ── Tab 3: Enrolled Roster ── */
-                detailsLab.enrolledStudents.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)' }}>
-                    No students have entered the join code <strong>{detailsLab.code}</strong> yet.
-                  </div>
-                ) : (
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
-                        <th style={{ padding: '10px 12px', fontWeight: 800 }}>Student</th>
-                        <th style={{ padding: '10px 12px', fontWeight: 800 }}>Email</th>
-                        <th style={{ padding: '10px 12px', fontWeight: 800 }}>Enrolled Date</th>
-                        <th style={{ padding: '10px 12px', fontWeight: 800 }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detailsLab.enrolledStudents.map((st) => (
-                        <tr key={st.studentId} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                              <span style={{ fontSize: 20 }}>{st.avatar || '🎓'}</span>
-                              <span style={{ fontWeight: 800 }}>{st.studentName}</span>
-                            </div>
-                          </td>
-                          <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{st.studentEmail}</td>
-                          <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
-                            {new Date(st.joinedAt).toLocaleDateString()}
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ color: '#059669', fontWeight: 700, background: 'rgba(5, 150, 105, 0.1)', padding: '2px 8px', borderRadius: 6 }}>
-                              Enrolled
-                            </span>
-                          </td>
+                detailsTab === 'roster' ? (
+                  detailsLab.enrolledStudents.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--text-muted)' }}>
+                      No students have entered the join code <strong>{detailsLab.code}</strong> yet.
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)' }}>
+                          <th style={{ padding: '10px 12px', fontWeight: 800 }}>Student</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 800 }}>Email</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 800 }}>Enrolled Date</th>
+                          <th style={{ padding: '10px 12px', fontWeight: 800 }}>Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {detailsLab.enrolledStudents.map((st) => (
+                          <tr key={st.studentId} style={{ borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: 20 }}>{st.avatar || '🎓'}</span>
+                                <span style={{ fontWeight: 800 }}>{st.studentName}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '12px', color: 'var(--text-secondary)' }}>{st.studentEmail}</td>
+                            <td style={{ padding: '12px', color: 'var(--text-muted)' }}>
+                              {new Date(st.joinedAt).toLocaleDateString()}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ color: '#059669', fontWeight: 700, background: 'rgba(5, 150, 105, 0.1)', padding: '2px 8px', borderRadius: 6 }}>
+                                Enrolled
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )
+                ) : (
+                  /* ── Tab 4: Lab Leaderboard ── */
+                  <LabLeaderboardView
+                    lab={detailsLab}
+                    currentUserEmail={user?.email}
+                    currentUserRole={user?.role}
+                    isTeacherView={true}
+                    onLaunchExperiment={onLaunchExperiment}
+                  />
                 )
               )}
             </div>

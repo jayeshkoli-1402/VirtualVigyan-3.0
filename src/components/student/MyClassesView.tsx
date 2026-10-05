@@ -8,6 +8,7 @@ import {
 import { getAllExperiments } from '../../experiments';
 import type { PrivateLab } from '../../types/privateLab';
 import { JoinLabModal } from './JoinLabModal';
+import { LabLeaderboardModal } from '../leaderboard/LabLeaderboardModal';
 
 interface MyClassesViewProps {
   onLaunchPrivateExperiment: (experimentId: string, lab: PrivateLab, attemptNumber: number) => void;
@@ -18,6 +19,7 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
   const { user } = useAuth();
   const [enrolledLabs, setEnrolledLabs] = useState<PrivateLab[]>([]);
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [leaderboardModalLab, setLeaderboardModalLab] = useState<PrivateLab | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const refreshLabs = () => {
@@ -305,8 +307,30 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
                     )}
                   </div>
 
-                  {/* Join Code Display */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Join Code & Leaderboard Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setLeaderboardModalLab(lab)}
+                      style={{
+                        all: 'unset',
+                        cursor: 'pointer',
+                        padding: '6px 14px',
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(202, 138, 4, 0.08))',
+                        border: '1px solid rgba(234, 179, 8, 0.4)',
+                        color: '#ca8a04',
+                        fontWeight: 800,
+                        fontSize: '0.76rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <span>🏆</span>
+                      <span>Lab Leaderboard</span>
+                    </button>
+
                     <div
                       style={{
                         padding: '6px 14px',
@@ -492,6 +516,21 @@ export const MyClassesView: React.FC<MyClassesViewProps> = ({ onLaunchPrivateExp
         onClose={() => setJoinModalOpen(false)}
         onJoinedSuccess={() => {
           refreshLabs();
+        }}
+      />
+
+      {/* Lab Leaderboard Modal */}
+      <LabLeaderboardModal
+        isOpen={!!leaderboardModalLab}
+        lab={leaderboardModalLab}
+        onClose={() => setLeaderboardModalLab(null)}
+        currentUserEmail={user?.email}
+        currentUserRole={user?.role}
+        onLaunchExperiment={(expId) => {
+          if (leaderboardModalLab) {
+            onLaunchPrivateExperiment(expId, leaderboardModalLab, 1);
+            setLeaderboardModalLab(null);
+          }
         }}
       />
     </div>

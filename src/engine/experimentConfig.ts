@@ -59,6 +59,9 @@ export type ExperimentConfig = {
   /** Restrict visibility strictly to admin users */
   adminOnly?: boolean;
 
+  /** If true, suppresses floating text labels on apparatus placed on the bench */
+  hidePlacedApparatusLabels?: boolean;
+
   // ── Lab Configuration ──
 
   /** Apparatus available in the toolbox */
@@ -148,6 +151,12 @@ export type ApparatusConfig = {
 
   /** If true, this apparatus starts already placed (not in toolbox) */
   prePlaced?: boolean;
+
+  /** If true, hides this apparatus from the toolbox when not active in current step */
+  hideWhenInactive?: boolean;
+
+  /** If false, suppresses floating text label when placed on the bench */
+  showPlacedLabel?: boolean;
 
   /** Initial props to pass to the SVG component */
   initialProps?: Record<string, unknown>;
@@ -487,6 +496,12 @@ export type CalculationField = {
 
   /** Display label for expected range, e.g. "4.2–4.5 mL" */
   expectedRangeLabel?: string;
+
+  /** Optional section title to group this field under */
+  section?: string;
+
+  /** Optional multiple choice options for MCQ assessment fields */
+  options?: string[];
 };
 
 

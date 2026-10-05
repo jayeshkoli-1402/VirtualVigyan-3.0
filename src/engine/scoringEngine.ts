@@ -495,16 +495,20 @@ export function validateCalculation(
     }
 
     let workedFormula = '';
-    if (field.expectedRangeLabel) {
+    if (field.options && field.options.length > 0) {
+      const optIndex = Math.round(expectedValue) - 1;
+      const correctOptText = field.options[optIndex] ?? `Option ${String.fromCharCode(65 + optIndex)}`;
+      workedFormula = `Correct Answer: ${correctOptText}`;
+    } else if (field.expectedRangeLabel) {
       if (formula) {
         workedFormula = `${formula.label}\n${formula.displayFormula}\nExpected acceptable range: ${field.expectedRangeLabel}`;
       } else {
         workedFormula = `Expected acceptable range: ${field.expectedRangeLabel}`;
       }
     } else if (formula) {
-      workedFormula = `${formula.label}\n${formula.displayFormula}\n= ${expectedValue.toFixed(4)} ${formula.unit}`;
+      workedFormula = `${formula.label}\n${formula.displayFormula}\n= ${expectedValue.toFixed(2)} ${formula.unit}`;
     } else {
-      workedFormula = `Expected: ${expectedValue.toFixed(4)} ${field.unit}`;
+      workedFormula = `Expected: ${expectedValue.toFixed(2)} ${field.unit}`;
     }
 
     return {

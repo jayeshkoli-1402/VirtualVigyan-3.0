@@ -197,6 +197,8 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
       : { icon: '📦', label: id };
   };
 
+  const isMixtureCompound = config.id === 'mixture-compound-iron-sulphur';
+
   return (
     <DndContext
       sensors={sensors}
@@ -204,7 +206,10 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div
+        className={isMixtureCompound ? 'mixture-compound-iron-sulphur-lab' : undefined}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+      >
 
         {/* Under Development Admin Preview Banner */}
         {config.underDevelopment && (
@@ -310,7 +315,15 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
 
         {/* Calculation screen */}
         {isCalcStep && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '24px 16px',
+            minHeight: 0,
+            height: '100%',
+            WebkitOverflowScrolling: 'touch',
+          }}>
             <GenericCalculation
               config={config}
               state={state}
@@ -322,7 +335,15 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
 
         {/* Results screen */}
         {isResultsStep && (
-          <div style={{ flex: 1, padding: 20 }}>
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            padding: '24px 16px',
+            minHeight: 0,
+            height: '100%',
+            WebkitOverflowScrolling: 'touch',
+          }}>
             <GenericResults
               config={config}
               state={state}
@@ -336,6 +357,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
         {/* Three-panel lab layout */}
         {isLabStep && (
           <div
+            className={isMixtureCompound ? 'mixture-compound-grid' : undefined}
             style={{
               flex: 1,
               display: 'grid',
@@ -348,12 +370,15 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
             }}
           >
             {/* Left: Toolbox */}
-            <div style={{
-              borderRight: isMobile ? 'none' : '1px solid var(--border)',
-              borderBottom: isMobile ? '1px solid var(--border)' : 'none',
-              background: 'var(--bg-card)',
-              order: isMobile ? 1 : 0,
-            }}>
+            <div
+              className={isMixtureCompound ? 'mixture-compound-left-panel' : undefined}
+              style={{
+                borderRight: isMobile ? 'none' : '1px solid var(--border)',
+                borderBottom: isMobile ? '1px solid var(--border)' : 'none',
+                background: 'var(--bg-card)',
+                order: isMobile ? 1 : 0,
+              }}
+            >
               <GenericToolbox
                 config={config}
                 state={state}
@@ -363,28 +388,34 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
             </div>
 
             {/* Center: Lab bench */}
-            <div style={{
-              display: 'flex',
-              padding: 8,
-              order: isMobile ? 0 : 1,
-              background: 'var(--bg-secondary)',
-            }}>
-                <GenericBench
-                  config={config}
-                  state={state}
-                  dispatch={dispatch}
-                  activeDropZone={activeDropZone}
-                  activeDragId={activeDragId}
-                />
+            <div
+              className={isMixtureCompound ? 'mixture-compound-center-panel' : undefined}
+              style={{
+                display: 'flex',
+                padding: 8,
+                order: isMobile ? 0 : 1,
+                background: 'var(--bg-secondary)',
+              }}
+            >
+              <GenericBench
+                config={config}
+                state={state}
+                dispatch={dispatch}
+                activeDropZone={activeDropZone}
+                activeDragId={activeDragId}
+              />
             </div>
 
             {/* Right: Instructions */}
-            <div style={{
-              borderLeft: isMobile ? 'none' : '1px solid var(--border)',
-              borderTop: isMobile ? '1px solid var(--border)' : 'none',
-              background: 'var(--bg-card)',
-              order: 2,
-            }}>
+            <div
+              className={isMixtureCompound ? 'mixture-compound-right-panel' : undefined}
+              style={{
+                borderLeft: isMobile ? 'none' : '1px solid var(--border)',
+                borderTop: isMobile ? '1px solid var(--border)' : 'none',
+                background: 'var(--bg-card)',
+                order: 2,
+              }}
+            >
               <GenericInstructions
                 config={config}
                 state={state}

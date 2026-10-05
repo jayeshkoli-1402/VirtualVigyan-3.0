@@ -53,10 +53,10 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
 
   return (
     <div style={{
-      maxWidth: 500,
+      maxWidth: 560,
       width: '100%',
       margin: '0 auto',
-      padding: 24,
+      padding: '16px 12px 64px 12px',
       animation: 'fadeIn 0.3s ease-out',
     }}>
       {/* Title */}
@@ -274,43 +274,116 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
         }}>
           {t('calc.yourCalculation', 'Your Calculation')}
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {calcConfig.fields.map(field => {
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {calcConfig.fields.map((field, fIdx) => {
             const result = results?.find(r => r.fieldId === field.id);
+            const isFirstInSection = field.section && (fIdx === 0 || calcConfig.fields[fIdx - 1]?.section !== field.section);
+
             return (
               <div key={field.id}>
+                {isFirstInSection && (
+                  <div style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    color: '#2563eb',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    marginTop: fIdx > 0 ? 16 : 4,
+                    marginBottom: 10,
+                    paddingBottom: 4,
+                    borderBottom: '1.5px solid rgba(37, 99, 235, 0.25)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                    <span>📝</span>
+                    <span>{tDynamic(field.section!)}</span>
+                  </div>
+                )}
+
                 <label style={{
-                  display: 'block', fontSize: '0.78rem', fontWeight: 500,
+                  display: 'block', fontSize: '0.78rem', fontWeight: 600,
                   color: 'var(--text-primary)', marginBottom: 4,
                 }}>
                   {tDynamic(field.label)}
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder={field.placeholder ? tDynamic(field.placeholder) : t('calc.enterValue', 'Enter value...')}
-                    value={answers[field.id] ?? ''}
-                    onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
-                    disabled={submitted}
-                    style={{
-                      flex: 1,
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      border: `1.5px solid ${
-                        result ? (result.correct ? '#059669' : '#dc2626') : 'var(--border)'
-                      }`,
-                      fontSize: '0.85rem',
-                      fontFamily: 'var(--font-mono)',
-                      background: submitted ? 'var(--bg-secondary)' : 'var(--bg-card)',
-                      color: 'var(--text-primary)',
-                      outline: 'none',
-                    }}
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', minWidth: 30 }}>
-                    {field.unit}
-                  </span>
-                </div>
+
+                {field.options && field.options.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                    {field.options.map((opt, optIdx) => {
+                      const optVal = (optIdx + 1).toString();
+                      const isSelected = answers[field.id] === optVal;
+                      return (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          disabled={submitted}
+                          onClick={() => setAnswers({ ...answers, [field.id]: optVal })}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 10,
+                            padding: '8px 12px',
+                            borderRadius: 'var(--radius-md)',
+                            border: `1.5px solid ${
+                              isSelected ? '#2563eb' : 'var(--border, #cbd5e1)'
+                            }`,
+                            background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-card)',
+                            color: 'var(--text-primary)',
+                            textAlign: 'left',
+                            fontSize: '0.8rem',
+                            cursor: submitted ? 'default' : 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 22,
+                            height: 22,
+                            borderRadius: '50%',
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            background: isSelected ? '#2563eb' : 'var(--bg-secondary)',
+                            color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                            flexShrink: 0,
+                          }}>
+                            {String.fromCharCode(65 + optIdx)}
+                          </span>
+                          <span style={{ lineHeight: 1.4, flex: 1 }}>{tDynamic(opt)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder={field.placeholder ? tDynamic(field.placeholder) : t('calc.enterValue', 'Enter value...')}
+                      value={answers[field.id] ?? ''}
+                      onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
+                      disabled={submitted}
+                      style={{
+                        flex: 1,
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        border: `1.5px solid ${
+                          result ? (result.correct ? '#059669' : '#dc2626') : 'var(--border)'
+                        }`,
+                        fontSize: '0.85rem',
+                        fontFamily: 'var(--font-mono)',
+                        background: submitted ? 'var(--bg-secondary)' : 'var(--bg-card)',
+                        color: 'var(--text-primary)',
+                        outline: 'none',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', minWidth: 30 }}>
+                      {field.unit}
+                    </span>
+                  </div>
+                )}
 
                 {/* Optional helper text & example explaining how to find this value */}
                 {field.helperText && (
@@ -352,9 +425,11 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
                           <span>✓</span>
                           <span>
-                            {field.expectedRangeLabel
+                            {field.options && field.options.length > 0
+                              ? `${t('common.correct', 'Correct!')} (Option ${String.fromCharCode(64 + Math.round(result.expectedValue))})`
+                              : field.expectedRangeLabel
                               ? t('calc.correctRange', 'Correct — within acceptable experimental range')
-                              : `${t('common.correct', 'Correct!')} (${result.expectedValue.toFixed(4)} ${field.unit})`}
+                              : `${t('common.correct', 'Correct!')} (${result.expectedValue.toFixed(2)} ${field.unit})`}
                           </span>
                         </div>
                         {field.expectedRangeLabel && (
@@ -368,9 +443,11 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>
                           <span>✗</span>
                           <span>
-                            {field.expectedRangeLabel
+                            {field.options && field.options.length > 0
+                              ? `${t('common.incorrect', 'Incorrect')} (${answers[field.id] ? `Selected Option ${String.fromCharCode(64 + parseInt(answers[field.id], 10))}` : 'No answer'} — Expected: Option ${String.fromCharCode(64 + Math.round(result.expectedValue))})`
+                              : field.expectedRangeLabel
                               ? t('calc.outsideRange', 'Outside acceptable experimental range')
-                              : `${t('common.incorrect', 'Incorrect')} (${answers[field.id] || '0'} ${field.unit} — ${t('calc.expectedRange', 'Expected')}: ${result.expectedValue.toFixed(4)} ${field.unit})`}
+                              : `${t('common.incorrect', 'Incorrect')} (${answers[field.id] || '0'} ${field.unit} — ${t('calc.expectedRange', 'Expected')}: ${result.expectedValue.toFixed(2)} ${field.unit})`}
                           </span>
                         </div>
                         {field.expectedRangeLabel && (

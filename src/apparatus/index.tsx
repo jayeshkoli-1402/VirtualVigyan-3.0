@@ -13,6 +13,7 @@
  */
 
 import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 
 // ── Standard Apparatus Props ─────────────────────────────────────
 
@@ -1045,7 +1046,47 @@ const TestTube: React.FC<ApparatusProps> = ({
   popEffect,
   effervescenceRate,
   extraProps,
+  ...props
 }) => {
+  const p = props as Record<string, unknown>;
+  const dispatch = p.dispatch as React.Dispatch<any> | undefined;
+  const hasClampSupport = Boolean(
+    p.clampSupport ??
+    extraProps?.['clampSupport']
+  );
+
+  const isFeSTest = Boolean(
+    flags?.feSCooled ||
+    flags?.feSPowderReady ||
+    flags?.feSObserved ||
+    flags?.feSMagnetTested ||
+    flags?.spatulaHasFeSSample ||
+    flags?.feSCS2SamplePrepared ||
+    flags?.feSCS2Added ||
+    flags?.feSCS2Corked ||
+    flags?.feSCS2Shaken ||
+    flags?.feSCS2Settled ||
+    flags?.feSCS2TestComplete ||
+    p.powderType === 'fes' ||
+    (typeof p.label === 'string' && p.label.toLowerCase().includes('fes'))
+  );
+
+  const hasCork = isFeSTest
+    ? Boolean(flags?.feSCS2Corked)
+    : Boolean(flags?.cs2Corked && !flags?.feSPowderReady);
+
+  const isShakingCS2 = isFeSTest
+    ? Boolean(flags?.isShakingCS2Tube || (flags?.feSCS2Shaken && !flags?.feSCS2Settled && flags?.isShaking))
+    : Boolean(flags?.isShakingCS2Tube || extraProps?.isShaking || flags?.isShaking);
+
+  const hasSediment = isFeSTest
+    ? Boolean(flags?.feSCS2Settled)
+    : Boolean(flags?.cs2Settled && !flags?.feSPowderReady);
+
+  const hasPowder = isFeSTest
+    ? Boolean(flags?.feSCS2SamplePrepared || flags?.feSCS2Added || flags?.feSCS2Corked || flags?.feSCS2Shaken || flags?.feSCS2Settled)
+    : Boolean(flags?.cs2SamplePrepared || (p.hasPowder && !flags?.feSPowderReady));
+
   // Check flags or explicit props for state
   const effRate = typeof effervescenceRate === 'number'
     ? effervescenceRate
@@ -1068,6 +1109,418 @@ const TestTube: React.FC<ApparatusProps> = ({
     (flags?.nailDipped && !isDisplacing)
   );
 
+  const gradId = `ttLiquidGrad-${id || 'def'}`;
+
+  // ── Heating Station: Compact Support Stand & Angled Boiling Tube ──
+  // ── Heating Station: Grounded Support Stand & Angled Boiling Tube ──
+  if (hasClampSupport) {
+    const effLevel = Math.min(1, Math.max(0, liquidLevel));
+    const fillH = 75 * effLevel;
+    const liqTopY = 128 - fillH;
+
+    // Optional powder solid support for Fe+S heating
+    const powderType = (p.powderType as string | undefined) ?? (extraProps?.powderType as string | undefined);
+    const hasPowder = Boolean(p.hasPowder || extraProps?.['hasPowder'] || powderType);
+    const isFeS = powderType === 'fes' || powderType === 'compound';
+    const isGlowing = powderType === 'glowing' || powderType === 'hot' || Boolean(flags?.reactionGlowing || flags?.isGlowing);
+
+    return (
+      <svg
+        width={width}
+        height={height}
+        viewBox="0 0 200 320"
+        fill="none"
+        style={{ overflow: 'visible' }}
+      >
+        <defs>
+          <linearGradient id="clampRodMetal" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#475569" />
+            <stop offset="35%" stopColor="#94a3b8" />
+            <stop offset="65%" stopColor="#cbd5e1" />
+            <stop offset="100%" stopColor="#334155" />
+          </linearGradient>
+          <linearGradient id="clampBaseMetal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#64748b" />
+            <stop offset="40%" stopColor="#334155" />
+            <stop offset="100%" stopColor="#1e293b" />
+          </linearGradient>
+          <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s ease' }} stopOpacity="0.8" />
+            <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s ease' }} stopOpacity="0.88" />
+            <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s ease' }} stopOpacity="0.95" />
+            <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s ease' }} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+
+        {/* ── Retort Stand Hardware (Resting firmly on workbench surface) ── */}
+        {/* Solid Cast Iron Base Plate sitting directly on tabletop */}
+        <rect x="10" y="286" width="60" height="14" rx="3" fill="url(#clampBaseMetal)" stroke="#1e293b" strokeWidth="1.2" />
+        <rect x="12" y="287.5" width="56" height="2.5" rx="1" fill="rgba(255,255,255,0.28)" />
+
+        {/* Vertical Stainless Steel Support Rod extending upward with clear headroom */}
+        <rect x="36" y="25" width="8" height="261" rx="4" fill="url(#clampRodMetal)" stroke="#334155" strokeWidth="1" />
+        <line x1="39" y1="28" x2="39" y2="286" stroke="rgba(255,255,255,0.45)" strokeWidth="1" strokeLinecap="round" />
+
+        {/* Bosshead clamp connector on rod */}
+        <rect x="30" y="75" width="20" height="22" rx="2.5" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+        <circle cx="40" cy="86" r="4.5" fill="#64748b" stroke="#334155" strokeWidth="1" />
+        <circle cx="40" cy="86" r="2.2" fill="#475569" />
+
+        {/* Horizontal clamp arm extending toward boiling tube */}
+        <rect x="48" y="82.5" width="40" height="7" rx="1.5" fill="url(#clampRodMetal)" stroke="#334155" strokeWidth="1" />
+        <ellipse cx="84" cy="86" rx="3" ry="5.5" fill="#64748b" stroke="#334155" strokeWidth="0.8" />
+
+        {/* Rear Clamp Jaw (behind the glass tube) */}
+        <path d="M 80 81 Q 95 76 112 83" stroke="#334155" strokeWidth="5.5" strokeLinecap="round" fill="none" />
+
+        {/* ── Angled Boiling Tube (Held firmly at 12° inclination, clear gap above burner) ── */}
+        <g transform="translate(95, 86) rotate(-12) translate(-14, -35)">
+          {/* Outer glow when highlighted */}
+          {highlighted && (
+            <path
+              d="M -2 1 L -2 126 Q -2 140 14 140 Q 30 140 30 126 L 30 1"
+              stroke="#3b82f6"
+              strokeWidth="6"
+              opacity="0.6"
+              filter="blur(2px)"
+            />
+          )}
+
+          {/* Tube Glass Back Wall */}
+          <path
+            d="M 0 3 L 0 125 Q 0 135 14 135 Q 28 135 28 125 L 28 3"
+            fill="rgba(241, 245, 249, 0.22)"
+            stroke="#cbd5e1"
+            strokeWidth="1.4"
+          />
+
+          {/* Liquid Fill with Meniscus */}
+          {effLevel > 0 && (
+            <g>
+              <path
+                d={`M 1.5 ${liqTopY} L 1.5 125 Q 1.5 133.5 14 133.5 Q 26.5 133.5 26.5 125 L 26.5 ${liqTopY} Z`}
+                fill={`url(#${gradId})`}
+                style={{ transition: 'all 1.5s ease' }}
+              />
+              <ellipse
+                cx="14"
+                cy={liqTopY}
+                rx="12.5"
+                ry="3.2"
+                fill="rgba(255, 255, 255, 0.4)"
+                stroke={liquidColor}
+                strokeWidth="0.8"
+              />
+            </g>
+          )}
+
+          {/* Powder / Solid at bottom of boiling tube */}
+          {hasPowder && (
+            <g id="clamp-tube-solid">
+              <path
+                d="M 1.5 102 Q 14 96 26.5 102 L 26.5 125 Q 26.5 133.5 14 133.5 Q 1.5 133.5 1.5 125 Z"
+                fill={isFeS ? '#09090b' : isGlowing ? '#b91c1c' : '#ca8a04'}
+                stroke={isFeS ? '#18181b' : isGlowing ? '#ef4444' : '#a16207'}
+                strokeWidth="1.2"
+              />
+              <ellipse
+                cx="14"
+                cy={102}
+                rx="12.5"
+                ry="3.2"
+                fill={isFeS ? '#27272a' : isGlowing ? '#ef4444' : '#eab308'}
+                stroke={isFeS ? '#09090b' : isGlowing ? '#f87171' : '#a16207'}
+                strokeWidth="0.8"
+              />
+              {isGlowing && (
+                <path
+                  d="M 2 103 Q 14 98 26 103 L 26 124 Q 26 132 14 132 Q 2 132 2 124 Z"
+                  fill="#ef4444"
+                  opacity="0.85"
+                >
+                  <animate attributeName="opacity" values="0.6;1;0.6" dur="0.7s" repeatCount="indefinite" />
+                </path>
+              )}
+              {isFeS && !isGlowing && (
+                <g opacity="0.85">
+                  <circle cx="7" cy="112" r="1.4" fill="#3f3f46" />
+                  <circle cx="15" cy="120" r="1.8" fill="#52525b" />
+                  <circle cx="21" cy="113" r="1.2" fill="#3f3f46" />
+                  <circle cx="11" cy="126" r="1.3" fill="#27272a" />
+                  <circle cx="18" cy="108" r="1.1" fill="#71717a" />
+                </g>
+              )}
+            </g>
+          )}
+
+          {/* Effervescence Bubbles */}
+          {isEvolvingGas && (
+            <g id="clamp-effervescence">
+              <circle cx="10" cy="120" r="2.0" fill="rgba(255,255,255,0.85)">
+                <animate attributeName="cy" values="120;55;12" dur="1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;0" dur="1s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="17" cy="116" r="2.4" fill="rgba(255,255,255,0.9)">
+                <animate attributeName="cy" values="116;50;10" dur="0.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.3;1;0" dur="0.8s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="13" cy="110" r="1.6" fill="#ffffff">
+                <animate attributeName="cy" values="110;45;8" dur="0.6s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.4;1;0" dur="0.6s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+
+          {/* Frosted pyrex measurement backing strip for maximum legibility */}
+          <rect
+            x="1"
+            y="48"
+            width="26"
+            height="72"
+            rx="2"
+            fill="rgba(255, 255, 255, 0.55)"
+            stroke="rgba(255, 255, 255, 0.75)"
+            strokeWidth="0.6"
+          />
+
+          {/* Etched Volumetric Graduations (Clear horizontal ticks & high-contrast labels) */}
+          {[
+            { y: 54, label: '5 mL' },
+            { y: 68, label: '4 mL' },
+            { y: 82, label: '3 mL' },
+            { y: 96, label: '2 mL' },
+            { y: 110, label: '1 mL' },
+          ].map((g, i) => (
+            <g key={i}>
+              {/* Major horizontal tick mark */}
+              <line x1="1" y1={g.y} x2="9" y2={g.y} stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" />
+              <line x1="1" y1={g.y - 0.4} x2="9" y2={g.y - 0.4} stroke="#ffffff" strokeWidth="0.6" strokeLinecap="round" />
+              {/* Readable mL text */}
+              <text
+                x="11"
+                y={g.y + 2.4}
+                fontSize="6.8"
+                fontWeight="700"
+                fill="#0f172a"
+                fontFamily="var(--font-mono, monospace)"
+                letterSpacing="-0.02em"
+              >
+                {g.label}
+              </text>
+            </g>
+          ))}
+
+          {/* Minor half-mL ticks */}
+          {[61, 75, 89, 103, 117].map((y, i) => (
+            <line
+              key={`sub-${i}`}
+              x1="1"
+              y1={y}
+              x2="5.5"
+              y2={y}
+              stroke="#334155"
+              strokeWidth="0.8"
+              strokeLinecap="round"
+            />
+          ))}
+
+          {/* Front Glass Wall & Specular Highlights */}
+          <path
+            d="M 0 3 L 0 125 Q 0 135 14 135 Q 28 135 28 125 L 28 3"
+            stroke={highlighted ? '#2563eb' : '#64748b'}
+            strokeWidth="1.8"
+            fill="none"
+          />
+          <line x1="3" y1="8" x2="3" y2="123" stroke="rgba(255,255,255,0.5)" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="25" y1="8" x2="25" y2="123" stroke="rgba(255,255,255,0.25)" strokeWidth="0.9" strokeLinecap="round" />
+
+          {/* Flared Glass Lip at Top */}
+          <ellipse cx="14" cy="3" rx="15" ry="4" fill="rgba(241, 245, 249, 0.45)" stroke="#64748b" strokeWidth="1.8" />
+          <ellipse cx="14" cy="3" rx="11.5" ry="2.8" fill="rgba(255, 255, 255, 0.25)" stroke="#94a3b8" strokeWidth="0.8" />
+        </g>
+
+        {/* Front Clamp Jaw (Heat-resistant red rubber sleeve gripping glass firmly in upper third) */}
+        <g id="clamp-jaw-front">
+          <rect x="78" y="83.5" width="10" height="5" rx="1" fill="url(#clampRodMetal)" stroke="#334155" strokeWidth="0.8" />
+          <ellipse cx="83" cy="86" rx="2.5" ry="4" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+          <path d="M 76 87 Q 95 95 112 89" stroke="#dc2626" strokeWidth="5" strokeLinecap="round" fill="none" />
+          <path d="M 77 86 Q 95 94 111 88" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" fill="none" />
+        </g>
+
+        {/* ── Interactive Action Pills for Heating & FeS Synthesis ── */}
+        {flags?.partBPrepared && !flags?.heatingStarted && (
+          <foreignObject x="35" y="140" width="130" height="36" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              id="btn-start-heating"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'start-heating-btn' } });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#ea580c',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '4px 9px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(234, 88, 12, 0.45)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>🔥</span>
+              <span>Start Heating</span>
+            </button>
+          </foreignObject>
+        )}
+
+        {flags?.heatingStarted && !flags?.reactionGlowing && (
+          <foreignObject x="30" y="140" width="140" height="36" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              id="btn-observe-glow"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'observe-glow-btn' } });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#dc2626',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '4px 9px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.45)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>🔥</span>
+              <span>Heat Strongly</span>
+            </button>
+          </foreignObject>
+        )}
+
+        {flags?.reactionGlowing && !flags?.feSFormed && (
+          <foreignObject x="30" y="140" width="140" height="36" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              id="btn-form-fes"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'form-fes-btn' } });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#b91c1c',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '4px 9px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(185, 28, 28, 0.45)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>⚡</span>
+              <span>Form FeS</span>
+            </button>
+          </foreignObject>
+        )}
+
+        {flags?.feSFormed && !flags?.removedFromHeat && (
+          <foreignObject x="25" y="140" width="150" height="36" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              id="btn-remove-heat"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'remove-heat-btn' } });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '4px 9px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(37, 99, 235, 0.45)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>❄️</span>
+              <span>Remove from Heat</span>
+            </button>
+          </foreignObject>
+        )}
+
+        {flags?.removedFromHeat && !flags?.feSCooled && (
+          <foreignObject x="25" y="140" width="150" height="36" style={{ overflow: 'visible' }}>
+            <button
+              type="button"
+              id="btn-complete-cooling"
+              onClick={(e) => {
+                e.stopPropagation();
+                dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'complete-cooling-btn' } });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: '#0d9488',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '4px 9px',
+                fontSize: '10px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(13, 148, 136, 0.45)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <span>⏳</span>
+              <span>Allow to Cool</span>
+            </button>
+          </foreignObject>
+        )}
+
+        {label && (
+          <text
+            x="100"
+            y="312"
+            textAnchor="middle"
+            fontSize="8"
+            fontWeight="600"
+            fill="var(--text-secondary)"
+            fontFamily="var(--font-sans)"
+          >
+            {label}
+          </text>
+        )}
+      </svg>
+    );
+  }
+
+  // ── Standard Unmounted Test Tube ──
   // Liquid geometry
   // Tube body: x from 22 to 54 (width 32). Tube height: 18 to 195 (lip at 18, bottom curved at 195).
   // Total tube height is ~175.
@@ -1075,11 +1528,34 @@ const TestTube: React.FC<ApparatusProps> = ({
   const maxFill = 150;
   const fillHeight = maxFill * effectiveLevel;
   const liquidTopY = 195 - fillHeight;
-  const gradId = `ttLiquidGrad-${id || 'def'}`;
 
   return (
-    <svg width={width} height={height} viewBox="0 0 76 230" fill="none" style={{ overflow: 'visible' }}>
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 76 230"
+      fill="none"
+      style={{
+        overflow: 'visible',
+        animation: isShakingCS2 ? 'testTubeShake 0.12s ease-in-out infinite alternate' : undefined,
+        transformOrigin: '50% 85%',
+        cursor: (hasCork && !flags?.cs2Shaken) || (flags?.cs2Shaken && !flags?.cs2Settled) ? 'pointer' : undefined,
+      }}
+      onClick={() => {
+        if (hasCork && !flags?.cs2Shaken && !flags?.isShakingCS2Tube) {
+          dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'shake-cs2-tube' } });
+        } else if (flags?.cs2Shaken && !flags?.cs2Settled && !flags?.isSettlingCS2Tube) {
+          dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'settle-cs2-tube' } });
+        }
+      }}
+    >
       <defs>
+        <style>{`
+          @keyframes testTubeShake {
+            0% { transform: rotate(-7deg) translateX(-3px); }
+            100% { transform: rotate(7deg) translateX(3px); }
+          }
+        `}</style>
         {/* Glass reflection gradient */}
         <linearGradient id={`ttGlassStreak-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
@@ -1197,6 +1673,77 @@ const TestTube: React.FC<ApparatusProps> = ({
             style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
             strokeWidth="1"
           />
+        </g>
+      )}
+
+      {/* ── Dry Fe + S Powder Sample at bottom (before CS2 solvent) ── */}
+      {hasPowder && !hasSediment && effectiveLevel === 0 && (
+        <g id="dry-sample-powder">
+          <ellipse cx="38" cy="204" rx="14" ry="5.5" fill="#ca8a04" opacity="0.85" />
+          {/* Iron dark grains */}
+          <circle cx="31" cy="203" r="1.5" fill="#1e293b" />
+          <circle cx="35" cy="206" r="1.3" fill="#334155" />
+          <circle cx="41" cy="205" r="1.6" fill="#1e293b" />
+          <circle cx="45" cy="202" r="1.4" fill="#475569" />
+          <circle cx="38" cy="201" r="1.5" fill="#1e293b" />
+          {/* Sulphur yellow grains */}
+          <circle cx="33" cy="205" r="1.6" fill="#facc15" />
+          <circle cx="37" cy="204" r="1.4" fill="#fde047" />
+          <circle cx="43" cy="204" r="1.5" fill="#facc15" />
+          <circle cx="29" cy="202" r="1.3" fill="#facc15" />
+        </g>
+      )}
+
+      {/* ── Agitated Swirling Particles during CS2 Shaking ── */}
+      {isShakingCS2 && effectiveLevel > 0 && (
+        <g id="shaking-particles">
+          {/* Swirling yellow sulphur particles */}
+          <circle cx="32" cy="180" r="2.2" fill="#facc15">
+            <animate attributeName="cy" values="190;150;185;140;190" dur="0.4s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="28;46;35;26;28" dur="0.4s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="42" cy="165" r="2.0" fill="#fde047">
+            <animate attributeName="cy" values="170;140;180;150;170" dur="0.35s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="44;28;40;48;44" dur="0.35s" repeatCount="indefinite" />
+          </circle>
+          {/* Swirling dark iron particles */}
+          <circle cx="36" cy="175" r="2.0" fill="#1e293b">
+            <animate attributeName="cy" values="195;160;190;170;195" dur="0.45s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="36;44;30;40;36" dur="0.45s" repeatCount="indefinite" />
+          </circle>
+          <circle cx="30" cy="188" r="1.8" fill="#334155">
+            <animate attributeName="cy" values="192;165;188;175;192" dur="0.38s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="30;38;26;34;30" dur="0.38s" repeatCount="indefinite" />
+          </circle>
+        </g>
+      )}
+
+      {/* ── Settled Insoluble Iron Solid Bed at Bottom (CS2 Settle Complete) ── */}
+      {hasSediment && (
+        <g id="iron-settled-sediment">
+          {/* Dense dark iron sediment base */}
+          <path
+            d="M 23 192 L 23 192 Q 23 214 38 214 Q 53 214 53 192 L 53 192 Q 38 195 23 192 Z"
+            fill="#0f172a"
+            stroke="#020617"
+            strokeWidth="0.8"
+          />
+          {/* Distinct top meniscus boundary of sediment */}
+          <ellipse cx="38" cy="192.5" rx="14.8" ry="3.2" fill="#1e293b" stroke="#334155" strokeWidth="0.7" />
+          {/* Granular dark iron solid texture */}
+          <circle cx="28" cy="197" r="1.5" fill="#475569" />
+          <circle cx="34" cy="201" r="1.7" fill="#334155" />
+          <circle cx="40" cy="198" r="1.6" fill="#475569" />
+          <circle cx="46" cy="202" r="1.5" fill="#334155" />
+          <circle cx="32" cy="206" r="1.6" fill="#0f172a" />
+          <circle cx="38" cy="207" r="1.7" fill="#334155" />
+          <circle cx="43" cy="206" r="1.4" fill="#475569" />
+          <circle cx="35" cy="210" r="1.3" fill="#0f172a" />
+          <circle cx="39" cy="211" r="1.3" fill="#334155" />
+          {/* Subtle gleams on metallic iron */}
+          <circle cx="30" cy="196" r="0.6" fill="#94a3b8" />
+          <circle cx="42" cy="200" r="0.6" fill="#94a3b8" />
+          <circle cx="36" cy="208" r="0.5" fill="#94a3b8" />
         </g>
       )}
 
@@ -1454,6 +2001,22 @@ const TestTube: React.FC<ApparatusProps> = ({
       <ellipse cx="38" cy="18" rx="18" ry="4.5" fill="rgba(241, 245, 249, 0.4)" stroke="#64748b" strokeWidth="2.2" />
       <ellipse cx="38" cy="18" rx="14" ry="3.2" fill="rgba(255, 255, 255, 0.2)" stroke="#94a3b8" strokeWidth="1" />
 
+      {/* ── Rubber Cork Stopper sealing tube mouth ── */}
+      {hasCork && (
+        <g id="test-tube-rubber-cork" style={{ zIndex: 12 }}>
+          {/* Stopper body plug extending into glass neck */}
+          <polygon points="26,6 50,6 46,23 30,23" fill="#334155" stroke="#1e293b" strokeWidth="1.2" />
+          {/* Ribbed grip lines on rubber */}
+          <line x1="27" y1="10" x2="49" y2="10" stroke="#475569" strokeWidth="1.1" />
+          <line x1="28.5" y1="14" x2="47.5" y2="14" stroke="#475569" strokeWidth="1.1" />
+          <line x1="29.5" y1="18" x2="46.5" y2="18" stroke="#475569" strokeWidth="1.1" />
+          {/* Flanged top rim */}
+          <ellipse cx="38" cy="6" rx="14" ry="3.5" fill="#475569" stroke="#1e293b" strokeWidth="1.2" />
+          {/* Highlight sheen */}
+          <ellipse cx="36" cy="5.5" rx="9" ry="1.8" fill="rgba(255,255,255,0.25)" />
+        </g>
+      )}
+
       {/* Volume Graduations etched on glass */}
       {[
         { y: 65, label: '4mL' },
@@ -1510,6 +2073,120 @@ const TestTube: React.FC<ApparatusProps> = ({
         >
           {label}
         </text>
+      )}
+
+      {/* ── Interactive Action Pills for Shaking & Settling ── */}
+      {((!isFeSTest && hasCork && !flags?.cs2Shaken && !flags?.isShakingCS2Tube) ||
+        (isFeSTest && flags?.feSCS2Corked && !flags?.feSCS2Shaken && !flags?.isShakingCS2Tube)) && (
+        <foreignObject x="-26" y="-44" width="128" height="38" style={{ overflow: 'visible', zIndex: 60 }}>
+          <button
+            type="button"
+            id="btn-shake-cs2-tube"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'shake-cs2-tube' } });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              background: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)',
+              color: '#ffffff',
+              border: '1.5px solid #818cf8',
+              borderRadius: '12px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>🔄</span>
+            <span>Shake Tube</span>
+          </button>
+        </foreignObject>
+      )}
+
+      {((!isFeSTest && flags?.cs2Shaken && !flags?.cs2Settled && !flags?.isSettlingCS2Tube) ||
+        (isFeSTest && flags?.feSCS2Shaken && !flags?.feSCS2Settled && !flags?.isSettlingCS2Tube)) && (
+        <foreignObject x="-26" y="-44" width="128" height="38" style={{ overflow: 'visible', zIndex: 60 }}>
+          <button
+            type="button"
+            id="btn-settle-cs2-tube"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'settle-cs2-tube' } });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)',
+              color: '#ffffff',
+              border: '1.5px solid #34d399',
+              borderRadius: '12px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(5, 150, 105, 0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>⏳</span>
+            <span>Allow to Settle</span>
+          </button>
+        </foreignObject>
+      )}
+
+      {/* Observation Badges (shown ONLY when settled and NO action button is active) */}
+      {flags?.cs2Settled && !isFeSTest && !flags?.feSPowderReady && !flags?.feSCooled && (
+        <foreignObject x="-46" y="-36" width="168" height="30" style={{ overflow: 'visible' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              background: 'rgba(255, 255, 255, 0.96)',
+              color: '#0f172a',
+              border: '1.2px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '2px 6px',
+              fontSize: '8px',
+              fontWeight: 700,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ color: '#16a34a' }}>✓</span>
+            <span>Yellow S solution + Dark Fe solid</span>
+          </div>
+        </foreignObject>
+      )}
+
+      {flags?.feSCS2Settled && (
+        <foreignObject x="-54" y="-36" width="184" height="30" style={{ overflow: 'visible' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              background: 'rgba(255, 255, 255, 0.96)',
+              color: '#0f172a',
+              border: '1.2px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '2px 6px',
+              fontSize: '8px',
+              fontWeight: 700,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span style={{ color: '#16a34a' }}>✓</span>
+            <span>FeS Insoluble in CS₂ (Clear solvent)</span>
+          </div>
+        </foreignObject>
       )}
     </svg>
   );
@@ -2235,19 +2912,22 @@ const BunsenBurner: React.FC<ApparatusProps> = ({
   extraProps = {},
   ...rest
 }) => {
-  // Determine if burner is lit: checks flags, extraProps, or top-level props (default true)
+  const p = rest as Record<string, unknown>;
+  // Explicit isLit prop takes absolute precedence, or checks extraProps, flags, or defaults to true
   const isLit =
-    flags.burnerLit !== undefined
-      ? flags.burnerLit
-      : (typeof extraProps.burnerLit === 'boolean'
-          ? extraProps.burnerLit
-          : (typeof extraProps.isLit === 'boolean'
-              ? extraProps.isLit
-              : (typeof rest.isLit === 'boolean' ? rest.isLit : true)));
+    typeof p.isLit === 'boolean'
+      ? (p.isLit as boolean)
+      : typeof extraProps?.['isLit'] === 'boolean'
+      ? (extraProps['isLit'] as boolean)
+      : typeof extraProps?.burnerLit === 'boolean'
+      ? (extraProps.burnerLit as boolean)
+      : flags?.burnerLit !== undefined
+      ? Boolean(flags.burnerLit)
+      : true;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (typeof extraProps.onToggleBurner === 'function') {
+    if (typeof extraProps?.onToggleBurner === 'function') {
       (extraProps.onToggleBurner as () => void)();
     }
   };
@@ -3309,51 +3989,119 @@ const DigitalBalanceSVG: React.FC<ApparatusProps> = ({
   width = 120,
   height = 70,
   extraProps,
+  ...props
 }) => {
-  const reading = (extraProps?.['reading'] as number) ?? 0;
-  const displayValue = reading > 0 ? reading.toFixed(2) : '0.00';
+  const p = props as Record<string, unknown>;
+  const rawReading =
+    typeof p.reading === 'number'
+      ? (p.reading as number)
+      : typeof p.massGrams === 'number'
+      ? (p.massGrams as number)
+      : typeof p.mass === 'number'
+      ? (p.mass as number)
+      : typeof extraProps?.['reading'] === 'number'
+      ? (extraProps['reading'] as number)
+      : 0;
+  const displayValue = rawReading > 0 ? rawReading.toFixed(2) : '0.00';
 
   return (
     <svg width={width} height={height} viewBox="0 0 120 70" fill="none">
       <defs>
-        <linearGradient id="balanceGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#f1f5f9" />
+        <linearGradient id="balancePanGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="25%" stopColor="#e2e8f0" />
+          <stop offset="50%" stopColor="#f8fafc" />
+          <stop offset="75%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+        <linearGradient id="balanceBodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f8fafc" />
+          <stop offset="30%" stopColor="#f1f5f9" />
           <stop offset="100%" stopColor="#cbd5e1" />
+        </linearGradient>
+        <linearGradient id="balanceBezelGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#0f172a" />
+          <stop offset="100%" stopColor="#1e293b" />
         </linearGradient>
       </defs>
 
-      {/* Base with depth */}
-      <rect x="5" y="40" width="110" height="22" rx="4"
-        fill="url(#balanceGrad)" stroke={highlighted ? '#3b82f6' : '#94a3b8'} strokeWidth="1.5" />
-      <rect x="5" y="40" width="110" height="4" rx="2" fill="rgba(255,255,255,0.5)" />
+      {/* Rubber anti-slip feet */}
+      <rect x="14" y="65" width="16" height="4" rx="1.5" fill="#1e293b" />
+      <rect x="90" y="65" width="16" height="4" rx="1.5" fill="#1e293b" />
 
-      {/* Weighing pan - stainless steel look */}
-      <rect x="20" y="32" width="80" height="10" rx="2"
-        fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
-      <line x1="22" y1="33" x2="98" y2="33" stroke="#ffffff" strokeWidth="0.5" />
+      {/* Main Chassis Body */}
+      <rect
+        x="6"
+        y="18"
+        width="108"
+        height="48"
+        rx="5"
+        fill="url(#balanceBodyGrad)"
+        stroke={highlighted ? '#3b82f6' : '#94a3b8'}
+        strokeWidth={highlighted ? 2 : 1.2}
+      />
+      {/* Upper casing bevel highlight */}
+      <path d="M 11 19 L 109 19" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" />
 
-      {/* Control Panel area */}
-      <rect x="15" y="10" width="90" height="28" rx="4" fill="#334155" />
+      {/* Center Weighing Pan Pillar/Stem */}
+      <rect x="54" y="12" width="12" height="7" rx="1" fill="#64748b" stroke="#475569" strokeWidth="0.8" />
 
-      {/* Display - LED look */}
-      <rect x="25" y="14" width="70" height="20" rx="3" fill="#0f172a" />
-      <text x="60" y="29" textAnchor="middle" fontSize="13" fill="#4ade80"
-        fontFamily="var(--font-mono, monospace)" fontWeight="700">
-        {displayValue} <tspan fontSize="8">g</tspan>
+      {/* Top Stainless Steel Weighing Pan Platform */}
+      {/* Pan 3D rim edge */}
+      <ellipse cx="60" cy="12" rx="46" ry="6" fill="#475569" />
+      <rect x="14" y="9" width="92" height="4" fill="url(#balancePanGrad)" stroke="#64748b" strokeWidth="0.6" />
+      {/* Pan Top Surface */}
+      <ellipse cx="60" cy="9" rx="46" ry="5.5" fill="url(#balancePanGrad)" stroke="#94a3b8" strokeWidth="0.8" />
+      {/* Pan concentric calibration ring & specular shine */}
+      <ellipse cx="60" cy="9" rx="38" ry="4" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="0.6" />
+      <ellipse cx="60" cy="8.5" rx="26" ry="2.8" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="0.5" />
+
+      {/* ── Front Face Control Panel & Display (Below the pan, 100% visible) ── */}
+      {/* Screen Bezel */}
+      <rect x="22" y="27" width="76" height="25" rx="3" fill="url(#balanceBezelGrad)" stroke="#334155" strokeWidth="1" />
+      {/* Inner display screen */}
+      <rect x="24" y="29" width="72" height="21" rx="2" fill="#020617" />
+
+      {/* Fluorescent LED Readout */}
+      <text
+        x="60"
+        y="44"
+        textAnchor="middle"
+        fontSize="13"
+        fill="#4ade80"
+        fontFamily="var(--font-mono, monospace)"
+        fontWeight="700"
+        letterSpacing="0.05em"
+      >
+        {displayValue} <tspan fontSize="8.5" fill="#22c55e">g</tspan>
       </text>
 
-      {/* Buttons */}
-      <circle cx="25" cy="54" r="3" fill="#94a3b8" />
-      <text x="25" y="63" textAnchor="middle" fontSize="5" fill="#475569" fontWeight="700">TARE</text>
+      {/* Small status indicators on display */}
+      <text x="27" y="35" fontSize="4.5" fill="#22c55e" fontFamily="var(--font-mono, monospace)" fontWeight="700">ZERO</text>
+      <text x="83" y="35" fontSize="4.5" fill="#22c55e" fontFamily="var(--font-mono, monospace)" fontWeight="700">STABLE</text>
 
-      <circle cx="95" cy="54" r="3" fill="#94a3b8" />
-      <text x="95" y="63" textAnchor="middle" fontSize="5" fill="#475569" fontWeight="700">UNIT</text>
+      {/* Control Buttons */}
+      <g>
+        <rect x="10" y="32" width="9" height="15" rx="2" fill="#334155" stroke="#475569" strokeWidth="0.8" />
+        <text x="14.5" y="42" textAnchor="middle" fontSize="4" fill="#94a3b8" fontWeight="700" fontFamily="var(--font-sans)">TARE</text>
 
-      {label && (
-        <text x="60" y="68" textAnchor="middle" fontSize="8.5" fontWeight="700" fill="#475569">
-          {label}
-        </text>
-      )}
+        <rect x="101" y="32" width="9" height="15" rx="2" fill="#334155" stroke="#475569" strokeWidth="0.8" />
+        <text x="105.5" y="42" textAnchor="middle" fontSize="4" fill="#94a3b8" fontWeight="700" fontFamily="var(--font-sans)">CAL</text>
+      </g>
+
+      {/* Brand / Precision Rating on Lower Apron */}
+      <text
+        x="60"
+        y="59"
+        textAnchor="middle"
+        fontSize="6"
+        fontWeight="700"
+        fill="#64748b"
+        letterSpacing="0.06em"
+        fontFamily="var(--font-sans)"
+      >
+        {label || 'DIGITAL BALANCE  d = 0.01 g'}
+      </text>
     </svg>
   );
 };
@@ -3368,13 +4116,69 @@ const RubberCork: React.FC<ApparatusProps> = ({
 }) => (
   <svg width={width} height={height} viewBox="0 0 40 30" fill="none">
     <path d="M 8 25 L 12 5 L 28 5 L 32 25 Z" rx="2"
-      fill={highlighted ? '#a78bfa' : '#92400e'}
-      stroke={highlighted ? '#7c3aed' : '#78350f'}
+      fill={highlighted ? '#a78bfa' : '#334155'}
+      stroke={highlighted ? '#7c3aed' : '#1e293b'}
       strokeWidth="1.5" />
-    <line x1="14" y1="10" x2="26" y2="10" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
-    <line x1="13" y1="15" x2="27" y2="15" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
+    <line x1="14" y1="10" x2="26" y2="10" stroke="#475569" strokeWidth="0.8" />
+    <line x1="13" y1="15" x2="27" y2="15" stroke="#475569" strokeWidth="0.8" />
   </svg>
 );
+
+
+// ── Stainless Steel Lab Spatula ──────────────────────────────────
+
+const Spatula: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 50,
+  height = 90,
+  label,
+  flags,
+  extraProps,
+  ...props
+}) => {
+  const p = props as Record<string, unknown>;
+  const hasSample = Boolean(p.hasSample || extraProps?.hasSample || flags?.spatulaHasSample);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 50 90" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="spatulaMetalGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="45%" stopColor="#f1f5f9" />
+          <stop offset="75%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+      </defs>
+      {/* Handle */}
+      <rect x="22" y="8" width="6" height="52" rx="2" fill="url(#spatulaMetalGrad)" stroke="#475569" strokeWidth="0.8" />
+      <line x1="24" y1="12" x2="24" y2="56" stroke="rgba(255,255,255,0.7)" strokeWidth="0.8" />
+      {/* Scoop / Flat Blade */}
+      <path d="M 19 60 C 17 72, 17 82, 25 82 C 33 82, 33 72, 31 60 Z" fill="url(#spatulaMetalGrad)" stroke="#334155" strokeWidth="0.9" />
+      <ellipse cx="25" cy="72" rx="4.5" ry="6.5" fill="rgba(255,255,255,0.3)" />
+
+      {/* Scooped Fe + S powder on blade */}
+      {hasSample && (
+        <g id="spatula-powder-heap">
+          <ellipse cx="25" cy="72" rx="4.5" ry="5.5" fill="#ca8a04" opacity="0.85" />
+          {/* Iron dark grains */}
+          <circle cx="23" cy="71" r="1.3" fill="#1e293b" />
+          <circle cx="26" cy="74" r="1.2" fill="#334155" />
+          <circle cx="27" cy="70" r="1.1" fill="#1e293b" />
+          {/* Sulphur yellow grains */}
+          <circle cx="25" cy="72" r="1.3" fill="#facc15" />
+          <circle cx="23" cy="75" r="1.1" fill="#fde047" />
+          <circle cx="27" cy="73" r="1.2" fill="#facc15" />
+        </g>
+      )}
+
+      {label && (
+        <text x="25" y="88" textAnchor="middle" fontSize="6.5" fill="var(--text-secondary)" fontWeight="600">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Thermometer ──────────────────────────────────────────────────
@@ -3992,17 +4796,1192 @@ const EvaporatingDish: React.FC<ApparatusProps> = ({
 
 // ── Watch Glass ──────────────────────────────────────────────────
 
+type LabMagnetDraggableProps = {
+  wNum: number;
+  hNum: number;
+  children: (
+    dragOffsetX: number,
+    dragOffsetY: number,
+    isDragging: boolean,
+    listeners: any,
+    attributes: any,
+    setRef: (node: SVGGElement | null) => void
+  ) => React.ReactNode;
+};
+
+const LabMagnetDraggable: React.FC<LabMagnetDraggableProps> = ({ wNum, hNum, children }) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: 'lab-bar-magnet',
+  });
+  const dragOffsetX = transform ? (transform.x * 100) / wNum : 0;
+  const dragOffsetY = transform ? (transform.y * 36) / hNum : 0;
+  const setRef = (node: SVGGElement | null) => setNodeRef(node as unknown as HTMLElement);
+
+  return <>{children(dragOffsetX, dragOffsetY, isDragging, listeners, attributes, setRef)}</>;
+};
+
 const WatchGlass: React.FC<ApparatusProps> = ({
+  id = 'watch-glass',
   highlighted = false,
-  width = 60,
-  height = 20,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 60 20" fill="none">
-    <path d="M 5 5 Q 30 18 55 5"
-      stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5"
-      fill="rgba(224, 242, 254, 0.15)" />
-  </svg>
-);
+  width = 126,
+  height = 44,
+  label,
+  flags = {},
+  extraProps,
+  ...props
+}) => {
+  const p = props as Record<string, unknown>;
+  const dispatch = p.dispatch as React.Dispatch<any> | undefined;
+  const isAddingIron = Boolean(
+    flags?.isAddingIron ||
+    flags?.addingIron ||
+    p.isAddingIron ||
+    extraProps?.['isAddingIron']
+  );
+
+  const isAddingSulphur = Boolean(
+    flags?.isAddingSulphur ||
+    flags?.addingSulphur ||
+    p.isAddingSulphur ||
+    extraProps?.['isAddingSulphur']
+  );
+
+  const isSeparatingMagnet = Boolean(
+    flags?.isSeparatingMagnet ||
+    flags?.separatingMagnet ||
+    p.isSeparatingMagnet ||
+    extraProps?.['isSeparatingMagnet']
+  );
+
+  const isReleasingIron = Boolean(
+    flags?.isReleasingIron ||
+    flags?.releasingIron ||
+    p.isReleasingIron ||
+    extraProps?.['isReleasingIron']
+  );
+
+  const mixtureRestored = Boolean(
+    flags?.mixtureRestored ||
+    p.mixtureRestored ||
+    extraProps?.['mixtureRestored']
+  );
+
+  const hasIronSeparated = Boolean(
+    (flags?.magnetSeparationComplete ||
+    flags?.magnetTestedMix ||
+    p.hasIronSeparated ||
+    extraProps?.['hasIronSeparated']) &&
+    !mixtureRestored
+  );
+
+  const showMagneticSeparation = isSeparatingMagnet || hasIronSeparated || isReleasingIron;
+  const isDispensing = isAddingIron || isAddingSulphur;
+
+  const canDragMagnet = false;
+
+  const wNum = typeof width === 'number' && width > 0 ? width : 126;
+  const hNum = typeof height === 'number' && height > 0 ? height : 44;
+
+  const powderType =
+    (p.powderType as string | undefined) ??
+    (p.solidType as string | undefined) ??
+    (extraProps?.powderType as string | undefined) ??
+    (extraProps?.solidType as string | undefined);
+
+  const powderColor =
+    (p.powderColor as string | undefined) ??
+    (p.solidColor as string | undefined) ??
+    (extraProps?.powderColor as string | undefined) ??
+    (extraProps?.solidColor as string | undefined);
+
+  const powderLevel =
+    typeof p.powderLevel === 'number'
+      ? (p.powderLevel as number)
+      : typeof p.solidLevel === 'number'
+      ? (p.solidLevel as number)
+      : typeof extraProps?.['powderLevel'] === 'number'
+      ? (extraProps['powderLevel'] as number)
+      : 0.55;
+
+  const showPowder = Boolean(
+    p.hasPowder ||
+    p.hasSolid ||
+    extraProps?.['hasPowder'] ||
+    extraProps?.['hasSolid'] ||
+    powderType ||
+    powderColor
+  );
+
+  const normType = (powderType || '').toLowerCase().trim();
+  const isFeS = normType === 'fes' || normType === 'compound' || normType === 'black' || normType === 'iron-sulphide' || normType === 'iron-sulfide';
+  const isIron = (normType === 'iron' || normType === 'iron-filings' || normType === 'fe') && !hasIronSeparated;
+  const isSulphur = (normType === 'sulphur' || normType === 'sulfur' || normType === 's' || hasIronSeparated) && !isFeS;
+  const isMixture = (normType === 'mixture' || normType === 'fe+s' || normType === 'iron-sulphur' || normType === 'iron-sulfur') && !hasIronSeparated;
+
+  // Determine base fill color
+  const defaultFillColor = isIron
+    ? '#334155'
+    : isSulphur
+    ? '#facc15'
+    : isMixture
+    ? '#ca8a04'
+    : isFeS
+    ? '#18181b'
+    : powderColor || '#e2e8f0';
+
+  const moundTopY = Math.max(9, 18 - 9 * Math.min(1, Math.max(0.1, powderLevel)));
+
+  const renderMagnetVisuals = (isDragging: boolean, isDraggable: boolean) => (
+    <>
+      {/* Generous hit-box for comfortable cursor/finger grabbing */}
+      {isDraggable && (
+        <rect
+          x="-50"
+          y="-90"
+          width="100"
+          height="125"
+          fill="#000000"
+          fillOpacity="0.001"
+          style={{ cursor: isDragging ? 'grabbing' : 'grab', pointerEvents: 'all' }}
+        />
+      )}
+      {/* Magnet cast shadow on table/dish surface below */}
+      <ellipse cx="0" cy="65" rx="30" ry="2.8" fill="rgba(0,0,0,0.08)" />
+
+      {/* ── Metallic Horseshoe Yoke (Arch) ── */}
+      <path
+        d="M -44 -4 L -44 -30 C -44 -76, 44 -76, 44 -30 L 44 -4 L 22 -4 L 22 -26 C 22 -54, -22 -54, -22 -26 L -22 -4 Z"
+        fill={`url(#uMagnetArch-${id || 'def'})`}
+        stroke="#475569"
+        strokeWidth="1.2"
+      />
+      {/* Specular highlight along outer curvature */}
+      <path
+        d="M -41 -30 C -41 -72, 41 -72, 41 -30"
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth="1.4"
+        fill="none"
+      />
+
+      {/* ── North Pole (Red, Left Leg) ── */}
+      <rect x="-44" y="-30" width="22" height="26" rx="0.5" fill="#dc2626" stroke="#991b1b" strokeWidth="0.9" />
+      {/* North Pole Metallic Face Cap */}
+      <rect x="-44" y="-4" width="22" height="4" rx="0.5" fill="#e2e8f0" stroke="#64748b" strokeWidth="0.8" />
+      {/* 'N' Pole Stamp */}
+      <text
+        x="-33"
+        y="-13"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="900"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        filter="drop-shadow(0 1.2px 1.5px rgba(0,0,0,0.6))"
+      >
+        N
+      </text>
+
+      {/* ── South Pole (Blue, Right Leg) ── */}
+      <rect x="22" y="-30" width="22" height="26" rx="0.5" fill="#2563eb" stroke="#1e40af" strokeWidth="0.9" />
+      {/* South Pole Metallic Face Cap */}
+      <rect x="22" y="-4" width="22" height="4" rx="0.5" fill="#e2e8f0" stroke="#64748b" strokeWidth="0.8" />
+      {/* 'S' Pole Stamp */}
+      <text
+        x="33"
+        y="-13"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="900"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        filter="drop-shadow(0 1.2px 1.5px rgba(0,0,0,0.6))"
+      >
+        S
+      </text>
+
+      {/* ── Final Static Iron Clusters at Poles (only AFTER 3s animation completes and NOT while releasing iron) ── */}
+      {hasIronSeparated && !isSeparatingMagnet && !isReleasingIron && (
+        <g id="final-pole-clusters">
+          {/* North pole cluster (centered at x = -33, y = 0) */}
+          <path
+            d="M -46 0 Q -42 14 -33 17 Q -24 14 -20 0 Q -26 6 -33 7 Q -40 6 -46 0 Z"
+            fill="#1e293b"
+            stroke="#0f172a"
+            strokeWidth="0.6"
+          />
+          <line x1="-42" y1="0" x2="-48" y2="12" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="-38" y1="0" x2="-41" y2="17" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="-33" y1="0" x2="-33" y2="20" stroke="#475569" strokeWidth="1.8" strokeLinecap="round" />
+          <line x1="-28" y1="0" x2="-25" y2="17" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="-24" y1="0" x2="-18" y2="12" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="-37" cy="10" r="1.3" fill="#94a3b8" />
+          <circle cx="-29" cy="12" r="1.1" fill="#cbd5e1" />
+
+          {/* South pole cluster (centered at x = 33, y = 0) */}
+          <path
+            d="M 20 0 Q 24 14 33 17 Q 42 14 46 0 Q 40 6 33 7 Q 26 6 20 0 Z"
+            fill="#1e293b"
+            stroke="#0f172a"
+            strokeWidth="0.6"
+          />
+          <line x1="24" y1="0" x2="18" y2="12" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="28" y1="0" x2="25" y2="17" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="33" y1="0" x2="33" y2="20" stroke="#475569" strokeWidth="1.8" strokeLinecap="round" />
+          <line x1="38" y1="0" x2="41" y2="17" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+          <line x1="42" y1="0" x2="48" y2="12" stroke="#334155" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="29" cy="10" r="1.3" fill="#94a3b8" />
+          <circle cx="37" cy="12" r="1.1" fill="#cbd5e1" />
+
+          {/* Inter-pole field line arch */}
+          <path d="M -20 2 Q 0 -2 20 2" stroke="#334155" strokeWidth="1.2" strokeDasharray="2.5 2" fill="none" />
+        </g>
+      )}
+
+      {/* Collapsing pole clusters during iron release */}
+      {isReleasingIron && (
+        <g id="collapsing-pole-clusters">
+          <circle cx="-33" cy="2" r="4" fill="#1e293b">
+            <animate attributeName="r" values="4; 1.5; 0" dur="0.25s" fill="freeze" />
+            <animate attributeName="opacity" values="1; 0.5; 0" dur="0.25s" fill="freeze" />
+          </circle>
+          <circle cx="33" cy="2" r="4" fill="#1e293b">
+            <animate attributeName="r" values="4; 1.5; 0" dur="0.25s" fill="freeze" />
+            <animate attributeName="opacity" values="1; 0.5; 0" dur="0.25s" fill="freeze" />
+          </circle>
+        </g>
+      )}
+
+      {/* ── Action Button: Return Iron to Mixture ── */}
+      {hasIronSeparated && !isSeparatingMagnet && !isReleasingIron && !mixtureRestored ? (
+        <foreignObject x="-65" y="-124" width="130" height="34" style={{ overflow: 'visible' }}>
+          <button
+            type="button"
+            id="btn-return-iron"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'release-iron-btn' } });
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'return-iron-btn' } });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              color: '#ffffff',
+              border: '1.5px solid #93c5fd',
+              borderRadius: '20px',
+              padding: '6px 14px',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>↩</span>
+            <span>Release Iron</span>
+          </button>
+        </foreignObject>
+      ) : (
+        /* Scientific separation callout badge */
+        <g transform="translate(0, -88)">
+          <rect
+            x="-44"
+            y="0"
+            width="88"
+            height="12"
+            rx="2.5"
+            fill="rgba(15, 23, 42, 0.94)"
+            stroke={isReleasingIron ? '#22c55e' : '#38bdf8'}
+            strokeWidth={0.8}
+          />
+          <text
+            x="0"
+            y="8"
+            textAnchor="middle"
+            fontSize="5.2"
+            fontWeight="700"
+            fill="#f8fafc"
+            fontFamily="var(--font-sans, system-ui, sans-serif)"
+          >
+            {isReleasingIron
+              ? '⬇️ Returning Fe Filings'
+              : '🧲 Fe Filings Attracted to Poles'}
+          </text>
+        </g>
+      )}
+    </>
+  );
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 100 36" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Watch Glass Shadow / Glow */}
+        {highlighted && (
+          <filter id={`wgGlow-${id || 'def'}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#3b82f6" floodOpacity="0.7" />
+          </filter>
+        )}
+
+        {/* Horseshoe Magnet Arch Gradient */}
+        <linearGradient id={`uMagnetArch-${id || 'def'}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#cbd5e1" />
+          <stop offset="35%" stopColor="#94a3b8" />
+          <stop offset="70%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#475569" />
+        </linearGradient>
+
+        {/* Powder mound gradients */}
+        <linearGradient id={`wgIronGrad-${id || 'def'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+
+        <linearGradient id={`wgSulphurGrad-${id || 'def'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fef08a" />
+          <stop offset="40%" stopColor="#facc15" />
+          <stop offset="100%" stopColor="#ca8a04" />
+        </linearGradient>
+
+        <linearGradient id={`wgMixtureGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ca8a04" />
+          <stop offset="18%" stopColor="#334155" />
+          <stop offset="38%" stopColor="#eab308" />
+          <stop offset="58%" stopColor="#1e293b" />
+          <stop offset="78%" stopColor="#facc15" />
+          <stop offset="100%" stopColor="#475569" />
+        </linearGradient>
+
+        <linearGradient id={`wgFeSGrad-${id || 'def'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#27272a" />
+          <stop offset="60%" stopColor="#18181b" />
+          <stop offset="100%" stopColor="#09090b" />
+        </linearGradient>
+      </defs>
+
+      {/* Caustic Contact Shadow Underneath (where dish sits on pan) */}
+      <ellipse cx="50" cy="31" rx="36" ry="2.5" fill="rgba(0,0,0,0.12)" />
+
+      {/* ── Concave Glass Basin (Back Wall) ── */}
+      <path
+        d="M 8 10 C 8 30.5, 92 30.5, 92 10"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth="1.4"
+        fill="rgba(224, 242, 254, 0.22)"
+        filter={highlighted ? `url(#wgGlow-${id || 'def'})` : undefined}
+      />
+      <path
+        d="M 10 11.5 C 10 29, 90 29, 90 11.5"
+        fill="rgba(241, 245, 249, 0.15)"
+      />
+
+      {/* ── Active Reagent Deposit Animation (Tilted Reagent Container + Granular Cascade) ── */}
+      {isDispensing && (
+        <g id={`wg-dispensing-${id || 'def'}`}>
+          {/* Tilted Glass Reagent Jar hovering above watch glass mouth */}
+          <g id="tilted-reagent-jar" transform="translate(56, 3) rotate(-130)">
+            {/* Jar Glass Body */}
+            <rect
+              x="-8.5"
+              y="6"
+              width="17"
+              height="20"
+              rx="3"
+              fill="rgba(241, 245, 249, 0.3)"
+              stroke="#64748b"
+              strokeWidth="0.9"
+            />
+            {/* Neck & Mouth Lip */}
+            <path
+              d="M -4 0 L -4 6 L 4 6 L 4 0"
+              fill="rgba(241, 245, 249, 0.3)"
+              stroke="#64748b"
+              strokeWidth="0.9"
+            />
+            <ellipse
+              cx="0"
+              cy="0"
+              rx="4.5"
+              ry="1.4"
+              fill="rgba(224, 242, 254, 0.45)"
+              stroke="#475569"
+              strokeWidth="0.8"
+            />
+
+            {/* Reagent powder inside jar tilted toward mouth */}
+            <path
+              d="M -7 18 Q 0 14 7 8 L 7 24 L -7 24 Z"
+              fill={isAddingIron ? '#334155' : '#facc15'}
+            />
+            {isAddingIron ? (
+              <>
+                <circle cx="2" cy="14" r="0.8" fill="#94a3b8" />
+                <circle cx="-2" cy="20" r="0.9" fill="#1e293b" />
+                <circle cx="4" cy="18" r="0.7" fill="#cbd5e1" />
+              </>
+            ) : (
+              <>
+                <circle cx="2" cy="14" r="0.8" fill="#fef08a" />
+                <circle cx="-2" cy="20" r="0.9" fill="#ca8a04" />
+                <circle cx="4" cy="18" r="0.7" fill="#fef9c3" />
+              </>
+            )}
+
+            {/* Upright horizontal label plaque on jar */}
+            <g transform="translate(0, 16) rotate(130)">
+              <rect
+                x="-8.5"
+                y="-4.5"
+                width="17"
+                height="9"
+                rx="1.5"
+                fill="#ffffff"
+                stroke="#94a3b8"
+                strokeWidth="0.6"
+              />
+              <text
+                x="0"
+                y="1.8"
+                textAnchor="middle"
+                fontSize="3.6"
+                fontWeight="700"
+                fill={isAddingIron ? '#0f172a' : '#854d0e'}
+                fontFamily="var(--font-sans, system-ui, sans-serif)"
+              >
+                {isAddingIron ? 'Fe (7g)' : 'S (4g)'}
+              </text>
+            </g>
+
+            {/* Specular highlight streak on glass */}
+            <line
+              x1="-6.5"
+              y1="8"
+              x2="-6.5"
+              y2="23"
+              stroke="rgba(255, 255, 255, 0.7)"
+              strokeWidth="1"
+              strokeLinecap="round"
+            />
+          </g>
+
+          {/* Granular cascade pouring from container mouth into dish bowl */}
+          {isAddingIron && (
+            <g id="falling-iron-cascade">
+              <circle cx="56" cy="4" r="1.3" fill="#1e293b">
+                <animate attributeName="cy" values="3;20" dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="56;49" dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.32s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="57" cy="5" r="1.1" fill="#475569">
+                <animate attributeName="cy" values="4;22" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="57;51" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="55" cy="4" r="1.4" fill="#334155">
+                <animate attributeName="cy" values="3;21" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="55;47" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="56.5" cy="5" r="1.0" fill="#94a3b8">
+                <animate attributeName="cy" values="4;23" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="56.5;53" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="55.5" cy="4.5" r="1.2" fill="#1e293b">
+                <animate attributeName="cy" values="4;20" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="55.5;48" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="57.5" cy="5" r="0.9" fill="#cbd5e1">
+                <animate attributeName="cy" values="5;21" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="57.5;52" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+
+          {isAddingSulphur && (
+            <g id="falling-sulphur-cascade">
+              <circle cx="56" cy="4" r="1.3" fill="#facc15">
+                <animate attributeName="cy" values="3;18" dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="56;49" dur="0.32s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.32s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="57" cy="5" r="1.1" fill="#eab308">
+                <animate attributeName="cy" values="4;20" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="57;51" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.28s" begin="0.06s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="55" cy="4" r="1.4" fill="#fef08a">
+                <animate attributeName="cy" values="3;19" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="55;47" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.35s" begin="0.12s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="56.5" cy="5" r="1.0" fill="#ca8a04">
+                <animate attributeName="cy" values="4;21" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="56.5;53" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.3s" begin="0.18s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="55.5" cy="4.5" r="1.2" fill="#facc15">
+                <animate attributeName="cy" values="4;19" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="55.5;48" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.34s" begin="0.22s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="57.5" cy="5" r="0.9" fill="#fef9c3">
+                <animate attributeName="cy" values="5;20" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+                <animate attributeName="cx" values="57.5;52" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.2;1;1;0" keyTimes="0;0.1;0.85;1" dur="0.27s" begin="0.1s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+
+          {/* Initial accumulating mound deposit inside bowl for iron */}
+          {isAddingIron && !showPowder && (
+            <g id="initial-accumulating-deposit">
+              <path
+                d="M 36 21 Q 50 17 64 21 Q 50 25 36 21 Z"
+                fill={`url(#wgIronGrad-${id || 'def'})`}
+                stroke="#1e293b"
+                strokeWidth="0.5"
+              >
+                <animate
+                  attributeName="d"
+                  values="M 44 23 Q 50 21 56 23 Q 50 24.5 44 23 Z; M 36 21 Q 50 17 64 21 Q 50 25 36 21 Z"
+                  dur="0.5s"
+                  fill="freeze"
+                />
+              </path>
+              <circle cx="48" cy="20" r="0.9" fill="#94a3b8" />
+              <circle cx="52" cy="19" r="1.0" fill="#f8fafc" />
+              <circle cx="45" cy="21" r="0.8" fill="#64748b" />
+              <circle cx="54" cy="21" r="0.9" fill="#cbd5e1" />
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* ── Active Magnetic Separation & Suspended Magnet Display ── */}
+      {showMagneticSeparation && (
+        <g id={`wg-magnet-separation-${id || 'def'}`}>
+          {/* ═══ Large Horseshoe Magnet — hovering with ~70px clear air gap above watch glass ═══ */}
+          {canDragMagnet ? (
+            <LabMagnetDraggable wNum={wNum} hNum={hNum}>
+              {(dragOffsetX, dragOffsetY, isDragging, listeners, attributes, setRef) => (
+                <g
+                  id="suspended-horseshoe-magnet"
+                  ref={setRef}
+                  {...listeners}
+                  {...attributes}
+                  transform={`translate(${50 + dragOffsetX}, ${-45 + dragOffsetY})`}
+                  style={{
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    touchAction: 'none',
+                    filter: isDragging
+                      ? 'drop-shadow(0 14px 28px rgba(37, 99, 235, 0.45))'
+                      : 'drop-shadow(0 0 10px rgba(59, 130, 246, 0.6))',
+                    transition: isDragging ? 'none' : 'transform 0.2s ease',
+                  }}
+                >
+                  {renderMagnetVisuals(isDragging, true)}
+                </g>
+              )}
+            </LabMagnetDraggable>
+          ) : (
+            <g
+              id="suspended-horseshoe-magnet"
+              transform="translate(50, -45)"
+              style={{ transition: 'transform 0.2s ease' }}
+            >
+              {renderMagnetVisuals(false, false)}
+            </g>
+          )}
+
+          {/* ═══ TRAVELING IRON PARTICLES — Visible flight through ~70px air gap ═══ */}
+          {/*
+            Pole tip coordinates in WatchGlass space:
+              North pole center: x = 50 + (-33) = 17,  y = -45
+              South pole center: x = 50 + (33)  = 83,  y = -45
+            Dish powder surface: y ≈ 17–22
+            Total vertical travel through air: ~62–67 units (~78–84 screen pixels!)
+          */}
+          {isSeparatingMagnet && (
+            <g id="traveling-iron-particles">
+              {/* ─── PHASE 1: First responders lift off (begin 0.45s–0.7s) ─── */}
+
+              {/* N1: Center-left liftoff */}
+              <circle cx="40" cy="18" r="2.6" fill="#0f172a">
+                <animate attributeName="cx" values="40; 35; 26; 17" keyTimes="0; 0.3; 0.7; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+                <animate attributeName="cy" values="18; 4; -22; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+              </circle>
+
+              {/* S1: Center-right liftoff */}
+              <circle cx="60" cy="18" r="2.6" fill="#0f172a">
+                <animate attributeName="cx" values="60; 65; 74; 83" keyTimes="0; 0.3; 0.7; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+                <animate attributeName="cy" values="18; 4; -22; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.45s" begin="0.45s" fill="freeze" />
+              </circle>
+
+              {/* N2: Mid-left liftoff */}
+              <circle cx="28" cy="19" r="2.4" fill="#1e293b">
+                <animate attributeName="cx" values="28; 25; 20; 15" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+                <animate attributeName="cy" values="19; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+              </circle>
+
+              {/* S2: Mid-right liftoff */}
+              <circle cx="72" cy="19" r="2.4" fill="#1e293b">
+                <animate attributeName="cx" values="72; 75; 80; 85" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+                <animate attributeName="cy" values="19; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.4s" begin="0.6s" fill="freeze" />
+              </circle>
+
+              {/* ─── PHASE 2: Main stream of particles rising through air (begin 0.8s–1.6s) ─── */}
+
+              {/* N3: Deep dish needle sliver */}
+              <line x1="38" y1="20" x2="41" y2="22" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round">
+                <animate attributeName="x1" values="38; 32; 22; 15" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="x2" values="41; 35; 25; 18" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="y1" values="20; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="y2" values="22; 7; -18; -42" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+              </line>
+
+              {/* S3: Deep dish needle sliver */}
+              <line x1="62" y1="20" x2="59" y2="22" stroke="#0f172a" strokeWidth="1.8" strokeLinecap="round">
+                <animate attributeName="x1" values="62; 68; 78; 85" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="x2" values="59; 65; 75; 82" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="y1" values="20; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="y2" values="22; 7; -18; -42" keyTimes="0; 0.3; 0.7; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.4s" begin="0.8s" fill="freeze" />
+              </line>
+
+              {/* N4: Large central filing */}
+              <circle cx="44" cy="21" r="2.8" fill="#0f172a">
+                <animate attributeName="cx" values="44; 37; 27; 19" keyTimes="0; 0.3; 0.7; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+                <animate attributeName="cy" values="21; 6; -19; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+              </circle>
+
+              {/* S4: Large central filing */}
+              <circle cx="56" cy="21" r="2.8" fill="#0f172a">
+                <animate attributeName="cx" values="56; 63; 73; 81" keyTimes="0; 0.3; 0.7; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+                <animate attributeName="cy" values="21; 6; -19; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.35s" begin="0.95s" fill="freeze" />
+              </circle>
+
+              {/* N5: Outer left filing */}
+              <circle cx="22" cy="18" r="2.5" fill="#1e293b">
+                <animate attributeName="cx" values="22; 20; 16; 13" keyTimes="0; 0.3; 0.7; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+                <animate attributeName="cy" values="18; 4; -21; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+              </circle>
+
+              {/* S5: Outer right filing */}
+              <circle cx="78" cy="18" r="2.5" fill="#1e293b">
+                <animate attributeName="cx" values="78; 80; 84; 87" keyTimes="0; 0.3; 0.7; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+                <animate attributeName="cy" values="18; 4; -21; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.3s" begin="1.1s" fill="freeze" />
+              </circle>
+
+              {/* N6: Metallic glint particle */}
+              <circle cx="34" cy="19" r="2.0" fill="#cbd5e1">
+                <animate attributeName="cx" values="34; 29; 22; 17" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+                <animate attributeName="cy" values="19; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+              </circle>
+
+              {/* S6: Metallic glint particle */}
+              <circle cx="66" cy="19" r="2.0" fill="#cbd5e1">
+                <animate attributeName="cx" values="66; 71; 78; 83" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+                <animate attributeName="cy" values="19; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.25s" begin="1.25s" fill="freeze" />
+              </circle>
+
+              {/* N7: Cross-over from center-right to North pole */}
+              <circle cx="48" cy="17" r="2.4" fill="#0f172a">
+                <animate attributeName="cx" values="48; 40; 28; 18" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+                <animate attributeName="cy" values="17; 3; -22; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+              </circle>
+
+              {/* S7: Cross-over from center-left to South pole */}
+              <circle cx="52" cy="17" r="2.4" fill="#0f172a">
+                <animate attributeName="cx" values="52; 60; 72; 82" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+                <animate attributeName="cy" values="17; 3; -22; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.25s" begin="1.4s" fill="freeze" />
+              </circle>
+
+              {/* N8: Needle sliver */}
+              <line x1="30" y1="21" x2="33" y2="23" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="30; 25; 18; 12" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="x2" values="33; 28; 21; 15" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="y1" values="21; 6; -19; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="y2" values="23; 8; -17; -41" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+              </line>
+
+              {/* S8: Needle sliver */}
+              <line x1="70" y1="21" x2="67" y2="23" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="70; 75; 82; 88" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="x2" values="67; 72; 79; 85" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="y1" values="21; 6; -19; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="y2" values="23; 8; -17; -41" keyTimes="0; 0.3; 0.7; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.2s" begin="1.55s" fill="freeze" />
+              </line>
+
+              {/* ─── PHASE 3: Late sweep & stragglers completing the brush (begin 1.7s–2.1s) ─── */}
+
+              {/* N9: Deep bottom bowl straggler */}
+              <circle cx="42" cy="22" r="2.3" fill="#0f172a">
+                <animate attributeName="cx" values="42; 34; 24; 16" keyTimes="0; 0.3; 0.7; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+                <animate attributeName="cy" values="22; 6; -19; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+              </circle>
+
+              {/* S9: Deep bottom bowl straggler */}
+              <circle cx="58" cy="22" r="2.3" fill="#0f172a">
+                <animate attributeName="cx" values="58; 66; 76; 84" keyTimes="0; 0.3; 0.7; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+                <animate attributeName="cy" values="22; 6; -19; -45" keyTimes="0; 0.3; 0.7; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.1s" begin="1.7s" fill="freeze" />
+              </circle>
+
+              {/* N10: Left rim straggler */}
+              <circle cx="26" cy="18" r="2.1" fill="#334155">
+                <animate attributeName="cx" values="26; 22; 17; 14" keyTimes="0; 0.3; 0.7; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+                <animate attributeName="cy" values="18; 3; -21; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+              </circle>
+
+              {/* S10: Right rim straggler */}
+              <circle cx="74" cy="18" r="2.1" fill="#334155">
+                <animate attributeName="cx" values="74; 78; 83; 86" keyTimes="0; 0.3; 0.7; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+                <animate attributeName="cy" values="18; 3; -21; -44" keyTimes="0; 0.3; 0.7; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="1.0s" begin="1.85s" fill="freeze" />
+              </circle>
+
+              {/* N11: Final glint particle */}
+              <circle cx="36" cy="17" r="1.8" fill="#f8fafc">
+                <animate attributeName="cx" values="36; 30; 23; 17" keyTimes="0; 0.3; 0.7; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+                <animate attributeName="cy" values="17; 3; -21; -45" keyTimes="0; 0.3; 0.7; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+              </circle>
+
+              {/* S11: Final glint particle */}
+              <circle cx="64" cy="17" r="1.8" fill="#f8fafc">
+                <animate attributeName="cx" values="64; 70; 77; 83" keyTimes="0; 0.3; 0.7; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+                <animate attributeName="cy" values="17; 3; -21; -45" keyTimes="0; 0.3; 0.7; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="0.95s" begin="2.0s" fill="freeze" />
+              </circle>
+
+              {/* N12: Final brush needle */}
+              <line x1="34" y1="20" x2="37" y2="22" stroke="#0f172a" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="34; 28; 21; 16" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="x2" values="37; 31; 24; 19" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="y1" values="20; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="y2" values="22; 7; -18; -42" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+              </line>
+
+              {/* S12: Final brush needle */}
+              <line x1="66" y1="20" x2="63" y2="22" stroke="#0f172a" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="66; 72; 79; 84" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="x2" values="63; 69; 76; 81" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="y1" values="20; 5; -20; -45" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="y2" values="22; 7; -18; -42" keyTimes="0; 0.3; 0.7; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+                <animate attributeName="opacity" values="0; 1; 1; 1" keyTimes="0; 0.08; 0.9; 1" dur="0.85s" begin="2.1s" fill="freeze" />
+              </line>
+            </g>
+          )}
+
+          {/* ═══ RELEASING IRON PARTICLES — Cascading downward through ~70px air gap into the dish basin ═══ */}
+          {isReleasingIron && (
+            <g id="releasing-iron-cascade">
+              {/* ── North pole particle releases (detaching from x ≈ 17, y ≈ -45) ── */}
+              {/* N1: Fast dropping central-left grain */}
+              <circle cx="17" cy="-45" r="2.5" fill="#0f172a">
+                <animate attributeName="cx" values="17; 22; 30; 36" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.05s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 4; 18" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.05s" fill="freeze" />
+                <animate attributeName="opacity" values="1; 1; 1; 1" dur="0.85s" begin="0.05s" fill="freeze" />
+              </circle>
+
+              {/* N2: Outer-left dropping grain */}
+              <circle cx="15" cy="-45" r="2.3" fill="#1e293b">
+                <animate attributeName="cx" values="15; 17; 22; 26" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.12s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -18; 5; 19" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.12s" fill="freeze" />
+                <animate attributeName="opacity" values="1; 1; 1; 1" dur="0.8s" begin="0.12s" fill="freeze" />
+              </circle>
+
+              {/* N3: Deep center-dish dropping grain */}
+              <circle cx="19" cy="-45" r="2.7" fill="#0f172a">
+                <animate attributeName="cx" values="19; 26; 36; 44" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.18s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -22; 3; 21" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.18s" fill="freeze" />
+                <animate attributeName="opacity" values="1; 1; 1; 1" dur="0.9s" begin="0.18s" fill="freeze" />
+              </circle>
+
+              {/* N4: Needle sliver tumbling downward */}
+              <line x1="16" y1="-45" x2="19" y2="-43" stroke="#0f172a" strokeWidth="1.7" strokeLinecap="round">
+                <animate attributeName="x1" values="16; 22; 29; 34" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="x2" values="19; 25; 32; 37" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="y1" values="-45; -20; 5; 20" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="y2" values="-43; -18; 7; 22" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+              </line>
+
+              {/* N5: Metallic glint particle */}
+              <circle cx="18" cy="-45" r="1.8" fill="#cbd5e1">
+                <animate attributeName="cx" values="18; 24; 32; 40" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.28s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 4; 18" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.28s" fill="freeze" />
+              </circle>
+
+              {/* N6: Far rim dropping grain */}
+              <circle cx="14" cy="-45" r="2.1" fill="#334155">
+                <animate attributeName="cx" values="14; 16; 19; 22" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.32s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -18; 3; 17" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.32s" fill="freeze" />
+              </circle>
+
+              {/* N7: Central crossover particle landing near x = 48 */}
+              <circle cx="17" cy="-45" r="2.4" fill="#0f172a">
+                <animate attributeName="cx" values="17; 26; 38; 48" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.35s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 3; 22" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.35s" fill="freeze" />
+              </circle>
+
+              {/* N8: Late needle sliver */}
+              <line x1="17" y1="-45" x2="20" y2="-43" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="17; 21; 26; 30" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="x2" values="20; 24; 29; 33" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="y1" values="-45; -20; 4; 21" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="y2" values="-43; -18; 6; 23" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+              </line>
+
+              {/* ── South pole particle releases (detaching from x ≈ 83, y ≈ -45) ── */}
+              {/* S1: Fast dropping central-right grain */}
+              <circle cx="83" cy="-45" r="2.5" fill="#0f172a">
+                <animate attributeName="cx" values="83; 78; 70; 64" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.05s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 4; 18" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.05s" fill="freeze" />
+              </circle>
+
+              {/* S2: Outer-right dropping grain */}
+              <circle cx="85" cy="-45" r="2.3" fill="#1e293b">
+                <animate attributeName="cx" values="85; 83; 78; 74" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.12s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -18; 5; 19" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.12s" fill="freeze" />
+              </circle>
+
+              {/* S3: Deep center-dish dropping grain */}
+              <circle cx="81" cy="-45" r="2.7" fill="#0f172a">
+                <animate attributeName="cx" values="81; 74; 64; 56" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.18s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -22; 3; 21" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.18s" fill="freeze" />
+              </circle>
+
+              {/* S4: Needle sliver tumbling downward */}
+              <line x1="84" y1="-45" x2="81" y2="-43" stroke="#0f172a" strokeWidth="1.7" strokeLinecap="round">
+                <animate attributeName="x1" values="84; 78; 71; 66" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="x2" values="81; 75; 68; 63" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="y1" values="-45; -20; 5; 20" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+                <animate attributeName="y2" values="-43; -18; 7; 22" keyTimes="0; 0.25; 0.65; 1" dur="0.85s" begin="0.22s" fill="freeze" />
+              </line>
+
+              {/* S5: Metallic glint particle */}
+              <circle cx="82" cy="-45" r="1.8" fill="#cbd5e1">
+                <animate attributeName="cx" values="82; 76; 68; 60" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.28s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 4; 18" keyTimes="0; 0.25; 0.65; 1" dur="0.8s" begin="0.28s" fill="freeze" />
+              </circle>
+
+              {/* S6: Far rim dropping grain */}
+              <circle cx="86" cy="-45" r="2.1" fill="#334155">
+                <animate attributeName="cx" values="86; 84; 81; 78" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.32s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -18; 3; 17" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.32s" fill="freeze" />
+              </circle>
+
+              {/* S7: Central crossover particle landing near x = 52 */}
+              <circle cx="83" cy="-45" r="2.4" fill="#0f172a">
+                <animate attributeName="cx" values="83; 74; 62; 52" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.35s" fill="freeze" />
+                <animate attributeName="cy" values="-45; -20; 3; 22" keyTimes="0; 0.25; 0.65; 1" dur="0.9s" begin="0.35s" fill="freeze" />
+              </circle>
+
+              {/* S8: Late needle sliver */}
+              <line x1="83" y1="-45" x2="80" y2="-43" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round">
+                <animate attributeName="x1" values="83; 79; 74; 70" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="x2" values="80; 76; 71; 67" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="y1" values="-45; -20; 4; 21" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+                <animate attributeName="y2" values="-43; -18; 6; 23" keyTimes="0; 0.25; 0.65; 1" dur="0.75s" begin="0.42s" fill="freeze" />
+              </line>
+
+              {/* Central landing sparkles / dust puffs when particles hit powder surface */}
+              <circle cx="36" cy="18" r="1.5" fill="#f8fafc" opacity="0">
+                <animate attributeName="opacity" values="0; 0.8; 0" keyTimes="0; 0.5; 1" dur="0.35s" begin="0.75s" fill="freeze" />
+                <animate attributeName="r" values="1.5; 3.5" dur="0.35s" begin="0.75s" fill="freeze" />
+              </circle>
+              <circle cx="64" cy="18" r="1.5" fill="#f8fafc" opacity="0">
+                <animate attributeName="opacity" values="0; 0.8; 0" keyTimes="0; 0.5; 1" dur="0.35s" begin="0.75s" fill="freeze" />
+                <animate attributeName="r" values="1.5; 3.5" dur="0.35s" begin="0.75s" fill="freeze" />
+              </circle>
+              <circle cx="50" cy="21" r="1.5" fill="#cbd5e1" opacity="0">
+                <animate attributeName="opacity" values="0; 0.8; 0" keyTimes="0; 0.5; 1" dur="0.35s" begin="0.95s" fill="freeze" />
+                <animate attributeName="r" values="1.5; 4.0" dur="0.35s" begin="0.95s" fill="freeze" />
+              </circle>
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* ── Powder / Solid Mass (Contained inside broad concave glass basin) ── */}
+      {showPowder && (
+        <g id={`wg-powder-${id || 'def'}`}>
+          {/* Main Heap Mound */}
+          {isMixture ? (
+            <>
+              {/* Sulphur Yellow Base — always visible, never moves */}
+              <path
+                d={`M 18 16 Q 50 ${moundTopY} 82 16 Q 50 28.5 18 16 Z`}
+                fill={`url(#wgSulphurGrad-${id || 'def'})`}
+                stroke="#ca8a04"
+                strokeWidth="0.5"
+              />
+              {/* Iron layer on top of Sulphur — fades away over 3s during separation */}
+              <path
+                d={`M 18 16 Q 50 ${moundTopY} 82 16 Q 50 28.5 18 16 Z`}
+                fill={`url(#wgIronGrad-${id || 'def'})`}
+                stroke="#1e293b"
+                strokeWidth="0.5"
+                opacity={0.75}
+              >
+                {isSeparatingMagnet && (
+                  <animate
+                    attributeName="opacity"
+                    values="0.75; 0.75; 0.4; 0.1; 0"
+                    keyTimes="0; 0.13; 0.4; 0.7; 1"
+                    dur="3s"
+                    fill="freeze"
+                  />
+                )}
+              </path>
+            </>
+          ) : (
+            <path
+              d={`M 18 16 Q 50 ${moundTopY} 82 16 Q 50 28.5 18 16 Z`}
+              fill={
+                isIron
+                  ? `url(#wgIronGrad-${id || 'def'})`
+                  : isSulphur
+                  ? `url(#wgSulphurGrad-${id || 'def'})`
+                  : isFeS
+                  ? `url(#wgFeSGrad-${id || 'def'})`
+                  : defaultFillColor
+              }
+              stroke={isIron ? '#1e293b' : isSulphur ? '#ca8a04' : isFeS ? '#09090b' : 'rgba(0,0,0,0.15)'}
+              strokeWidth="0.5"
+            >
+              {isIron && (
+                <animate
+                  attributeName="opacity"
+                  values="0.5; 1"
+                  dur="0.25s"
+                  fill="freeze"
+                />
+              )}
+            </path>
+          )}
+
+          {/* Returning Iron Layer accumulating over Sulphur base as particles fall */}
+          {isSulphur && isReleasingIron && (
+            <path
+              d={`M 18 16 Q 50 ${moundTopY} 82 16 Q 50 28.5 18 16 Z`}
+              fill={`url(#wgIronGrad-${id || 'def'})`}
+              stroke="#1e293b"
+              strokeWidth="0.5"
+              opacity={0}
+            >
+              <animate
+                attributeName="opacity"
+                values="0; 0.1; 0.45; 0.75"
+                keyTimes="0; 0.3; 0.65; 1"
+                dur="1.2s"
+                fill="freeze"
+              />
+            </path>
+          )}
+
+          {/* Granule & Particle Highlights */}
+          {isIron && (
+            <g id="iron-filings-specks">
+              <circle cx="36" cy="18" r="1.1" fill="#94a3b8" />
+              <circle cx="50" cy="15" r="1.2" fill="#f8fafc" />
+              <circle cx="62" cy="17" r="1.0" fill="#cbd5e1" />
+              <circle cx="44" cy="21" r="1.1" fill="#64748b" />
+              <circle cx="58" cy="22" r="1.2" fill="#94a3b8" />
+              <circle cx="32" cy="20" r="1.0" fill="#cbd5e1" />
+              <circle cx="52" cy="24" r="0.9" fill="#f1f5f9" />
+              <circle cx="68" cy="19" r="0.8" fill="#94a3b8" />
+              {isAddingSulphur && (
+                <g id="accumulating-sulphur-specks">
+                  <circle cx="48" cy="17" r="1.3" fill="#facc15">
+                    <animate attributeName="opacity" values="0;1" dur="0.25s" fill="freeze" />
+                  </circle>
+                  <circle cx="53" cy="16" r="1.4" fill="#fef08a">
+                    <animate attributeName="opacity" values="0;1" dur="0.32s" fill="freeze" />
+                  </circle>
+                  <circle cx="44" cy="19" r="1.2" fill="#eab308">
+                    <animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze" />
+                  </circle>
+                  <circle cx="58" cy="18" r="1.2" fill="#facc15">
+                    <animate attributeName="opacity" values="0;1" dur="0.45s" fill="freeze" />
+                  </circle>
+                </g>
+              )}
+            </g>
+          )}
+
+          {isSulphur && (
+            <g id="sulphur-powder-specks">
+              <circle cx="40" cy="16" r="1.2" fill="#fef08a" />
+              <circle cx="52" cy="14" r="1.3" fill="#fef9c3" />
+              <circle cx="64" cy="17" r="1.1" fill="#fef08a" />
+              <circle cx="46" cy="20" r="1.2" fill="#fef08a" />
+              <circle cx="56" cy="22" r="1.1" fill="#fef9c3" />
+              <circle cx="34" cy="19" r="1.0" fill="#fef08a" />
+              <circle cx="68" cy="18" r="0.9" fill="#fef08a" />
+            </g>
+          )}
+
+          {/* Returning Iron Specks appearing as particles land */}
+          {isSulphur && isReleasingIron && (
+            <g id="releasing-iron-specks">
+              <circle cx="28" cy="19" r="1.5" fill="#0f172a" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.35; 0.7; 1" dur="1.2s" fill="freeze" />
+              </circle>
+              <circle cx="34" cy="18" r="1.6" fill="#1e293b" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.35; 0.7; 1" dur="1.2s" fill="freeze" />
+              </circle>
+              <circle cx="48" cy="14.5" r="1.7" fill="#0f172a" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.4; 0.75; 1" dur="1.2s" fill="freeze" />
+              </circle>
+              <circle cx="60" cy="17" r="1.6" fill="#1e293b" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.35; 0.7; 1" dur="1.2s" fill="freeze" />
+              </circle>
+              <circle cx="66" cy="21" r="1.6" fill="#0f172a" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.4; 0.75; 1" dur="1.2s" fill="freeze" />
+              </circle>
+              <circle cx="54" cy="23" r="1.5" fill="#0f172a" opacity="0">
+                <animate attributeName="opacity" values="0; 0; 0.6; 1" keyTimes="0; 0.45; 0.8; 1" dur="1.2s" fill="freeze" />
+              </circle>
+            </g>
+          )}
+
+          {isMixture && (
+            <g id="mixture-specks">
+              {/* Bright yellow sulphur grains — 100% stationary throughout! */}
+              <g id="mixture-sulphur-grains">
+                <circle cx="24" cy="17" r="1.5" fill="#facc15" />
+                <circle cx="31" cy="21" r="1.4" fill="#fef08a" />
+                <circle cx="38" cy="16" r="1.6" fill="#facc15" />
+                <circle cx="45" cy="19" r="1.5" fill="#fef9c3" />
+                <circle cx="52" cy="15" r="1.6" fill="#facc15" />
+                <circle cx="58" cy="21" r="1.5" fill="#fef08a" />
+                <circle cx="64" cy="16" r="1.6" fill="#facc15" />
+                <circle cx="70" cy="20" r="1.4" fill="#fef08a" />
+                <circle cx="76" cy="17" r="1.3" fill="#facc15" />
+                <circle cx="35" cy="19" r="1.3" fill="#fef08a" />
+                <circle cx="48" cy="17" r="1.4" fill="#facc15" />
+                <circle cx="61" cy="19" r="1.3" fill="#fef9c3" />
+              </g>
+
+              {/* Dark metallic iron filings intermixed — depleted over 3s during separation */}
+              <g id="mixture-iron-filings">
+                {isSeparatingMagnet && (
+                  <>
+                    {/* Phase 1: Micro-quiver & orientation shift under magnetic field */}
+                    <animateTransform
+                      attributeName="transform"
+                      type="translate"
+                      values="0,0; -0.3,-0.4; 0.4,-0.2; -0.2,-0.7; 0.3,-0.5; 0,-1.0; 0,-1.0"
+                      keyTimes="0; 0.04; 0.08; 0.12; 0.16; 0.2; 1"
+                      dur="3s"
+                      fill="freeze"
+                    />
+                    {/* Phase 2 & 3: Smooth depletion as iron is attracted to magnet poles */}
+                    <animate
+                      attributeName="opacity"
+                      values="1; 1; 0.5; 0.15; 0"
+                      keyTimes="0; 0.13; 0.4; 0.7; 1"
+                      dur="3s"
+                      fill="freeze"
+                    />
+                  </>
+                )}
+                {/* Individual high-contrast iron specks and needle slivers */}
+                <circle cx="28" cy="19" r="1.5" fill="#0f172a" />
+                <circle cx="34" cy="18" r="1.6" fill="#1e293b" />
+                <line x1="33" y1="17" x2="36" y2="19" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="42" cy="22" r="1.5" fill="#1e293b" />
+                <circle cx="48" cy="14.5" r="1.7" fill="#0f172a" />
+                <line x1="47" y1="13.5" x2="50" y2="15.5" stroke="#334155" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="54" cy="23" r="1.5" fill="#0f172a" />
+                <circle cx="60" cy="17" r="1.6" fill="#1e293b" />
+                <line x1="59" y1="16" x2="62" y2="18" stroke="#0f172a" strokeWidth="1.2" strokeLinecap="round" />
+                <circle cx="66" cy="21" r="1.6" fill="#0f172a" />
+                <circle cx="72" cy="18" r="1.4" fill="#1e293b" />
+                {/* Distinct metallic specular glints */}
+                <circle cx="34.5" cy="17.5" r="0.8" fill="#cbd5e1" />
+                <circle cx="48.5" cy="14" r="0.9" fill="#f8fafc" />
+                <circle cx="66.5" cy="20.5" r="0.8" fill="#94a3b8" />
+                <circle cx="54" cy="22.5" r="0.7" fill="#cbd5e1" />
+              </g>
+            </g>
+          )}
+
+          {isFeS && (
+            <g id="fes-crystalline-specks">
+              <polygon points="40,16 43,14 46,17 43,18" fill="#3f3f46" />
+              <polygon points="52,15 56,13.5 58,17 54,18" fill="#27272a" />
+              <circle cx="46" cy="21" r="0.9" fill="#52525b" />
+              <circle cx="62" cy="19" r="1.0" fill="#3f3f46" />
+              <circle cx="34" cy="19" r="0.9" fill="#27272a" />
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* ── Glass Front Specular Rim & Gleam (Perspective Elliptical Aperture) ── */}
+      <ellipse
+        cx="50"
+        cy="10"
+        rx="42"
+        ry="4.5"
+        stroke={highlighted ? '#2563eb' : 'rgba(148, 163, 184, 0.55)'}
+        strokeWidth="1"
+        fill="none"
+      />
+      <path
+        d="M 12 11 Q 50 21 88 11"
+        stroke="rgba(255, 255, 255, 0.75)"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Rim Glint at Left and Right Lips */}
+      <ellipse cx="14" cy="10.5" rx="3" ry="1.2" fill="rgba(255, 255, 255, 0.85)" />
+      <ellipse cx="86" cy="10.5" rx="2.5" ry="1.0" fill="rgba(255, 255, 255, 0.5)" />
+
+      {label && (
+        <text
+          x="50"
+          y="34"
+          textAnchor="middle"
+          fontSize="6"
+          fontWeight="600"
+          fill="#64748b"
+          fontFamily="var(--font-sans, system-ui, sans-serif)"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Glass Rod ────────────────────────────────────────────────────
@@ -5753,6 +7732,860 @@ const SpecificGravityBottle: React.FC<ApparatusProps> = ({
 
 
 
+// ── Bar Magnet ───────────────────────────────────────────────────
+
+const BarMagnet: React.FC<ApparatusProps> = ({
+  id = 'bar-magnet',
+  highlighted = false,
+  width = 36,
+  height = 110,
+  label,
+}) => {
+  return (
+    <svg width={width} height={height} viewBox="0 0 36 110" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* North Pole Red Gradient */}
+        <linearGradient id={`magnetNorthGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#dc2626" />
+          <stop offset="30%" stopColor="#ef4444" />
+          <stop offset="70%" stopColor="#f87171" />
+          <stop offset="100%" stopColor="#b91c1c" />
+        </linearGradient>
+
+        {/* South Pole Blue Gradient */}
+        <linearGradient id={`magnetSouthGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1d4ed8" />
+          <stop offset="30%" stopColor="#2563eb" />
+          <stop offset="70%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="#1e40af" />
+        </linearGradient>
+
+        {/* Metallic Pole Tip Gradient */}
+        <linearGradient id={`magnetTipGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="40%" stopColor="#f1f5f9" />
+          <stop offset="70%" stopColor="#e2e8f0" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+
+        {/* Gloss / Specular Streak */}
+        <linearGradient id={`magnetShine-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+          <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </linearGradient>
+      </defs>
+
+      {/* Highlight Glow when focused or dragged */}
+      {highlighted && (
+        <rect
+          x="3"
+          y="4"
+          width="30"
+          height="102"
+          rx="4"
+          stroke="#3b82f6"
+          strokeWidth="4"
+          opacity="0.6"
+          filter="blur(2px)"
+        />
+      )}
+
+      {/* Main Magnet Body Shadow */}
+      <rect x="6" y="7" width="24" height="96" rx="3" fill="rgba(0,0,0,0.2)" />
+
+      {/* North Pole (Red, Upper Half) */}
+      <path
+        d="M 6 10 C 6 8.3 7.3 7 9 7 L 27 7 C 28.7 7 30 8.3 30 10 L 30 55 L 6 55 Z"
+        fill={`url(#magnetNorthGrad-${id || 'def'})`}
+        stroke="#991b1b"
+        strokeWidth="1"
+      />
+
+      {/* South Pole (Blue, Lower Half) */}
+      <path
+        d="M 6 55 L 30 55 L 30 100 C 30 101.7 28.7 103 27 103 L 9 103 C 7.3 103 6 101.7 6 100 Z"
+        fill={`url(#magnetSouthGrad-${id || 'def'})`}
+        stroke="#1e3a8a"
+        strokeWidth="1"
+      />
+
+      {/* Top Silver Pole Cap */}
+      <rect
+        x="6"
+        y="7"
+        width="24"
+        height="5"
+        rx="2"
+        fill={`url(#magnetTipGrad-${id || 'def'})`}
+        stroke="#64748b"
+        strokeWidth="0.8"
+      />
+
+      {/* Bottom Silver Pole Cap */}
+      <rect
+        x="6"
+        y="98"
+        width="24"
+        height="5"
+        rx="2"
+        fill={`url(#magnetTipGrad-${id || 'def'})`}
+        stroke="#64748b"
+        strokeWidth="0.8"
+      />
+
+      {/* Center Neutral Dividing Seam */}
+      <line x1="6" y1="55" x2="30" y2="55" stroke="#0f172a" strokeWidth="1.2" />
+      <line x1="7" y1="55.6" x2="29" y2="55.6" stroke="rgba(255,255,255,0.4)" strokeWidth="0.6" />
+
+      {/* Specular Longitudinal Reflection */}
+      <rect
+        x="8"
+        y="12"
+        width="4"
+        height="86"
+        rx="1"
+        fill={`url(#magnetShine-${id || 'def'})`}
+      />
+
+      {/* Pole Lettering */}
+      {/* 'N' Letter */}
+      <text
+        x="18"
+        y="35"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="800"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        letterSpacing="0.5"
+        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+      >
+        N
+      </text>
+
+      {/* 'S' Letter */}
+      <text
+        x="18"
+        y="83"
+        textAnchor="middle"
+        fontSize="14"
+        fontWeight="800"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        letterSpacing="0.5"
+        filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+      >
+        S
+      </text>
+
+      {label && (
+        <text
+          x="18"
+          y="108"
+          textAnchor="middle"
+          fontSize="6"
+          fontWeight="700"
+          fill="#475569"
+          fontFamily="var(--font-sans, system-ui, sans-serif)"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
+
+// ── Horseshoe / U-Shaped Magnet ──────────────────────────────────
+
+const HorseshoeMagnet: React.FC<ApparatusProps> = ({
+  id = 'horseshoe-magnet',
+  highlighted = false,
+  width = 120,
+  height = 140,
+  label,
+  flags = {},
+  extraProps,
+  ...props
+}) => {
+  const p = props as Record<string, unknown>;
+  const hasAttractedIron = Boolean(
+    (p.hasAttractedIron ||
+      extraProps?.['hasAttractedIron'] ||
+      flags?.magnetSeparationComplete ||
+      flags?.magnetTestedMix) &&
+      !flags?.mixtureRestored &&
+      !flags?.isReleasingIron &&
+      !p.ironReturned
+  );
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 84 98" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Curved Steel Arch Metallic Gradient */}
+        <linearGradient id={`uMagnetMetal-${id || 'def'}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#cbd5e1" />
+          <stop offset="35%" stopColor="#94a3b8" />
+          <stop offset="70%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#475569" />
+        </linearGradient>
+
+        {/* North Pole Red Gradient */}
+        <linearGradient id={`uMagnetNorth-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#b91c1c" />
+          <stop offset="30%" stopColor="#ef4444" />
+          <stop offset="70%" stopColor="#f87171" />
+          <stop offset="100%" stopColor="#991b1b" />
+        </linearGradient>
+
+        {/* South Pole Blue Gradient */}
+        <linearGradient id={`uMagnetSouth-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1e40af" />
+          <stop offset="30%" stopColor="#3b82f6" />
+          <stop offset="70%" stopColor="#60a5fa" />
+          <stop offset="100%" stopColor="#1d4ed8" />
+        </linearGradient>
+
+        {/* Metallic Pole Face Gradient */}
+        <linearGradient id={`uMagnetTip-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="50%" stopColor="#f8fafc" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+      </defs>
+
+      {/* Highlight glow when hovered/dragged */}
+      {highlighted && (
+        <path
+          d="M 12 76 L 12 34 C 12 10, 72 10, 72 34 L 72 76 L 52 76 L 52 38 C 52 26, 32 26, 32 38 L 32 76 Z"
+          stroke="#3b82f6"
+          strokeWidth="4"
+          fill="none"
+          opacity="0.6"
+          filter="blur(2px)"
+        />
+      )}
+
+      {/* Cast Shadow */}
+      <ellipse cx="42" cy="85" rx="34" ry="4" fill="rgba(0,0,0,0.14)" />
+
+      {/* ── Metallic Horseshoe Yoke (Arch) ── */}
+      <path
+        d="M 14 50 L 14 34 C 14 12, 70 12, 70 34 L 70 50 L 54 50 L 54 36 C 54 24, 30 24, 30 36 L 30 50 Z"
+        fill={`url(#uMagnetMetal-${id || 'def'})`}
+        stroke="#475569"
+        strokeWidth="1.2"
+      />
+      {/* Specular Highlight along outer curvature */}
+      <path
+        d="M 16 34 C 16 15, 68 15, 68 34"
+        stroke="rgba(255, 255, 255, 0.65)"
+        strokeWidth="1.4"
+        fill="none"
+      />
+
+      {/* ── North Pole (Red, Left Leg) ── */}
+      <rect
+        x="14"
+        y="50"
+        width="16"
+        height="24"
+        rx="0.5"
+        fill={`url(#uMagnetNorth-${id || 'def'})`}
+        stroke="#7f1d1d"
+        strokeWidth="1"
+      />
+      {/* North Pole Metallic Face Cap */}
+      <rect
+        x="14"
+        y="74"
+        width="16"
+        height="3.5"
+        rx="0.5"
+        fill={`url(#uMagnetTip-${id || 'def'})`}
+        stroke="#64748b"
+        strokeWidth="0.8"
+      />
+      {/* 'N' Pole Stamp */}
+      <text
+        x="22"
+        y="68"
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="900"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        filter="drop-shadow(0 1px 1px rgba(0,0,0,0.4))"
+      >
+        N
+      </text>
+
+      {/* ── South Pole (Blue, Right Leg) ── */}
+      <rect
+        x="54"
+        y="50"
+        width="16"
+        height="24"
+        rx="0.5"
+        fill={`url(#uMagnetSouth-${id || 'def'})`}
+        stroke="#1e3a8a"
+        strokeWidth="1"
+      />
+      {/* South Pole Metallic Face Cap */}
+      <rect
+        x="54"
+        y="74"
+        width="16"
+        height="3.5"
+        rx="0.5"
+        fill={`url(#uMagnetTip-${id || 'def'})`}
+        stroke="#64748b"
+        strokeWidth="0.8"
+      />
+      {/* 'S' Pole Stamp */}
+      <text
+        x="62"
+        y="68"
+        textAnchor="middle"
+        fontSize="13"
+        fontWeight="900"
+        fill="#ffffff"
+        fontFamily="var(--font-sans, system-ui, sans-serif)"
+        filter="drop-shadow(0 1px 1px rgba(0,0,0,0.4))"
+      >
+        S
+      </text>
+
+      {/* ── Clustered Iron Filings (When iron has been magnetically separated) ── */}
+      {hasAttractedIron && (
+        <g id="attracted-iron-clusters">
+          {/* North pole filings cluster */}
+          <path
+            d="M 11 77 Q 14 88 22 91 Q 30 88 33 77 Q 27 82 22 83 Q 17 82 11 77 Z"
+            fill="#1e293b"
+            stroke="#0f172a"
+            strokeWidth="0.6"
+          />
+          {/* North pole bristling needles/whiskers */}
+          <line x1="14" y1="77" x2="9" y2="86" stroke="#334155" strokeWidth="1.3" strokeLinecap="round" />
+          <line x1="17" y1="77" x2="14" y2="90" stroke="#1e293b" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="22" y1="77" x2="22" y2="94" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="27" y1="77" x2="30" y2="90" stroke="#1e293b" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="30" y1="77" x2="35" y2="86" stroke="#334155" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx="18" cy="85" r="1.1" fill="#94a3b8" />
+          <circle cx="26" cy="86" r="1.0" fill="#cbd5e1" />
+
+          {/* South pole filings cluster */}
+          <path
+            d="M 51 77 Q 54 88 62 91 Q 70 88 73 77 Q 67 82 62 83 Q 57 82 51 77 Z"
+            fill="#1e293b"
+            stroke="#0f172a"
+            strokeWidth="0.6"
+          />
+          {/* South pole bristling needles/whiskers */}
+          <line x1="54" y1="77" x2="49" y2="86" stroke="#334155" strokeWidth="1.3" strokeLinecap="round" />
+          <line x1="57" y1="77" x2="54" y2="90" stroke="#1e293b" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="62" y1="77" x2="62" y2="94" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="67" y1="77" x2="70" y2="90" stroke="#1e293b" strokeWidth="1.4" strokeLinecap="round" />
+          <line x1="70" y1="77" x2="75" y2="86" stroke="#334155" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx="58" cy="85" r="1.1" fill="#94a3b8" />
+          <circle cx="66" cy="86" r="1.0" fill="#cbd5e1" />
+
+          {/* Magnetic field line filament bridge */}
+          <path
+            d="M 30 79 Q 42 75 54 79"
+            stroke="#334155"
+            strokeWidth="1.0"
+            strokeDasharray="2 1.5"
+            fill="none"
+          />
+        </g>
+      )}
+
+      {label && (
+        <text
+          x="42"
+          y="96"
+          textAnchor="middle"
+          fontSize="5"
+          fontWeight="700"
+          fill="#475569"
+          fontFamily="var(--font-sans, system-ui, sans-serif)"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
+// ── Mortar ────────────────────────────────────────────────────────
+
+const Mortar: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 90,
+  height = 55,
+  label,
+  flags,
+  extraProps,
+  ...props
+}) => {
+  const p = props as Record<string, unknown>;
+  const dispatch = p.dispatch as React.Dispatch<any> | undefined;
+  const powderType = (p.powderType as string | undefined) ?? (extraProps?.powderType as string | undefined);
+  const hasSolid = Boolean(p.hasSolid || extraProps?.['hasSolid'] || flags?.feSTransferredToMortar || flags?.feSInMortar);
+  const hasPowder = Boolean(p.hasPowder || extraProps?.['hasPowder'] || powderType || flags?.feSPowderReady);
+  const isFeS = powderType === 'fes' || powderType === 'compound' || Boolean(flags?.feSTransferredToMortar || flags?.feSInMortar || flags?.feSPowderReady);
+  const isCrushing = Boolean(flags?.isCrushingFeS);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 90 55" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="mortarOuterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f8fafc" />
+          <stop offset="50%" stopColor="#e2e8f0" />
+          <stop offset="100%" stopColor="#cbd5e1" />
+        </linearGradient>
+        <linearGradient id="mortarInnerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#cbd5e1" />
+          <stop offset="60%" stopColor="#f1f5f9" />
+          <stop offset="100%" stopColor="#ffffff" />
+        </linearGradient>
+      </defs>
+      {/* Base rim */}
+      <ellipse cx="45" cy="48" rx="28" ry="5" fill="#94a3b8" />
+      <path
+        d="M 20 47 Q 45 52 70 47 L 76 22 Q 45 28 14 22 Z"
+        fill="url(#mortarOuterGrad)"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth={highlighted ? 2 : 1.2}
+      />
+      {/* Pouring lip on the left */}
+      <path
+        d="M 14 22 C 10 20 8 18 10 16 C 13 17 17 19 20 20"
+        fill="#e2e8f0"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth="1.2"
+      />
+      {/* Outer top rim */}
+      <ellipse
+        cx="45"
+        cy="20"
+        rx="34"
+        ry="9"
+        fill="url(#mortarOuterGrad)"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth="1.2"
+      />
+      {/* Inner cavity */}
+      <ellipse
+        cx="45"
+        cy="21"
+        rx="28"
+        ry="7"
+        fill="url(#mortarInnerGrad)"
+        stroke="#cbd5e1"
+        strokeWidth="0.8"
+      />
+
+      {/* Solid chunk inside Mortar before crushing */}
+      {hasSolid && !hasPowder && (
+        <g id="mortar-solid-chunk">
+          <ellipse cx="45" cy="22" rx="16" ry="4.5" fill="#09090b" stroke="#27272a" strokeWidth="0.8" />
+          <circle cx="41" cy="21" r="1.8" fill="#3f3f46" />
+          <circle cx="48" cy="23" r="1.5" fill="#27272a" />
+          <circle cx="45" cy="22" r="1.2" fill="#52525b" />
+        </g>
+      )}
+
+      {/* Finely ground powder inside Mortar after crushing */}
+      {hasPowder && (
+        <g id="mortar-powder-bed">
+          <ellipse
+            cx="45"
+            cy="22"
+            rx="23"
+            ry="5.8"
+            fill={isFeS ? '#09090b' : '#ca8a04'}
+            stroke={isFeS ? '#18181b' : '#a16207'}
+            strokeWidth="0.8"
+          />
+          {isFeS ? (
+            <g opacity="0.85">
+              <circle cx="36" cy="22" r="1" fill="#3f3f46" />
+              <circle cx="42" cy="21" r="1.1" fill="#52525b" />
+              <circle cx="48" cy="23" r="1" fill="#27272a" />
+              <circle cx="53" cy="22" r="0.9" fill="#3f3f46" />
+              <circle cx="45" cy="24" r="1" fill="#27272a" />
+            </g>
+          ) : (
+            <g opacity="0.85">
+              <circle cx="36" cy="22" r="1" fill="#facc15" />
+              <circle cx="42" cy="21" r="1.1" fill="#1e293b" />
+              <circle cx="48" cy="23" r="1" fill="#facc15" />
+              <circle cx="53" cy="22" r="0.9" fill="#1e293b" />
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* Pestle crushing animation inside mortar */}
+      {isCrushing && (
+        <g transform="translate(45, 12)">
+          <path d="M -4 -18 L -3 6 Q 0 9 3 6 L 4 -18 Z" fill="#cbd5e1" stroke="#475569" strokeWidth="1">
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              values="-15 0 0; 15 0 0; -15 0 0"
+              dur="0.3s"
+              repeatCount="indefinite"
+            />
+          </path>
+        </g>
+      )}
+
+      {/* Interactive Action Pill on Mortar to Crush / Grind */}
+      {hasSolid && !hasPowder && !isCrushing && (
+        <foreignObject x="-20" y="-34" width="140" height="34" style={{ overflow: 'visible' }}>
+          <button
+            type="button"
+            id="btn-crush-fes"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'crush-fes-btn' } });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: '#475569',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '4px 9px',
+              fontSize: '10px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(71, 85, 105, 0.4)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>🔨</span>
+            <span>Crush / Grind FeS</span>
+          </button>
+        </foreignObject>
+      )}
+
+      {/* Interactive Action Pill on Mortar to Record Visual Observation */}
+      {hasPowder && !flags?.feSObserved && (
+        <foreignObject x="-30" y="-34" width="160" height="34" style={{ overflow: 'visible' }}>
+          <button
+            type="button"
+            id="btn-observe-fes"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch?.({ type: 'CLICK_ELEMENT', payload: { elementId: 'observe-fes-btn' } });
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: '#0284c7',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '4px 9px',
+              fontSize: '10px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.45)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>👁️</span>
+            <span>Record Visual Observation</span>
+          </button>
+        </foreignObject>
+      )}
+
+      {label && (
+        <text
+          x="45"
+          y="40"
+          textAnchor="middle"
+          fontSize="6.5"
+          fill="#64748b"
+          fontWeight="600"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
+// ── Pestle ────────────────────────────────────────────────────────
+
+const Pestle: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 30,
+  height = 70,
+  label,
+}) => (
+  <svg width={width} height={height} viewBox="0 0 30 70" fill="none">
+    <defs>
+      <linearGradient id="pestleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#e2e8f0" />
+        <stop offset="40%" stopColor="#ffffff" />
+        <stop offset="80%" stopColor="#cbd5e1" />
+        <stop offset="100%" stopColor="#94a3b8" />
+      </linearGradient>
+    </defs>
+    {/* Handle to head body */}
+    <path
+      d="M 12 10 C 12 6 18 6 18 10 L 17 42 C 17 48 24 54 23 60 C 22 66 8 66 7 60 C 6 54 13 48 13 42 Z"
+      fill="url(#pestleGrad)"
+      stroke={highlighted ? '#2563eb' : '#94a3b8'}
+      strokeWidth={highlighted ? 2 : 1.2}
+    />
+    {/* Rounded top knob */}
+    <ellipse
+      cx="15"
+      cy="9"
+      rx="3.5"
+      ry="2"
+      fill="#f8fafc"
+      stroke={highlighted ? '#2563eb' : '#94a3b8'}
+      strokeWidth="1"
+    />
+    {/* Bottom rounded grinding head highlight */}
+    <ellipse
+      cx="15"
+      cy="61"
+      rx="7"
+      ry="4"
+      fill="#e2e8f0"
+      stroke="#cbd5e1"
+      strokeWidth="0.8"
+    />
+    {label && (
+      <text
+        x="15"
+        y="35"
+        textAnchor="middle"
+        fontSize="5"
+        fill="#64748b"
+        transform="rotate(-90 15 35)"
+      >
+        {label}
+      </text>
+    )}
+  </svg>
+);
+
+
+// ── Magnifying Glass ──────────────────────────────────────────────
+
+const MagnifyingGlass: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 65,
+  height = 85,
+  label,
+}) => (
+  <svg width={width} height={height} viewBox="0 0 65 85" fill="none">
+    <defs>
+      <linearGradient id="lensGrad" x1="20%" y1="20%" x2="80%" y2="80%">
+        <stop offset="0%" stopColor="rgba(255, 255, 255, 0.7)" />
+        <stop offset="40%" stopColor="rgba(224, 242, 254, 0.3)" />
+        <stop offset="100%" stopColor="rgba(186, 230, 253, 0.4)" />
+      </linearGradient>
+      <linearGradient id="handleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#475569" />
+        <stop offset="50%" stopColor="#1e293b" />
+        <stop offset="100%" stopColor="#0f172a" />
+      </linearGradient>
+    </defs>
+    {/* Handle angled downwards to the right */}
+    <rect
+      x="36"
+      y="44"
+      width="8"
+      height="38"
+      rx="3"
+      transform="rotate(-40 36 44)"
+      fill="url(#handleGrad)"
+      stroke={highlighted ? '#2563eb' : '#334155'}
+      strokeWidth="1.2"
+    />
+    {/* Ferrule / connector */}
+    <rect
+      x="34"
+      y="41"
+      width="6"
+      height="6"
+      rx="1"
+      transform="rotate(-40 34 41)"
+      fill="#cbd5e1"
+      stroke="#94a3b8"
+      strokeWidth="0.8"
+    />
+    {/* Outer metallic rim */}
+    <circle
+      cx="26"
+      cy="26"
+      r="22"
+      fill="#f1f5f9"
+      stroke={highlighted ? '#2563eb' : '#64748b'}
+      strokeWidth="2.5"
+    />
+    {/* Inner lens */}
+    <circle
+      cx="26"
+      cy="26"
+      r="19.5"
+      fill="url(#lensGrad)"
+      stroke="#94a3b8"
+      strokeWidth="0.8"
+    />
+    {/* Lens glare / highlight arc */}
+    <path
+      d="M 14 20 A 15 15 0 0 1 26 11"
+      stroke="rgba(255, 255, 255, 0.85)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      fill="none"
+    />
+    {label && (
+      <text
+        x="26"
+        y="30"
+        textAnchor="middle"
+        fontSize="6"
+        fill="#475569"
+        fontWeight="600"
+      >
+        {label}
+      </text>
+    )}
+  </svg>
+);
+
+
+// ── Filter Funnel ─────────────────────────────────────────────────
+
+const FilterFunnel: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 60,
+  height = 80,
+  label,
+}) => (
+  <svg width={width} height={height} viewBox="0 0 60 80" fill="none">
+    <defs>
+      <linearGradient id="funnelGlassGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="rgba(255, 255, 255, 0.35)" />
+        <stop offset="30%" stopColor="rgba(240, 249, 255, 0.15)" />
+        <stop offset="70%" stopColor="rgba(224, 242, 254, 0.2)" />
+        <stop offset="100%" stopColor="rgba(255, 255, 255, 0.4)" />
+      </linearGradient>
+    </defs>
+    {/* Stem */}
+    <path
+      d="M 27 42 L 27 75 L 33 71 L 33 42 Z"
+      fill="url(#funnelGlassGrad)"
+      stroke={highlighted ? '#2563eb' : '#94a3b8'}
+      strokeWidth={highlighted ? 1.8 : 1.2}
+    />
+    {/* Conical body */}
+    <polygon
+      points="5,10 55,10 33,42 27,42"
+      fill="url(#funnelGlassGrad)"
+      stroke={highlighted ? '#2563eb' : '#94a3b8'}
+      strokeWidth={highlighted ? 1.8 : 1.2}
+    />
+    {/* Top rim ellipse */}
+    <ellipse
+      cx="30"
+      cy="10"
+      rx="25"
+      ry="4"
+      fill="rgba(255, 255, 255, 0.4)"
+      stroke={highlighted ? '#2563eb' : '#94a3b8'}
+      strokeWidth="1.2"
+    />
+    {/* Glass shine line */}
+    <path
+      d="M 12 13 L 28 39"
+      stroke="rgba(255, 255, 255, 0.7)"
+      strokeWidth="1.2"
+      strokeLinecap="round"
+    />
+    {label && (
+      <text
+        x="30"
+        y="25"
+        textAnchor="middle"
+        fontSize="6"
+        fill="#64748b"
+        fontWeight="600"
+      >
+        {label}
+      </text>
+    )}
+  </svg>
+);
+
+
+// ── Filter Paper ──────────────────────────────────────────────────
+
+const FilterPaper: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 60,
+  height = 60,
+  label,
+}) => (
+  <svg width={width} height={height} viewBox="0 0 60 60" fill="none">
+    <defs>
+      <linearGradient id="filterPaperGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="60%" stopColor="#f8fafc" />
+        <stop offset="100%" stopColor="#e2e8f0" />
+      </linearGradient>
+    </defs>
+    {/* Circular disc with slight 3D perspective / depth */}
+    <circle
+      cx="30"
+      cy="30"
+      r="26"
+      fill="url(#filterPaperGrad)"
+      stroke={highlighted ? '#2563eb' : '#cbd5e1'}
+      strokeWidth={highlighted ? 2 : 1.2}
+    />
+    {/* Subtle fold lines (laboratory quadrant folding for funnel fitting) */}
+    <line x1="30" y1="4" x2="30" y2="56" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2,2" />
+    <line x1="4" y1="30" x2="56" y2="30" stroke="#e2e8f0" strokeWidth="1" strokeDasharray="2,2" />
+    {/* Center crease mark */}
+    <circle cx="30" cy="30" r="1.5" fill="#cbd5e1" />
+    {label && (
+      <text
+        x="30"
+        y="42"
+        textAnchor="middle"
+        fontSize="6"
+        fill="#64748b"
+        fontWeight="600"
+      >
+        {label}
+      </text>
+    )}
+  </svg>
+);
+
+
+
 // ══════════════════════════════════════════════════════════════════
 //  APPARATUS REGISTRY
 // ══════════════════════════════════════════════════════════════════
@@ -5767,18 +8600,21 @@ const SpecificGravityBottle: React.FC<ApparatusProps> = ({
  * 3. Reference it by name in experiment configs
  */
 export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
-  // Containers
+  // Containers & Mixing
   ConicalFlask,
   Beaker,
   TestTube,
   EvaporatingDish,
+  ChinaDish: EvaporatingDish,
+  Mortar,
+  Pestle,
   WatchGlass,
   VolumetricFlask,
   BODBottle,
   SpecificGravityBottle,
   MeasuringCylinder,
 
-  // Transfer & Fluid Dynamics
+  // Transfer, Separation & Fluid Dynamics
   Burette: BuretteSVG,
   Pipette: PipetteSVG,
   Dropper: DropperBottle,
@@ -5788,7 +8624,17 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   Matchstick,
   LaserPointer,
   LaserTorch: LaserPointer,
+  Spatula,
+  FilterFunnel,
+  Funnel: FilterFunnel,
+  FilterPaper,
   OstwaldViscometer,
+
+  // Magnetic & Physical Testing
+  HorseshoeMagnet,
+  BarMagnet,
+  Magnet: HorseshoeMagnet,
+  MagnifyingGlass,
 
   // Heating & Temperature
   BunsenBurner,

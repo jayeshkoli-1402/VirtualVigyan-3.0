@@ -57,6 +57,7 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {config.apparatus
             .filter(a => !a.prePlaced)
+            .filter(a => !(a.hideWhenInactive && a.activeInSteps && currentStep && !a.activeInSteps.includes(currentStep.id)))
             .map(apparatus => {
               const isPlaced = apparatus.id in state.placedApparatus;
               const isActiveStep = !apparatus.activeInSteps ||
@@ -81,6 +82,7 @@ const GenericToolbox: React.FC<GenericToolboxProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
           {config.apparatus
             .filter(a => !a.prePlaced)
+            .filter(a => !(a.hideWhenInactive && a.activeInSteps && currentStep && !a.activeInSteps.includes(currentStep.id)))
             .map(apparatus => {
               const isPlaced = apparatus.id in state.placedApparatus;
               return (

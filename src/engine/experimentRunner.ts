@@ -956,8 +956,8 @@ export function createExperimentReducer(
           };
         }
 
-        // Mark action as completed
-        if (interaction.completesAction) {
+        // Mark action as completed (deferred to ANIMATION_COMPLETE if effects are deferred)
+        if (interaction.completesAction && !interaction.animation?.effectsAfterAnimation) {
           newState = {
             ...newState,
             completedActions: [...newState.completedActions, interaction.completesAction],
@@ -1016,7 +1016,7 @@ export function createExperimentReducer(
           }
         }
 
-        if (interaction.completesAction) {
+        if (interaction.completesAction && !interaction.animation?.effectsAfterAnimation) {
           newState = {
             ...newState,
             completedActions: [...newState.completedActions, interaction.completesAction],

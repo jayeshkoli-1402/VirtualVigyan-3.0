@@ -196,12 +196,12 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           background: `${gradeColor}10`,
         }}>
           <span style={{
-            fontSize: '2rem',
+            fontSize: scoreResult.maxScore <= 20 ? '1.6rem' : '2rem',
             fontWeight: 800,
             color: gradeColor,
             fontFamily: 'var(--font-mono)',
           }}>
-            {animatedScore}
+            {animatedScore}{scoreResult.maxScore !== 100 ? ` / ${scoreResult.maxScore}` : ''}
           </span>
         </div>
         <div style={{
@@ -222,6 +222,59 @@ const GenericResults: React.FC<GenericResultsProps> = ({
           {tDynamic(scoreResult.feedback)}
         </p>
       </div>
+
+      {/* Assessment Section Summary Cards */}
+      {scoreResult.maxScore === 9 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 10,
+          marginBottom: 16,
+        }}>
+          <div style={{
+            background: 'var(--bg-inset, rgba(148, 163, 184, 0.08))',
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1px solid var(--border)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Observation MCQs
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#2563eb', marginTop: 2 }}>
+              {scoreResult.breakdown.filter(c => c.name.startsWith('MCQ')).reduce((sum, c) => sum + c.points, 0)} / 5
+            </div>
+          </div>
+          <div style={{
+            background: 'var(--bg-inset, rgba(148, 163, 184, 0.08))',
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1px solid var(--border)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Calculation
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#059669', marginTop: 2 }}>
+              {scoreResult.breakdown.filter(c => c.name.startsWith('Section')).reduce((sum, c) => sum + c.points, 0)} / 4
+            </div>
+          </div>
+          <div style={{
+            background: 'var(--bg-inset, rgba(148, 163, 184, 0.08))',
+            padding: '10px 12px',
+            borderRadius: 10,
+            border: '1.5px solid #2563eb',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase' }}>
+              Total
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: gradeColor, marginTop: 2 }}>
+              {scoreResult.totalScore} / 9
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Score breakdown */}
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: 20 }}>

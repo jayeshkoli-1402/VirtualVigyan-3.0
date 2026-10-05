@@ -28,7 +28,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
   state,
   dispatch,
   activeDropZone,
-  activeDragId,
+  activeDragId = null,
 }) => {
   const { t, tDynamic } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
@@ -362,7 +362,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               alignItems: 'center',
               height: '100%',
               paddingTop: '20px',
-              opacity: 0.25,
+              opacity: 0.15,
+              pointerEvents: 'none',
             }}
           >
             <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -1172,6 +1173,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             zone={zone}
             isActive={activeDropZone === zone.id}
             isDragCompatible={isDragCompatible}
+            activeDragId={activeDragId}
             state={state}
             config={config}
             solutionColor={solutionColor}
@@ -1199,7 +1201,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const isBurette = apparatusConfig.component === 'Burette' || apparatusConfig.component === 'BuretteStand';
         const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'EvaporatingDish'].includes(apparatusConfig.component);
         const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod', 'IronNail', 'Thermometer'].includes(apparatusConfig.component);
-        const isHardware = ['RetortStand', 'Tripod', 'WireGauze', 'TestTubeStand'].includes(apparatusConfig.component);
+        const isHardware = ['RetortStand', 'Tripod', 'WireGauze', 'TestTubeStand', 'DigitalBalance', 'MagneticStirrer'].includes(apparatusConfig.component);
         const isBurner = apparatusConfig.component === 'BunsenBurner';
         const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : isHardware ? 14 : isBurner ? 12 : 10;
 
@@ -1240,6 +1242,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             >
               <Component
                 id={apparatusId}
+                dispatch={dispatch}
                 liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
                 flags={{
                   ...state.flags,
@@ -1269,7 +1272,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             </div>
 
             {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
-            {apparatusConfig.label && !isHardware && !isBurette && apparatusConfig.component !== 'Thermometer' && (
+            {apparatusConfig.label && !isHardware && !isBurette && apparatusConfig.component !== 'Thermometer' && !config.hidePlacedApparatusLabels && apparatusConfig.showPlacedLabel !== false && (
               <div
                 style={{
                   position: 'absolute',
@@ -1756,6 +1759,7 @@ type DropZoneProps = {
   zone: DropZoneConfig;
   isActive: boolean;
   isDragCompatible?: boolean;
+  activeDragId?: string | null;
   state: ExperimentState;
   config: ExperimentConfig;
   solutionColor: string;
@@ -1766,6 +1770,7 @@ const DropZone: React.FC<DropZoneProps> = ({
   zone,
   isActive,
   isDragCompatible = false,
+  activeDragId = null,
   state,
   config,
 }) => {
@@ -1804,8 +1809,9 @@ const DropZone: React.FC<DropZoneProps> = ({
     disabled: Boolean(hasItem && isBenchPlacementZone),
   });
 
+  const isTargetOfCurrentDrag = Boolean(activeDragId && zone.accepts?.includes(activeDragId));
   // Bench placement zones waiting for apparatus are always visible so students know where to place items!
-  const isZoneVisible = isOver || isActive || isDragCompatible || (!hasItem && isBenchPlacementZone);
+  const isZoneVisible = isOver || isActive || isDragCompatible || isTargetOfCurrentDrag || (!hasItem && isBenchPlacementZone);
 
   return (
     <div
@@ -1821,7 +1827,7 @@ const DropZone: React.FC<DropZoneProps> = ({
         border: `2px dashed ${
           isOver
             ? '#2563eb'
-            : isActive || isDragCompatible
+            : isActive || isDragCompatible || isTargetOfCurrentDrag
               ? '#3b82f6'
               : isBenchPlacementZone && !hasItem
                 ? 'rgba(59, 130, 246, 0.55)'
@@ -1831,14 +1837,14 @@ const DropZone: React.FC<DropZoneProps> = ({
         }`,
         background: isOver
           ? 'rgba(37, 99, 235, 0.18)'
-          : isActive || isDragCompatible
+          : isActive || isDragCompatible || isTargetOfCurrentDrag
             ? 'rgba(59, 130, 246, 0.12)'
             : isBenchPlacementZone && !hasItem
               ? 'rgba(59, 130, 246, 0.04)'
               : 'transparent',
         boxShadow: isOver
           ? '0 0 20px rgba(37, 99, 235, 0.45)'
-          : isActive || isDragCompatible
+          : isActive || isDragCompatible || isTargetOfCurrentDrag
             ? '0 0 16px rgba(59, 130, 246, 0.35)'
             : isBenchPlacementZone && !hasItem
               ? '0 2px 10px rgba(59, 130, 246, 0.08)'
@@ -1847,7 +1853,7 @@ const DropZone: React.FC<DropZoneProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: isOver || isActive ? 22 : isBenchPlacementZone && !hasItem ? 12 : 5,
+        zIndex: isOver || isActive || isTargetOfCurrentDrag ? 24 : isBenchPlacementZone && !hasItem ? 12 : 5,
         pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
@@ -1862,6 +1868,7 @@ const DropZone: React.FC<DropZoneProps> = ({
             pointerEvents: 'none',
             zIndex: 14,
             whiteSpace: 'nowrap',
+            animation: 'fadeIn 0.15s ease-out',
           }}
         >
           <span
@@ -1871,12 +1878,12 @@ const DropZone: React.FC<DropZoneProps> = ({
               gap: 4,
               fontSize: '0.68rem',
               fontWeight: 700,
-              color: isOver ? '#1e3a8a' : isActive || isDragCompatible ? '#1d4ed8' : '#2563eb',
+              color: isOver ? '#1e3a8a' : isActive || isDragCompatible || isTargetOfCurrentDrag ? '#1d4ed8' : '#2563eb',
               background: 'rgba(255, 255, 255, 0.96)',
               padding: '3px 10px',
               borderRadius: 12,
               border: `1.5px solid ${
-                isOver ? '#2563eb' : isActive || isDragCompatible ? '#60a5fa' : 'rgba(59, 130, 246, 0.45)'
+                isOver ? '#2563eb' : isActive || isDragCompatible || isTargetOfCurrentDrag ? '#60a5fa' : 'rgba(59, 130, 246, 0.45)'
               }`,
               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
               letterSpacing: '0.02em',
@@ -1900,7 +1907,7 @@ const DropZone: React.FC<DropZoneProps> = ({
             gap: 4,
             pointerEvents: 'none',
             userSelect: 'none',
-            opacity: isOver ? 0.95 : isActive || isDragCompatible ? 0.9 : 0.7,
+            opacity: isOver ? 0.95 : isActive || isDragCompatible || isTargetOfCurrentDrag ? 0.9 : 0.7,
             transition: 'all 0.2s ease',
             textAlign: 'center',
             padding: '6px',
@@ -1912,7 +1919,7 @@ const DropZone: React.FC<DropZoneProps> = ({
               fontSize: '1.9rem',
               lineHeight: 1,
               filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12))',
-              transform: isOver ? 'scale(1.15)' : isDragCompatible ? 'scale(1.08)' : 'scale(1)',
+              transform: isOver ? 'scale(1.15)' : isDragCompatible || isTargetOfCurrentDrag ? 'scale(1.08)' : 'scale(1)',
               transition: 'transform 0.2s ease',
             }}
           >
@@ -1939,13 +1946,13 @@ const DropZone: React.FC<DropZoneProps> = ({
             style={{
               fontSize: '0.55rem',
               fontWeight: 600,
-              color: isOver ? '#1e40af' : isActive || isDragCompatible ? '#2563eb' : '#64748b',
+              color: isOver ? '#1e40af' : isActive || isDragCompatible || isTargetOfCurrentDrag ? '#2563eb' : '#64748b',
               letterSpacing: '0.01em',
             }}
           >
             {isOver
               ? tDynamic('Drop to place')
-              : isDragCompatible
+              : isDragCompatible || isTargetOfCurrentDrag
                 ? tDynamic('Place here')
                 : tDynamic('Drag here')}
           </span>

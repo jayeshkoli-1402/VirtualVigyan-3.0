@@ -614,3 +614,94 @@ body {
     margin: 12mm 15mm;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   Mixture and Compound (Iron Filings + Sulfur Powder)
+   Fixed Viewport & Independent Sidebar Scrolling Layout
+   Strictly scoped to this experiment via .mixture-compound-iron-sulphur-lab
+   ══════════════════════════════════════════════════════ */
+
+@media (min-width: 900px) {
+  html:has(.mixture-compound-iron-sulphur-lab),
+  body:has(.mixture-compound-iron-sulphur-lab) {
+    overflow: hidden;
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  body:has(.mixture-compound-iron-sulphur-lab) main {
+    min-height: 0;
+    height: calc(100dvh - 54px);
+    max-height: calc(100dvh - 54px);
+    overflow: hidden;
+  }
+
+  .mixture-compound-iron-sulphur-lab {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .mixture-compound-iron-sulphur-lab .mixture-compound-grid {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  /* Left Apparatus Sidebar: Independent vertical scroll */
+  .mixture-compound-iron-sulphur-lab .mixture-compound-left-panel {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mixture-compound-iron-sulphur-lab .mixture-compound-left-panel > div {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  /* Center Laboratory Workspace: Stationary, fixed in viewport, no scrolling */
+  .mixture-compound-iron-sulphur-lab .mixture-compound-center-panel {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mixture-compound-iron-sulphur-lab .mixture-compound-center-panel > div {
+    flex: 1;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  /* Right Instructions Sidebar: Independent vertical scroll */
+  .mixture-compound-iron-sulphur-lab .mixture-compound-right-panel {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .mixture-compound-iron-sulphur-lab .mixture-compound-right-panel > div {
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+}

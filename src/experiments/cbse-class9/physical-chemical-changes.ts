@@ -184,6 +184,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       label: '1. Fe + CuSO₄ Reaction',
       instruction: 'Add blue CuSO₄ solution to the test tube, then dip the iron nail. Observe the nail getting a reddish copper coating and solution turning pale green.',
       requiredActions: ['added-cuso4', 'dipped-nail'],
+      advanceMode: 'button',
       type: 'lab',
     },
     {
@@ -191,6 +192,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       label: '2. Burning Magnesium',
       instruction: 'Bring the magnesium ribbon over the burner. Observe the dazzling white flame producing white ash of MgO.',
       requiredActions: ['burned-mg'],
+      advanceMode: 'button',
       type: 'lab',
     },
     {
@@ -198,6 +200,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       label: '3. Sublimation of NH₄Cl',
       instruction: 'Add ammonium chloride to the heated China dish. Observe white vapours forming without melting, condensing back to pure NH₄Cl solid on cooler surfaces (Physical Change).',
       requiredActions: ['added-nh4cl'],
+      advanceMode: 'button',
       type: 'lab',
     },
     {
@@ -320,6 +323,11 @@ export const physicalChemicalChanges: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'china-dish', prop: 'label', value: '✨ Dazzling White Flame → White MgO Ash' },
       ],
       completesAction: 'burned-mg',
+      animation: {
+        type: 'color-change',
+        durationMs: 3500,
+        animatingFlag: 'isBurningMg',
+      },
     },
     {
       id: 'sublime-nh4cl-act',
@@ -333,6 +341,11 @@ export const physicalChemicalChanges: ExperimentConfig = {
         { type: 'setApparatusProp', apparatusId: 'china-dish', prop: 'label', value: 'NH₄Cl Sublimed! White crystalline solid deposits (Physical)' },
       ],
       completesAction: 'added-nh4cl',
+      animation: {
+        type: 'color-change',
+        durationMs: 4500,
+        animatingFlag: 'isSubliming',
+      },
     },
   ],
 

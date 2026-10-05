@@ -3443,33 +3443,209 @@ const Tripod: React.FC<ApparatusProps> = ({
 };
 
 
-// ── Evaporating Dish ─────────────────────────────────────────────
+// ── Evaporating Dish (China Dish / Porcelain Basin) ──────────────
 
 const EvaporatingDish: React.FC<ApparatusProps> = ({
   liquidLevel = 0,
   liquidColor = 'rgba(224, 242, 254, 0.35)',
   label,
   highlighted = false,
-  width = 80,
-  height = 40,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 80 40" fill="none">
-    {/* Dish */}
-    <path d="M 5 15 Q 5 35 40 35 Q 75 35 75 15"
-      stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1.5" fill="rgba(255,255,255,0.1)" />
-    {/* Rim */}
-    <line x1="3" y1="15" x2="77" y2="15" stroke="#94a3b8" strokeWidth="1.5" />
-    {/* Liquid */}
-    {liquidLevel > 0 && (
-      <path d={`M 10 18 Q 10 ${18 + liquidLevel * 15} 40 ${18 + liquidLevel * 15} Q 70 ${18 + liquidLevel * 15} 70 18 Z`}
-        fill={liquidColor}
-        style={{ transition: 'fill 0.5s ease' }} />
-    )}
-    {label && (
-      <text x="40" y="12" textAnchor="middle" fontSize="7" fill="#64748b">{label}</text>
-    )}
-  </svg>
-);
+  width = 95,
+  height = 55,
+  flags = {},
+  extraProps = {},
+}) => {
+  const hasNH4Cl = Boolean(flags?.nh4clSublimed || extraProps?.hasNH4Cl || flags?.isSubliming);
+  const isSubliming = Boolean(flags?.isSubliming || extraProps?.isSubliming);
+
+  const hasMgAsh = Boolean(flags?.mgBurned || extraProps?.hasMgAsh || flags?.isBurningMg);
+  const isBurningMg = Boolean(flags?.isBurningMg || extraProps?.isBurningMg);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 100 65" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Porcelain ceramic glaze gradient */}
+        <linearGradient id="porcelainGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="40%" stopColor="#f8fafc" />
+          <stop offset="75%" stopColor="#e2e8f0" />
+          <stop offset="100%" stopColor="#cbd5e1" />
+        </linearGradient>
+
+        {/* Inner basin shadow gradient */}
+        <linearGradient id="basinInnerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.35" />
+          <stop offset="40%" stopColor="#cbd5e1" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#f1f5f9" stopOpacity="0.9" />
+        </linearGradient>
+
+        {/* NH4Cl sublimation fume blur filter */}
+        <filter id="fumeBlur" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" />
+        </filter>
+        <filter id="starBurstGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Highlight glow when active drop target */}
+      {highlighted && (
+        <ellipse cx="50" cy="38" rx="44" ry="18" stroke="#3b82f6" strokeWidth="4" opacity="0.6" filter="blur(2px)" />
+      )}
+
+      {/* ── Sublimation White Fumes / Dense Vapours (Rising Clouds) ── */}
+      {isSubliming && (
+        <g id="nh4cl-sublimation-fumes">
+          {/* Cloud Billow 1 (Left puff) */}
+          <circle cx="36" cy="18" r="14" fill="rgba(255, 255, 255, 0.85)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="24;8;-2" dur="2.0s" repeatCount="indefinite" />
+            <animate attributeName="r" values="10;16;22" dur="2.0s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.85;0.6;0" dur="2.0s" repeatCount="indefinite" />
+          </circle>
+          {/* Cloud Billow 2 (Center dense puff) */}
+          <circle cx="50" cy="14" r="16" fill="rgba(255, 255, 255, 0.9)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="22;6;-6" dur="1.7s" repeatCount="indefinite" />
+            <animate attributeName="r" values="12;18;26" dur="1.7s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;0.7;0" dur="1.7s" repeatCount="indefinite" />
+          </circle>
+          {/* Cloud Billow 3 (Right puff) */}
+          <circle cx="64" cy="16" r="13" fill="rgba(255, 255, 255, 0.85)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="23;7;-3" dur="2.2s" repeatCount="indefinite" />
+            <animate attributeName="r" values="9;15;21" dur="2.2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.85;0.6;0" dur="2.2s" repeatCount="indefinite" />
+          </circle>
+
+          {/* Sublimation reaction status banner */}
+          <rect x="10" y="-18" width="80" height="15" rx="4" fill="rgba(15, 23, 42, 0.88)" stroke="#38bdf8" strokeWidth="0.8" />
+          <text x="50" y="-8" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#38bdf8" fontFamily="var(--font-sans)">
+            NH₄Cl Subliming: Solid ➔ Vapours
+            <animate attributeName="opacity" values="0.6;1;0.6" dur="1s" repeatCount="indefinite" />
+          </text>
+        </g>
+      )}
+
+      {/* ── Burning Magnesium Dazzling Flash ── */}
+      {isBurningMg && (
+        <g id="mg-dazzling-burn">
+          {/* Blinding white starburst flash */}
+          <circle cx="50" cy="30" r="24" fill="rgba(255, 255, 255, 0.95)" filter="url(#starBurstGlow)">
+            <animate attributeName="r" values="22;28;22" dur="0.2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;1;0.9" dur="0.15s" repeatCount="indefinite" />
+          </circle>
+          {/* Spark rays */}
+          <path d="M 50 2 L 53 27 L 78 30 L 53 33 L 50 58 L 47 33 L 22 30 L 47 27 Z" fill="#ffffff" filter="url(#starBurstGlow)">
+            <animate attributeName="opacity" values="0.8;1;0.8" dur="0.2s" repeatCount="indefinite" />
+          </path>
+          <path d="M 32 12 L 48 28 L 68 12 L 52 32 L 68 48 L 48 32 L 32 48 L 48 28 Z" fill="#e0e7ff" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="0.25s" repeatCount="indefinite" />
+          </path>
+
+          {/* Burning Mg reaction banner */}
+          <rect x="10" y="-18" width="80" height="15" rx="4" fill="rgba(15, 23, 42, 0.9)" stroke="#f59e0b" strokeWidth="0.8" />
+          <text x="50" y="-8" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#fde047" fontFamily="var(--font-sans)">
+            ✨ Dazzling Flame: 2Mg + O₂ ➔ 2MgO
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="0.6s" repeatCount="indefinite" />
+          </text>
+        </g>
+      )}
+
+      {/* ── China Dish Body (Porcelain Basin) ── */}
+
+      {/* Outer porcelain bowl wall */}
+      <path
+        d="M 8 28 Q 8 60 50 60 Q 92 60 92 28 Z"
+        fill="url(#porcelainGrad)"
+        stroke="#94a3b8"
+        strokeWidth="1.6"
+        filter="drop-shadow(0 4px 6px rgba(0,0,0,0.15))"
+      />
+
+      {/* Dish base foot ring */}
+      <ellipse cx="50" cy="59" rx="20" ry="3" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.8" />
+
+      {/* Inner basin cavity */}
+      <ellipse cx="50" cy="28" rx="40" ry="12" fill="url(#basinInnerGrad)" stroke="#cbd5e1" strokeWidth="1" />
+
+      {/* Rim top edge with pouring spout on left */}
+      <path
+        d="M 5 27 Q 8 26 12 28 Q 50 36 88 28 Q 92 27 95 28 Q 50 16 5 27 Z"
+        fill="#ffffff"
+        stroke="#94a3b8"
+        strokeWidth="0.8"
+      />
+
+      {/* Liquid Fill (if used as evaporating dish with solution) */}
+      {liquidLevel > 0 && !hasNH4Cl && !hasMgAsh && (
+        <path
+          d={`M 15 32 Q 15 ${32 + liquidLevel * 18} 50 ${32 + liquidLevel * 18} Q 85 ${32 + liquidLevel * 18} 85 32 Z`}
+          fill={liquidColor}
+          style={{ transition: 'fill 0.5s ease' }}
+        />
+      )}
+
+      {/* ── Solid Contents ── */}
+
+      {/* Ammonium Chloride Solid & Sublimate Encrustation */}
+      {hasNH4Cl && (
+        <g id="nh4cl-solid-and-crystals">
+          {/* White crystalline powder layer resting at bottom */}
+          <polygon
+            points="24,42 76,42 70,55 30,55"
+            fill="#f8fafc"
+            stroke="#e2e8f0"
+            strokeWidth="0.8"
+            filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+          />
+          {/* Crystal grains and texture facets */}
+          <circle cx="34" cy="46" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="42" cy="49" r="1.5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="50" cy="46" r="1.4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="58" cy="48" r="1.6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="66" cy="46" r="1.3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="46" cy="52" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="54" cy="52" r="1.3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+
+          {/* Sublimate crystalline crust along upper cooler dish rim */}
+          <path d="M 12 28 Q 25 31 35 28" stroke="#ffffff" strokeWidth="2" strokeDasharray="1.5,1.5" fill="none" opacity="0.9" />
+          <path d="M 65 28 Q 75 31 88 28" stroke="#ffffff" strokeWidth="2" strokeDasharray="1.5,1.5" fill="none" opacity="0.9" />
+        </g>
+      )}
+
+      {/* White Magnesium Oxide (MgO) Ash Powder Bed */}
+      {hasMgAsh && !isBurningMg && (
+        <g id="mgo-ash-powder">
+          <ellipse cx="50" cy="48" rx="22" ry="7" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="0.8" />
+          {/* Powdery fluffy ash mounds and texture */}
+          <ellipse cx="44" cy="47" rx="9" ry="4" fill="#ffffff" opacity="0.9" />
+          <ellipse cx="56" cy="48" rx="10" ry="4" fill="#ffffff" opacity="0.9" />
+          <circle cx="48" cy="49" r="1.5" fill="#94a3b8" opacity="0.5" />
+          <circle cx="52" cy="46" r="1.2" fill="#94a3b8" opacity="0.4" />
+          <circle cx="41" cy="48" r="1.4" fill="#94a3b8" opacity="0.4" />
+          <circle cx="59" cy="49" r="1.3" fill="#94a3b8" opacity="0.4" />
+        </g>
+      )}
+
+      {/* Porcelain glossy specular light reflection streak */}
+      <path
+        d="M 16 36 Q 22 52 46 54"
+        stroke="rgba(255, 255, 255, 0.75)"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {label && (
+        <text x="50" y="65" textAnchor="middle" fontSize="6.5" fontWeight="600" fill="#64748b" fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Watch Glass ──────────────────────────────────────────────────

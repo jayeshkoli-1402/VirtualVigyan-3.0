@@ -232,6 +232,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
   const getPillLabel = (cls: string): string => {
     if (cls === 'All') return t('landing.showcase.all', 'All');
+    if (cls === 'CBSE') return 'CBSE';
     if (cls === 'F.Y. B.Tech (DBATU)') return t('landing.showcase.dbatu', 'F.Y. B.Tech (DBATU)');
     if (cls === 'Class 12') return t('landing.showcase.class12', 'Class 12');
     if (cls === 'Class 11') return t('landing.showcase.class11', 'Class 11');
@@ -255,7 +256,11 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
     // Filter by class pill
     if (selectedClass !== 'All') {
-      list = list.filter((item) => item.classLevel === selectedClass);
+      if (selectedClass === 'CBSE') {
+        list = list.filter((item) => item.categoryTag.includes('CBSE') || item.classLevel.startsWith('Class'));
+      } else {
+        list = list.filter((item) => item.classLevel === selectedClass);
+      }
     }
 
     // Filter by search query (from top header)
@@ -318,7 +323,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
     }
   };
 
-  const classPills = ['All', 'F.Y. B.Tech (DBATU)', 'Class 11', 'Class 10', 'Class 9'];
+  const classPills = ['All', 'CBSE', 'Class 9', 'Class 10', 'Class 11', 'F.Y. B.Tech (DBATU)'];
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>

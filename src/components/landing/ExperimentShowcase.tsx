@@ -19,28 +19,30 @@ const ExperimentShowcase: React.FC<ExperimentShowcaseProps> = ({
 
   const filterOptions = [
     { key: 'All', label: t('landing.showcase.all', 'All') },
-    { key: 'F.Y. B.Tech (DBATU)', label: t('landing.showcase.dbatu', 'F.Y. B.Tech (DBATU)') },
-    { key: 'Class 12', label: t('landing.showcase.class12', 'Class 12') },
-    { key: 'Class 11', label: t('landing.showcase.class11', 'Class 11') },
-    { key: 'Class 10', label: t('landing.showcase.class10', 'Class 10') },
+    { key: 'CBSE', label: 'CBSE' },
     { key: 'Class 9', label: t('landing.showcase.class9', 'Class 9') },
+    { key: 'Class 10', label: t('landing.showcase.class10', 'Class 10') },
+    { key: 'Class 11', label: t('landing.showcase.class11', 'Class 11') },
+    { key: 'F.Y. B.Tech (DBATU)', label: t('landing.showcase.dbatu', 'F.Y. B.Tech (DBATU)') },
   ];
 
   // Curate balanced representation across classes for the initial "All" view
   const defaultShowcaseIds = [
     'titration',
     'conservation-of-mass',
+    'true-solution-colloid-suspension',
     'viscosity-ostwald',
     'ph-metric-titration',
     'zinc-acid-reaction',
-    'conductometric-titration',
   ];
 
   const filtered: ExperimentItem[] = activeFilter === 'All'
     ? defaultShowcaseIds
         .map((id) => ALL_EXPERIMENTS.find((e) => e.id === id))
         .filter((e): e is ExperimentItem => Boolean(e))
-    : ALL_EXPERIMENTS.filter((e) => e.classLevel === activeFilter).slice(0, 6);
+    : activeFilter === 'CBSE'
+        ? ALL_EXPERIMENTS.filter((e) => e.categoryTag.includes('CBSE') || e.classLevel.startsWith('Class')).slice(0, 6)
+        : ALL_EXPERIMENTS.filter((e) => e.classLevel === activeFilter).slice(0, 6);
 
   return (
     <section id="experiments" className="ln-section">

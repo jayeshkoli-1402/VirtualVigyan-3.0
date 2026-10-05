@@ -36,11 +36,91 @@ const PILOT_RECORDS: StudentRecord[] = [
   { name: 'Sanskruti Yogesh Bhalerao', email: 'sanskrutibhalerao44@gmail.com', experimentTitle: 'Acidity of Water Sample (Titration with NaOH)', timeSpent: '8m 25s', attempt: 1, avatar: '👩‍🎓', status: 'Tested & Verified' },
 ];
 
+interface PilotPhoto {
+  id: string;
+  image: string;
+  badge: string;
+  avatar: string;
+  title: string;
+  role: string;
+  caption: string;
+  tabLabel: string;
+}
+
+const PILOT_PHOTOS: PilotPhoto[] = [
+  {
+    id: 'photo-mentor-team',
+    image: '/images/mentor-lab-pilot.jpg',
+    badge: 'SIH Pilot Testing Session • Smart Lab Demonstration',
+    avatar: '👨‍🏫',
+    title: 'Our SIH Mentor & Research Team',
+    role: 'Smart India Hackathon (SIH) Faculty Mentor & Guide',
+    caption: 'Our SIH mentor and student team evaluating titration procedures, stopcock control, and stoichiometric calculations on the digital smartboard.',
+    tabLabel: 'Mentor & Team',
+  },
+  {
+    id: 'photo-smartboard',
+    image: '/images/student-testing-1.jpg',
+    badge: 'Interactive Smartboard Trial • Hands-On Calibration',
+    avatar: '👩‍🔬',
+    title: 'Live Titration Demonstration on Smartboard',
+    role: 'Physical Bench Touchscreen Experiment Pilot',
+    caption: 'Students performing EDTA water hardness titration on the interactive digital smartboard, calibrating real-time drop delivery and color indicators.',
+    tabLabel: 'Smartboard Trial',
+  },
+  {
+    id: 'photo-lab-cohort',
+    image: '/images/student-testing-2.jpg',
+    badge: 'Full 20+ Student Computer Lab Trial • Concurrent Practice',
+    avatar: '💻',
+    title: '20+ Student Concurrent Lab Testing Session',
+    role: 'Classroom Evaluation & Workstation Simulation',
+    caption: 'Full laboratory classroom cohort of 22 students actively testing VirtualVigyan across individual workstations simultaneously.',
+    tabLabel: '20+ Student Lab',
+  },
+  {
+    id: 'photo-peer-feedback',
+    image: '/images/student-testing-3.jpg',
+    badge: 'Individual Workstation Feedback • Peer Discussion',
+    avatar: '👥',
+    title: 'Peer Discussion & Real-Time Procedure Validation',
+    role: 'Collaborative Problem Solving & Faculty Review',
+    caption: 'Students collaborating at individual lab workstations, discussing titration endpoints and validating procedural correctness with mentors.',
+    tabLabel: 'Peer Discussion',
+  },
+];
+
 export const PilotStudySection: React.FC = () => {
   const { t } = useLanguage();
   const [showAllStudents, setShowAllStudents] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+
+  // Auto-scroll slideshow effect every 4 seconds
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % PILOT_PHOTOS.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    if (touchStart - touchEnd > 45) {
+      setCurrentSlide((prev) => (prev + 1) % PILOT_PHOTOS.length);
+    } else if (touchEnd - touchStart > 45) {
+      setCurrentSlide((prev) => (prev - 1 + PILOT_PHOTOS.length) % PILOT_PHOTOS.length);
+    }
+    setTouchStart(null);
+  };
 
   const visibleRecords = showAllStudents ? PILOT_RECORDS : PILOT_RECORDS.slice(0, 6);
+  const activePhoto = PILOT_PHOTOS[currentSlide];
 
   return (
     <section id="pilot-study" className="ln-section ln-pilot-section">
@@ -87,40 +167,112 @@ export const PilotStudySection: React.FC = () => {
 
         {/* Main 2-Column Showcase */}
         <div className="ln-pilot-grid ln-reveal">
-          {/* Left Column: Real Mentor & Classroom Photo Card */}
+          {/* Left Column: Real Mentor & Classroom Photo Card with Auto-Scroll */}
           <div className="ln-pilot-photo-column">
-            <div className="ln-pilot-photo-frame">
-              <div className="ln-pilot-img-wrapper">
-                <img
-                  src="/images/mentor-lab-pilot.jpg"
-                  alt="VirtualVigyan team and students with SIH mentor during chemistry lab trial"
-                  className="ln-pilot-img"
-                  loading="lazy"
+            <div
+              className="ln-pilot-photo-frame"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Auto-scroll progress line */}
+              <div className="ln-pilot-carousel-progress-track">
+                <div
+                  key={currentSlide}
+                  className="ln-pilot-carousel-progress-bar"
                 />
+              </div>
+
+              {/* Main Image Slider Viewport */}
+              <div className="ln-pilot-img-wrapper">
+                <div
+                  className="ln-pilot-slider-track"
+                  style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                >
+                  {PILOT_PHOTOS.map((photo, index) => (
+                    <div key={photo.id} className="ln-pilot-slide">
+                      <img
+                        src={photo.image}
+                        alt={photo.title}
+                        className="ln-pilot-img"
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Navigation Arrows */}
+                <button
+                  type="button"
+                  className="ln-pilot-arrow-btn ln-pilot-arrow-prev"
+                  onClick={() => setCurrentSlide((prev) => (prev - 1 + PILOT_PHOTOS.length) % PILOT_PHOTOS.length)}
+                  aria-label="Previous photo"
+                  title="Previous photo"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="ln-pilot-arrow-btn ln-pilot-arrow-next"
+                  onClick={() => setCurrentSlide((prev) => (prev + 1) % PILOT_PHOTOS.length)}
+                  aria-label="Next photo"
+                  title="Next photo"
+                >
+                  ›
+                </button>
+
+                {/* Overlay Badge at bottom-left */}
                 <div className="ln-pilot-img-overlay">
                   <div className="ln-pilot-img-badge">
                     <span>🏆</span>
-                    <span>{t('landing.pilot.photoTag', 'SIH Pilot Testing Session • Smart Lab Demonstration')}</span>
+                    <span>{activePhoto.badge}</span>
                   </div>
                 </div>
+
+                {/* Pagination Dots at bottom-right */}
+                <div className="ln-pilot-dots-bar">
+                  {PILOT_PHOTOS.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`ln-pilot-dot ${idx === currentSlide ? 'active' : ''}`}
+                      onClick={() => setCurrentSlide(idx)}
+                      aria-label={`Jump to photo ${idx + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* 4 Interactive Thumbnail Buttons */}
+              <div className="ln-pilot-thumbs-strip">
+                {PILOT_PHOTOS.map((photo, idx) => (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    className={`ln-pilot-thumb-btn ${idx === currentSlide ? 'active' : ''}`}
+                    onClick={() => setCurrentSlide(idx)}
+                    title={photo.title}
+                  >
+                    <img src={photo.image} alt={photo.tabLabel} className="ln-pilot-thumb-img" />
+                    <span className="ln-pilot-thumb-label">{photo.tabLabel}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Photo Metadata and Live Caption */}
               <div className="ln-pilot-photo-info">
                 <div className="ln-pilot-mentor-meta">
-                  <span className="ln-mentor-avatar">👨‍🏫</span>
+                  <span className="ln-mentor-avatar">{activePhoto.avatar}</span>
                   <div>
                     <h4 className="ln-pilot-mentor-name">
-                      {t('landing.pilot.mentorTitle', 'Our SIH Mentor & Research Team')}
+                      {activePhoto.title}
                     </h4>
                     <p className="ln-pilot-mentor-role">
-                      {t('landing.pilot.mentorRole', 'Smart India Hackathon (SIH) Faculty Mentor & Guide')}
+                      {activePhoto.role}
                     </p>
                   </div>
                 </div>
                 <p className="ln-pilot-photo-caption">
-                  {t(
-                    'landing.pilot.photoCaption',
-                    'Our SIH mentor and student team evaluating titration procedures, stopcock control, and stoichiometric calculations on the digital smartboard.'
-                  )}
+                  {activePhoto.caption}
                 </p>
               </div>
             </div>

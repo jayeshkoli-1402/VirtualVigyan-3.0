@@ -936,6 +936,8 @@ const TestTube: React.FC<ApparatusProps> = ({
   height = 230,
   flags,
   hasZinc,
+  hasIronNail,
+  nailCoated,
   isReacting,
   popEffect,
   effervescenceRate,
@@ -948,6 +950,20 @@ const TestTube: React.FC<ApparatusProps> = ({
   const showZinc = Boolean(hasZinc || flags?.zincAdded);
   const isEvolvingGas = Boolean(isReacting || flags?.reactionStarted || flags?.gasEvolving || effRate > 0);
   const showPop = Boolean(popEffect || flags?.popSoundHeard);
+
+  const hasNail = Boolean(
+    hasIronNail ||
+    extraProps?.hasIronNail ||
+    flags?.nailDipped ||
+    flags?.hasIronNail ||
+    flags?.isDisplacing
+  );
+  const isDisplacing = Boolean(flags?.isDisplacing || extraProps?.isDisplacing);
+  const isNailCoated = Boolean(
+    nailCoated ||
+    extraProps?.nailCoated ||
+    (flags?.nailDipped && !isDisplacing)
+  );
 
   // Liquid geometry
   // Tube body: x from 22 to 54 (width 32). Tube height: 18 to 195 (lip at 18, bottom curved at 195).
@@ -968,12 +984,12 @@ const TestTube: React.FC<ApparatusProps> = ({
           <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
         </linearGradient>
 
-        {/* Liquid depth gradient */}
+        {/* Liquid depth gradient with 4.0s progressive color shift */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
-          <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
-          <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.95" />
-          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="1" />
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
+          <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.95" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="1" />
         </linearGradient>
 
         {/* Zinc metallic gradient */}
@@ -982,6 +998,45 @@ const TestTube: React.FC<ApparatusProps> = ({
           <stop offset="50%" stopColor="#64748b" />
           <stop offset="100%" stopColor="#475569" />
         </linearGradient>
+
+        {/* Steel Iron Nail Gradient */}
+        <linearGradient id={`ttSteelGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="25%" stopColor="#94a3b8" />
+          <stop offset="60%" stopColor="#f1f5f9" />
+          <stop offset="85%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#334155" />
+        </linearGradient>
+
+        {/* Displaced Copper Coating Gradient */}
+        <linearGradient id={`ttCopperGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#7c2d12" />
+          <stop offset="25%" stopColor="#c2410c" />
+          <stop offset="55%" stopColor="#ea580c" />
+          <stop offset="85%" stopColor="#9a3412" />
+          <stop offset="100%" stopColor="#431407" />
+        </linearGradient>
+
+        {/* Copper Deposition Progressive Keyframe */}
+        <style>{`
+          @keyframes depositCopper-${id || 'def'} {
+            0% {
+              opacity: 0;
+            }
+            20% {
+              opacity: 0.25;
+            }
+            55% {
+              opacity: 0.65;
+            }
+            85% {
+              opacity: 0.9;
+            }
+            100% {
+              opacity: 1;
+            }
+          }
+        `}</style>
       </defs>
 
       {/* Outer shadow / glow when highlighted */}
@@ -1057,6 +1112,167 @@ const TestTube: React.FC<ApparatusProps> = ({
           <circle cx="34" cy="199" r="1" fill="#f8fafc" />
           <circle cx="41" cy="203" r="1" fill="#f8fafc" />
           <circle cx="30" cy="204" r="0.8" fill="#f8fafc" />
+        </g>
+      )}
+
+      {/* ── Persistent Iron Nail & Copper Displacement Reaction ── */}
+      {hasNail && (
+        <g id="iron-nail-assembly">
+          {/* Suspension nylon thread tied from rim to nail head */}
+          <path
+            d="M 38 18 C 39 42, 43 68, 44 91"
+            stroke="#94a3b8"
+            strokeWidth="0.8"
+            strokeDasharray="2,2"
+            fill="none"
+          />
+          {/* Thread knot around head */}
+          <ellipse cx="44" cy="91" rx="2" ry="1.2" fill="#64748b" stroke="#334155" strokeWidth="0.5" />
+
+          {/* 1. Unsubmerged Upper Portion (Above meniscus, stays clean metallic steel Fe) */}
+          {/* Flat nail head */}
+          <ellipse
+            cx="44"
+            cy="92"
+            rx="5.8"
+            ry="2.2"
+            fill={`url(#ttSteelGrad-${id || 'def'})`}
+            stroke="#334155"
+            strokeWidth="0.8"
+            transform="rotate(-12 44 92)"
+          />
+          <ellipse
+            cx="44"
+            cy="91.5"
+            rx="4.5"
+            ry="1.4"
+            fill="rgba(255,255,255,0.45)"
+            stroke="none"
+            transform="rotate(-12 44 92)"
+          />
+
+          {/* Upper shaft (y: 93 to liquidTopY) */}
+          <polygon
+            points={`42,93 46,93 ${46 - (liquidTopY - 93) * 0.13},${liquidTopY} ${42 - (liquidTopY - 93) * 0.13},${liquidTopY}`}
+            fill={`url(#ttSteelGrad-${id || 'def'})`}
+            stroke="#334155"
+            strokeWidth="0.6"
+          />
+          <line
+            x1="44"
+            y1="94"
+            x2={44 - (liquidTopY - 94) * 0.13}
+            y2={liquidTopY}
+            stroke="#ffffff"
+            strokeWidth="0.8"
+            opacity="0.9"
+          />
+
+          {/* 2. Submerged Portion: Base Steel Nail */}
+          <polygon
+            points={`${42 - (liquidTopY - 93) * 0.13},${liquidTopY} ${46 - (liquidTopY - 93) * 0.13},${liquidTopY} 32,204 28,203`}
+            fill={`url(#ttSteelGrad-${id || 'def'})`}
+            stroke="#334155"
+            strokeWidth="0.6"
+          />
+          <polygon
+            points="28,203 32,204 29.5,208"
+            fill={`url(#ttSteelGrad-${id || 'def'})`}
+            stroke="#334155"
+            strokeWidth="0.6"
+          />
+          <line
+            x1={44 - (liquidTopY - 94) * 0.13}
+            y1={liquidTopY}
+            x2="30.5"
+            y2="204"
+            stroke="#ffffff"
+            strokeWidth="0.6"
+            opacity="0.5"
+          />
+
+          {/* 3. Displaced Copper Coating Overlay (Progressive reddish-brown layer) */}
+          <g
+            id="copper-displacement-layer"
+            style={{
+              animation: isDisplacing
+                ? `depositCopper-${id || 'def'} 4.0s cubic-bezier(0.4, 0, 0.2, 1) forwards`
+                : undefined,
+              opacity: isNailCoated ? 1 : (isDisplacing ? undefined : 0),
+              transition: isDisplacing ? undefined : 'opacity 0.8s ease',
+            }}
+          >
+            {/* Reddish-brown coated shaft */}
+            <polygon
+              points={`${41.8 - (liquidTopY - 93) * 0.13},${liquidTopY} ${46.2 - (liquidTopY - 93) * 0.13},${liquidTopY} 32.4,204.4 27.6,203.4`}
+              fill={`url(#ttCopperGrad-${id || 'def'})`}
+              stroke="#5c1d0a"
+              strokeWidth="0.7"
+            />
+            {/* Coated pointed tip */}
+            <polygon
+              points="27.6,203.4 32.4,204.4 29.5,209"
+              fill={`url(#ttCopperGrad-${id || 'def'})`}
+              stroke="#5c1d0a"
+              strokeWidth="0.7"
+            />
+            {/* Copper metallic specular sheen */}
+            <line
+              x1={44 - (liquidTopY - 94) * 0.13}
+              y1={liquidTopY + 2}
+              x2="30.5"
+              y2="204"
+              stroke="#fed7aa"
+              strokeWidth="0.8"
+              opacity="0.8"
+            />
+
+            {/* Granular porous copper crust nodules adhering to the submerged nail */}
+            <circle cx="41.5" cy="132" r="1.6" fill="#ea580c" stroke="#7c2d12" strokeWidth="0.5" />
+            <circle cx="36.5" cy="144" r="1.8" fill="#c2410c" stroke="#5c1d0a" strokeWidth="0.5" />
+            <circle cx="39.8" cy="156" r="2.0" fill="#ea580c" stroke="#7c2d12" strokeWidth="0.5" />
+            <circle cx="34.8" cy="168" r="1.7" fill="#c2410c" stroke="#5c1d0a" strokeWidth="0.5" />
+            <circle cx="37.5" cy="180" r="1.9" fill="#ea580c" stroke="#7c2d12" strokeWidth="0.5" />
+            <circle cx="32.0" cy="192" r="1.7" fill="#c2410c" stroke="#5c1d0a" strokeWidth="0.5" />
+            <circle cx="34.5" cy="200" r="1.8" fill="#ea580c" stroke="#7c2d12" strokeWidth="0.5" />
+            <circle cx="27.8" cy="205" r="1.4" fill="#9a3412" stroke="#5c1d0a" strokeWidth="0.5" />
+
+            {/* Settled displaced copper flakes & precipitate at curved bottom */}
+            <ellipse cx="33" cy="210" rx="3.2" ry="1.2" fill="#9a3412" stroke="#7c2d12" strokeWidth="0.5" />
+            <ellipse cx="42" cy="209" rx="2.8" ry="1.0" fill="#c2410c" stroke="#5c1d0a" strokeWidth="0.5" />
+            <ellipse cx="38" cy="211.5" rx="4.2" ry="1.4" fill="#ea580c" stroke="#431407" strokeWidth="0.5" />
+          </g>
+
+          {/* 4. Active Displacement Ion-Exchange Micro-Bubbles & Reaction Glow */}
+          {isDisplacing && (
+            <g id="displacement-microbubbles">
+              <circle cx="38" cy="140" r="1.2" fill="rgba(255,255,255,0.85)">
+                <animate attributeName="cy" values="180;140;120" dur="1.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0.3;0" dur="1.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="35" cy="160" r="1.0" fill="rgba(255,255,255,0.75)">
+                <animate attributeName="cy" values="190;150;120" dur="1.0s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7;0.2;0" dur="1.0s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="32" cy="180" r="1.3" fill="rgba(255,255,255,0.85)">
+                <animate attributeName="cy" values="200;160;120" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0.3;0" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="40" cy="150" r="1.1" fill="rgba(255,255,255,0.8)">
+                <animate attributeName="cy" values="170;135;120" dur="0.9s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0.2;0" dur="0.9s" repeatCount="indefinite" />
+              </circle>
+
+              {/* Displacement reaction status badge */}
+              <text x="38" y="52" textAnchor="middle" fontSize="6.5" fontWeight="bold" fill="#047857" filter="drop-shadow(0 1px 2px rgba(255,255,255,0.9))">
+                Fe + CuSO₄
+              </text>
+              <text x="38" y="61" textAnchor="middle" fontSize="5.2" fontWeight="600" fill="#065f46" filter="drop-shadow(0 1px 2px rgba(255,255,255,0.9))">
+                Displacement...
+                <animate attributeName="opacity" values="0.4;1;0.4" dur="0.8s" repeatCount="indefinite" />
+              </text>
+            </g>
+          )}
         </g>
       )}
 
@@ -3084,6 +3300,62 @@ const Matchstick: React.FC<ApparatusProps> = ({
 );
 
 
+// ── Iron Nail (Reagent / Specimen) ──────────────────────────────
+
+const IronNail: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 28,
+  height = 110,
+  label,
+  flags = {},
+  extraProps = {},
+}) => {
+  const isCoated = Boolean(flags?.nailCoated || extraProps?.isCoated);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 28 110" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="ironNailSteelGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="25%" stopColor="#94a3b8" />
+          <stop offset="60%" stopColor="#f1f5f9" />
+          <stop offset="85%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#334155" />
+        </linearGradient>
+        <linearGradient id="ironNailCopperGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#7c2d12" />
+          <stop offset="30%" stopColor="#ea580c" />
+          <stop offset="65%" stopColor="#c2410c" />
+          <stop offset="100%" stopColor="#431407" />
+        </linearGradient>
+      </defs>
+
+      {/* Highlight glow */}
+      {highlighted && (
+        <rect x="5" y="8" width="18" height="96" rx="4" stroke="#3b82f6" strokeWidth="4" opacity="0.5" filter="blur(2px)" />
+      )}
+
+      {/* Flat circular nail head */}
+      <ellipse cx="14" cy="12" rx="8" ry="3.5" fill={isCoated ? 'url(#ironNailCopperGrad)' : 'url(#ironNailSteelGrad)'} stroke={isCoated ? '#7c2d12' : '#334155'} strokeWidth="1" />
+      <ellipse cx="14" cy="11.5" rx="6.5" ry="2.2" fill="rgba(255,255,255,0.4)" stroke="none" />
+
+      {/* Nail shaft / stem */}
+      <rect x="11.5" y="14" width="5" height="78" rx="0.5" fill={isCoated ? 'url(#ironNailCopperGrad)' : 'url(#ironNailSteelGrad)'} stroke={isCoated ? '#7c2d12' : '#334155'} strokeWidth="0.8" />
+      <line x1="13" y1="15" x2="13" y2="92" stroke="rgba(255,255,255,0.7)" strokeWidth="0.8" />
+
+      {/* Chiseled pointed nail tip */}
+      <polygon points="11.5,92 16.5,92 14,104" fill={isCoated ? 'url(#ironNailCopperGrad)' : 'url(#ironNailSteelGrad)'} stroke={isCoated ? '#7c2d12' : '#334155'} strokeWidth="0.8" />
+
+      {label && (
+        <text x="14" y="114" textAnchor="middle" fontSize="6.5" fontWeight="600" fill="#64748b" fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
 // ── Laser Pointer (Class 3R 650 nm Ruby Red Diode Source) ──────────
 
 const LaserPointer: React.FC<ApparatusProps> = ({
@@ -4729,6 +5001,7 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   Dropper: DropperBottle,
   ReagentBottle,
   GlassRod,
+  IronNail,
   Matchstick,
   LaserPointer,
   LaserTorch: LaserPointer,

@@ -48,10 +48,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
     },
     {
       id: 'iron-nail',
-      component: 'Matchstick',
+      component: 'IronNail',
       label: 'Clean Iron Nail',
       icon: '📌',
-      initialProps: { isLit: false, label: 'Fe Nail' },
+      initialProps: { width: 28, height: 110, label: 'Fe Nail' },
     },
     {
       id: 'cuso4-bottle',
@@ -239,12 +239,22 @@ export const physicalChemicalChanges: ExperimentConfig = {
       trigger: { type: 'drop', source: 'iron-nail', target: 'tube-mouth' },
       conditions: [{ type: 'flag', key: 'hasCuSO4', equals: true }],
       blockMessage: 'Add CuSO₄ solution to the test tube first.',
+      guard: {
+        condition: { type: 'flag', key: 'nailDipped', equals: true },
+        message: 'The iron nail has already been immersed in the copper sulphate solution.',
+      },
       effects: [
         { type: 'setFlag', key: 'nailDipped', value: true },
-        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidColor', value: 'rgba(74, 222, 128, 0.65)' },
+        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'hasIronNail', value: true },
+        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidColor', value: 'rgba(134, 239, 172, 0.75)' },
         { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'label', value: 'FeSO₄ (Pale Green) + Reddish Cu on Nail' },
       ],
       completesAction: 'dipped-nail',
+      animation: {
+        type: 'color-change',
+        durationMs: 4000,
+        animatingFlag: 'isDisplacing',
+      },
     },
     {
       id: 'burn-mg-act',

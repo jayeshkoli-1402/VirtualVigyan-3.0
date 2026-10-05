@@ -355,7 +355,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       name: 'Viva Voce Evaluation',
       maxPoints: 15,
-      evaluator: { type: 'booleanCheck', flag: 'mgBurned', truePoints: 15 },
+      evaluator: { type: 'vivaQuiz' },
     },
   ],
   validation: [],

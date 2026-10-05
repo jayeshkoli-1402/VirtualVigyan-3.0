@@ -376,7 +376,7 @@ export const mixtureCompoundIronSulphur: ExperimentConfig = {
     {
       name: 'Viva Voce Evaluation',
       maxPoints: 15,
-      evaluator: { type: 'booleanCheck', flag: 'magnetTestedCompound', truePoints: 15 },
+      evaluator: { type: 'vivaQuiz' },
     },
   ],
   validation: [],

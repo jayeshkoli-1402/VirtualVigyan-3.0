@@ -308,7 +308,7 @@ export const meltingIceBoilingWater: ExperimentConfig = {
     {
       name: 'Viva Voce Evaluation',
       maxPoints: 15,
-      evaluator: { type: 'booleanCheck', flag: 'iceAdded', truePoints: 15 },
+      evaluator: { type: 'vivaQuiz' },
     },
   ],
   validation: [],

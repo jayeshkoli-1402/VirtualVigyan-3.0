@@ -27,8 +27,8 @@ export const trueSolutionColloidSuspension: ExperimentConfig = {
   themeColor: '#0284c7',
   icon: '🧪',
   estimatedMinutes: 25,
-  underDevelopment: true,
-  adminOnly: true,
+  underDevelopment: false,
+  adminOnly: false,
 
   // ── Apparatus ──
   apparatus: [
@@ -647,24 +647,63 @@ export const trueSolutionColloidSuspension: ExperimentConfig = {
   // ── Scoring ──
   scoring: [
     {
-      name: 'Glassware Setup',
-      maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'hasWaterA', truePoints: 20 },
-    },
-    {
-      name: 'Mixture Preparation & Settling',
-      maxPoints: 40,
-      evaluator: { type: 'booleanCheck', flag: 'stabilityObserved', truePoints: 40 },
-    },
-    {
-      name: 'Tyndall Scattering Test',
-      maxPoints: 25,
-      evaluator: { type: 'booleanCheck', flag: 'tyndallTestedC', truePoints: 25 },
-    },
-    {
-      name: 'Viva Voce Evaluation',
+      name: 'Glassware & Water Preparation',
       maxPoints: 15,
-      evaluator: { type: 'booleanCheck', flag: 'tyndallTestedA', truePoints: 15 },
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Beaker A: 50 mL water added', points: 5, flag: 'hasWaterA' },
+          { label: 'Beaker B: 50 mL water added', points: 5, flag: 'hasWaterB' },
+          { label: 'Beaker C: 50 mL water added', points: 5, flag: 'hasWaterC' },
+        ],
+      },
+    },
+    {
+      name: 'Mixture Preparation & Proper Stirring Technique',
+      maxPoints: 30,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Salt added to Beaker A', points: 3, flag: 'hasSalt' },
+          { label: 'Beaker A stirred with glass rod', points: 5, flag: 'stirredA' },
+          { label: 'Soil added to Beaker B', points: 3, flag: 'hasSoil' },
+          { label: 'Beaker B stirred with glass rod', points: 5, flag: 'stirredB' },
+          { label: 'Starch paste added to Beaker C', points: 3, flag: 'hasStarch' },
+          { label: 'Beaker C stirred with glass rod', points: 5, flag: 'stirredC' },
+          { label: 'Stability & sedimentation observed after rest', points: 6, flag: 'stabilityObserved' },
+        ],
+      },
+    },
+    {
+      name: 'Tyndall Scattering Optical Examination (All 3 Beakers)',
+      maxPoints: 20,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Beaker A optical test (Invisible path / true solution)', points: 6, flag: 'tyndallTestedA' },
+          { label: 'Beaker B optical test (Total beam extinction / coarse suspension)', points: 7, flag: 'tyndallTestedB' },
+          { label: 'Beaker C optical test (Tyndall scattering cone / colloid)', points: 7, flag: 'tyndallTestedC' },
+        ],
+      },
+    },
+    {
+      name: 'Mixture Classification & Observation Table',
+      maxPoints: 20,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Sample A classified as True Solution (1)', points: 6, calcFieldId: 'sampleA', expectedValue: 1, tolerance: 0.1 },
+          { label: 'Sample B classified as Suspension (3)', points: 7, calcFieldId: 'sampleB', expectedValue: 3, tolerance: 0.1 },
+          { label: 'Sample C classified as Colloid (2)', points: 7, calcFieldId: 'sampleC', expectedValue: 2, tolerance: 0.1 },
+        ],
+      },
+    },
+    {
+      name: 'Viva Voce Conceptual Examination',
+      maxPoints: 15,
+      evaluator: {
+        type: 'vivaQuiz',
+      },
     },
   ],
   validation: [],

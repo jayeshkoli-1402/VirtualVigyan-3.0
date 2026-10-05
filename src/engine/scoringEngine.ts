@@ -96,15 +96,18 @@ export function computeScore(
     });
   }
 
-  // Check state.mistakes for any other logged technique infractions
+  // Check state.mistakes for any other logged technique or procedural infractions
   if (state.mistakes && state.mistakes.length > 0) {
-    for (const m of state.mistakes) {
+    const uniqueMistakes = [...new Set(state.mistakes)];
+    for (const m of uniqueMistakes) {
       const lower = m.toLowerCase();
       if ((lower.includes('overshot') || lower.includes('rapid titrant') || lower.includes('over-titrat')) &&
           !penalties.some(p => p.reason.toLowerCase().includes('over-titration'))) {
         penalties.push({ reason: m, pointsLost: 10 });
       } else if (lower.includes('swirling') && !penalties.some(p => p.reason.toLowerCase().includes('swirling'))) {
         penalties.push({ reason: m, pointsLost: 10 });
+      } else if (lower.includes('before stirring') || lower.includes('add water first') || lower.includes('before adding') || lower.includes('out of order') || lower.includes('sequence')) {
+        penalties.push({ reason: `Procedural sequence violation: ${m}`, pointsLost: 5 });
       }
     }
   }
@@ -116,7 +119,7 @@ export function computeScore(
 
   if (penalties.length > 0) {
     breakdown.push({
-      name: 'Practical Technique & Titration Precision',
+      name: 'Practical Technique & Procedure Compliance',
       points: -totalPenalties,
       maxPoints: 0,
       explanation: `⚠️ Technique Penalties Applied (-${totalPenalties} marks): ${penalties.map(p => `${p.reason} (-${p.pointsLost} pts)`).join('; ')}`,
@@ -126,7 +129,7 @@ export function computeScore(
   const grade = getGrade(totalScore);
   let feedback = generateFeedback(totalScore, breakdown);
   if (penalties.length > 0) {
-    feedback += ` Note: ${totalPenalties} marks were deducted for titration speed and mixing technique errors.`;
+    feedback += ` Note: ${totalPenalties} marks were deducted for procedure sequence and mixing technique errors.`;
   }
 
   return { totalScore, maxScore, breakdown, penalties, grade, feedback };
@@ -140,7 +143,7 @@ function evaluateCategory(
   state: ExperimentState,
   config: ExperimentConfig,
 ): CategoryResult {
-  const { points, explanation } = evaluateSingle(category.evaluator, state, config);
+  const { points, explanation } = evaluateSingle(category.evaluator, state, config, category.maxPoints);
   const clampedPoints = Math.min(category.maxPoints, Math.max(0, points));
 
   return {
@@ -155,6 +158,7 @@ function evaluateSingle(
   evaluator: ScoringEvaluator,
   state: ExperimentState,
   config: ExperimentConfig,
+  categoryMaxPoints?: number,
 ): { points: number; explanation: string } {
 
   switch (evaluator.type) {
@@ -251,7 +255,15 @@ function evaluateSingle(
         return { points: 0, explanation: 'Calculation field not found' };
       }
 
-      const studentAnswer = state.studentAnswers[field.id] ?? 0;
+      const hasAnswer = field.id in state.studentAnswers && state.studentAnswers[field.id] !== undefined;
+      if (!hasAnswer) {
+        return {
+          points: 0,
+          explanation: `Field '${field.label || field.id}' left unanswered → 0 points`,
+        };
+      }
+
+      const studentAnswer = state.studentAnswers[field.id];
       let correct = false;
       const effectiveVariables = {
         ...state.variables,
@@ -294,13 +306,13 @@ function evaluateSingle(
 
       if (evaluator.proportional) {
         const errorFraction = targetAnswer !== 0 ? deviation / Math.abs(targetAnswer) : deviation;
-        let scoreRatio = 0.10;
-        if (errorFraction <= 0.03) scoreRatio = 1.0;
-        else if (errorFraction <= 0.08) scoreRatio = 0.90;
-        else if (errorFraction <= 0.15) scoreRatio = 0.75;
-        else if (errorFraction <= 0.25) scoreRatio = 0.60;
-        else if (errorFraction <= 0.40) scoreRatio = 0.40;
-        else if (errorFraction <= 0.60) scoreRatio = 0.20;
+        let scoreRatio = 0.0;
+        if (errorFraction <= 0.02) scoreRatio = 1.0;
+        else if (errorFraction <= 0.05) scoreRatio = 0.90;
+        else if (errorFraction <= 0.10) scoreRatio = 0.75;
+        else if (errorFraction <= 0.20) scoreRatio = 0.50;
+        else if (errorFraction <= 0.35) scoreRatio = 0.25;
+        else scoreRatio = 0.0;
 
         const pts = Math.round(scoreRatio * evaluator.correctPoints * 10) / 10;
         const accuracyPct = Math.max(0, Math.min(100, Math.round((1 - errorFraction) * 1000) / 10));
@@ -316,8 +328,72 @@ function evaluateSingle(
       return {
         points: pts,
         explanation: correct
-          ? `Calculation correct (${studentAnswer.toFixed(4)} ≈ ${targetAnswer.toFixed(4)}) → ${pts} points`
-          : `Calculation incorrect (${studentAnswer.toFixed(4)} vs expected ${targetAnswer.toFixed(4)}) → ${pts} points`,
+          ? `Calculation correct (${studentAnswer} ≈ expected ${targetAnswer}) → ${pts} points`
+          : `Calculation incorrect (${studentAnswer} vs expected ${targetAnswer}) → ${pts} points`,
+      };
+    }
+
+    // ── Multi-Check Additive Criteria ──
+    case 'multiCheck': {
+      let earned = 0;
+      const notes: string[] = [];
+
+      for (const check of evaluator.checks) {
+        let ok = false;
+        if (check.flag !== undefined) {
+          ok = Boolean(state.flags[check.flag]);
+        } else if (check.action !== undefined) {
+          ok = state.completedActions.includes(check.action);
+        } else if (check.calcFieldId !== undefined) {
+          const studentVal = state.studentAnswers[check.calcFieldId];
+          if (studentVal !== undefined && check.expectedValue !== undefined) {
+            const tol = check.tolerance ?? 0.1;
+            ok = Math.abs(studentVal - check.expectedValue) <= tol;
+          }
+        }
+
+        if (ok) {
+          earned += check.points;
+          notes.push(`${check.label} ✓ (+${check.points})`);
+        } else {
+          notes.push(`${check.label} ✗ (0)`);
+        }
+      }
+
+      return {
+        points: earned,
+        explanation: notes.join(' • '),
+      };
+    }
+
+    // ── Viva Voce Oral / Conceptual Quiz ──
+    case 'vivaQuiz': {
+      if (!config.viva?.questions || config.viva.questions.length === 0) {
+        return { points: 0, explanation: 'No viva voce questions configured for this experiment' };
+      }
+      const questions = config.viva.questions;
+      let correctCount = 0;
+      const questionBadges: string[] = [];
+
+      questions.forEach((q, idx) => {
+        const studentPick = state.studentAnswers[`viva_${q.id}`];
+        const isCorrect = studentPick !== undefined && studentPick === q.correctIndex;
+        if (isCorrect) {
+          correctCount++;
+          questionBadges.push(`Q${idx + 1} ✓`);
+        } else {
+          questionBadges.push(`Q${idx + 1} ✗`);
+        }
+      });
+
+      const totalQuestions = questions.length;
+      const maxPts = categoryMaxPoints ?? 15;
+      const earned = Math.round((correctCount / totalQuestions) * maxPts * 10) / 10;
+      const pct = Math.round((correctCount / totalQuestions) * 100);
+
+      return {
+        points: earned,
+        explanation: `Viva Voce: ${correctCount}/${totalQuestions} answered correctly (${pct}%) [${questionBadges.join(' • ')}] → ${earned}/${maxPts} marks`,
       };
     }
 

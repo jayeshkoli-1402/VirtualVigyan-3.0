@@ -311,6 +311,7 @@ const Beaker: React.FC<ApparatusProps> = ({
   width = 100,
   height = 120,
   flags = {},
+  variables = {},
   extraProps = {},
   effervescenceRate,
   ...rest
@@ -319,7 +320,7 @@ const Beaker: React.FC<ApparatusProps> = ({
   const effRate = typeof effervescenceRate === 'number'
     ? effervescenceRate
     : (typeof extraProps?.effervescenceRate === 'number' ? (extraProps.effervescenceRate as number) : 0);
-  const isEvolvingGas = Boolean(flags?.gasEvolving || flags?.reactionStarted || effRate > 0);
+  const isEvolvingGas = Boolean(flags?.gasEvolving || flags?.reactionStarted || effRate > 0 || flags?.waterBoiled || flags?.isReacting);
   const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
   // Total fillable height in beaker aligns with 100 mL graduation mark (y=32 to y=108 => 76px)
   const fillHeight = 76 * effectiveLevel;
@@ -334,10 +335,22 @@ const Beaker: React.FC<ApparatusProps> = ({
   const isBeakerC = id.includes('colloid') || id.includes('beaker-c') || id === 'beaker-3';
 
   const explicitSalt = restProps.hasSaltCrystals ?? extraProps?.hasSaltCrystals;
+  const explicitIce = restProps.hasIce ?? extraProps?.hasIce;
   const explicitSediment = restProps.hasSediment ?? extraProps?.hasSediment;
   const explicitSuspension = restProps.hasSuspension ?? extraProps?.hasSuspension;
   const explicitTyndallBeam = restProps.tyndallBeam ?? extraProps?.tyndallBeam;
   const explicitTyndallBlocked = restProps.tyndallBlocked ?? extraProps?.tyndallBlocked;
+
+  // Solid crushed ice in Beaker (Melting Point of Ice experiment)
+  const meltProgress = typeof variables?.iceMeltProgress === 'number'
+    ? Math.max(0, Math.min(1, variables.iceMeltProgress))
+    : (flags.iceMelted ? 1 : 0);
+
+  const isIceVisible =
+    effectiveLevel > 0 &&
+    (explicitIce !== undefined
+      ? Boolean(explicitIce)
+      : (Boolean(flags.iceAdded) && meltProgress < 1));
 
   // Salt crystals (NaCl) only in Beaker A (or single default beaker), never in B or C
   const isSaltVisible =
@@ -441,6 +454,14 @@ const Beaker: React.FC<ApparatusProps> = ({
             100% {
               transform: translateY(0) scaleY(1);
               opacity: 1;
+            }
+          }
+          @keyframes glassRodStir {
+            0% {
+              transform: rotate(-2.5deg);
+            }
+            100% {
+              transform: rotate(3deg);
             }
           }
         `}</style>
@@ -608,6 +629,88 @@ const Beaker: React.FC<ApparatusProps> = ({
             <circle cx="60" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
               <animate attributeName="r" values="1;2.2;0" dur="0.42s" repeatCount="indefinite" />
             </circle>
+          </g>
+        )}
+
+        {/* ── Boiling Steam Wisps (Water Boiling at 100 °C) ── */}
+        {Boolean(flags?.waterBoiled) && (
+          <g id={`beaker-boiling-steam-${id || 'def'}`}>
+            <path d="M 32 20 Q 26 10, 36 2 T 30 -10" fill="none" stroke="rgba(255, 255, 255, 0.65)" strokeWidth="2.5" strokeLinecap="round">
+              <animate attributeName="d" values="M 32 20 Q 26 10, 36 2 T 30 -10;M 32 20 Q 38 10, 28 2 T 34 -10;M 32 20 Q 26 10, 36 2 T 30 -10" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite" />
+            </path>
+            <path d="M 50 18 Q 58 8, 46 0 T 52 -12" fill="none" stroke="rgba(255, 255, 255, 0.75)" strokeWidth="3" strokeLinecap="round">
+              <animate attributeName="d" values="M 50 18 Q 58 8, 46 0 T 52 -12;M 50 18 Q 42 8, 54 0 T 48 -12;M 50 18 Q 58 8, 46 0 T 52 -12" dur="2.4s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.4;0.9;0.4" dur="2.4s" repeatCount="indefinite" />
+            </path>
+            <path d="M 68 20 Q 62 10, 72 2 T 66 -10" fill="none" stroke="rgba(255, 255, 255, 0.65)" strokeWidth="2.5" strokeLinecap="round">
+              <animate attributeName="d" values="M 68 20 Q 62 10, 72 2 T 66 -10;M 68 20 Q 74 10, 64 2 T 70 -10;M 68 20 Q 62 10, 72 2 T 66 -10" dur="1.8s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.3;0.7;0.3" dur="1.8s" repeatCount="indefinite" />
+            </path>
+          </g>
+        )}
+
+        {/* ── Solid Crushed Ice Chunks (Melting Point experiment) ── */}
+        {isIceVisible && (
+          <g
+            id={`beaker-crushed-ice-${id || 'def'}`}
+            clipPath={`url(#beakerInnerClip-${id || 'def'})`}
+            style={{
+              transform: `scale(${1 - meltProgress * 0.7})`,
+              transformOrigin: '50px 92px',
+              opacity: 1 - meltProgress * 0.95,
+              transition: 'opacity 0.25s ease-out, transform 0.25s ease-out',
+            }}
+          >
+            {/* Submerged and floating faceted ice chunks */}
+            <polygon points="24,96 32,90 40,94 36,104 26,103" fill="rgba(224, 242, 254, 0.92)" stroke="#93c5fd" strokeWidth="0.8" />
+            <polygon points="38,100 46,93 56,96 52,106 42,105" fill="rgba(240, 249, 255, 0.95)" stroke="#60a5fa" strokeWidth="0.8" />
+            <polygon points="48,94 58,88 66,93 62,102 52,101" fill="rgba(224, 242, 254, 0.92)" stroke="#93c5fd" strokeWidth="0.8" />
+            <polygon points="28,84 38,78 46,83 40,92 30,90" fill="rgba(255, 255, 255, 0.95)" stroke="#93c5fd" strokeWidth="0.8" />
+            <polygon points="44,86 54,80 63,85 56,93 46,91" fill="rgba(240, 249, 255, 0.9)" stroke="#60a5fa" strokeWidth="0.8" />
+            <polygon points="34,74 44,68 52,73 46,82 36,80" fill="rgba(224, 242, 254, 0.88)" stroke="#bae6fd" strokeWidth="0.8" />
+            <polygon points="50,76 60,70 68,75 62,84 52,82" fill="rgba(255, 255, 255, 0.92)" stroke="#93c5fd" strokeWidth="0.8" />
+            {/* Frost crystal facets and specular highlights */}
+            <line x1="32" y1="90" x2="36" y2="104" stroke="#ffffff" strokeWidth="0.9" />
+            <line x1="46" y1="93" x2="52" y2="106" stroke="#ffffff" strokeWidth="0.9" />
+            <line x1="58" y1="88" x2="62" y2="102" stroke="#ffffff" strokeWidth="0.9" />
+            <circle cx="34" cy="85" r="1.4" fill="#ffffff" opacity="0.85" />
+            <circle cx="50" cy="83" r="1.6" fill="#ffffff" opacity="0.85" />
+            <circle cx="60" cy="95" r="1.3" fill="#ffffff" opacity="0.85" />
+          </g>
+        )}
+
+        {/* ── Glass Stirring Rod Dipping in Beaker ── */}
+        {(Boolean(flags.glassRodUsed) || Boolean(flags.stirring) || Boolean(restProps.isStirring) || Boolean(extraProps?.isStirring)) && (
+          <g id={`beaker-glass-stirrer-${id || 'def'}`}>
+            <g style={{
+              transformOrigin: '42px 90px',
+              animation: 'glassRodStir 1.4s ease-in-out infinite alternate',
+            }}>
+              {/* Glass Rod Body */}
+              <line
+                x1="74"
+                y1="-14"
+                x2="34"
+                y2="92"
+                stroke="rgba(241, 245, 249, 0.75)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.25))"
+              />
+              {/* Glass Rod Core Reflection */}
+              <line
+                x1="73"
+                y1="-13"
+                x2="35"
+                y2="91"
+                stroke="rgba(255, 255, 255, 0.9)"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+              {/* Glass Tip rounded bead */}
+              <circle cx="34" cy="92" r="2.5" fill="rgba(224, 242, 254, 0.85)" stroke="#94a3b8" strokeWidth="0.8" />
+            </g>
           </g>
         )}
 
@@ -2481,8 +2584,11 @@ const RetortStand: React.FC<ApparatusProps> = ({
   width = 140,
   height = 300,
   extraProps = {},
+  ...rest
 }) => {
-  const hideLowerClamp = !!(extraProps as Record<string, unknown>).hideLowerClamp;
+  const restProps = rest as Record<string, unknown>;
+  const hideLowerClamp = !!(extraProps as Record<string, unknown>).hideLowerClamp || !!restProps.hideLowerClamp;
+  const hideUpperClamp = !!(extraProps as Record<string, unknown>).hideUpperClamp || !!restProps.hideUpperClamp;
 
   return (
     <svg width={width} height={height} viewBox="0 0 140 300" fill="none" style={{ overflow: 'visible', transition: 'opacity 0.3s ease' }}>
@@ -2505,9 +2611,13 @@ const RetortStand: React.FC<ApparatusProps> = ({
       {/* Vertical Stainless Steel Rod */}
       <rect x="42" y="10" width="7" height="270" rx="3.5" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
       {/* Upper Boss Head Clamp */}
-      <rect x="38" y="55" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
-      <circle cx="49" cy="62" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
-      <path d="M 53 58 L 72 58 L 78 54 L 78 68 L 72 64 L 53 64 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+      {!hideUpperClamp && (
+        <>
+          <rect x="38" y="55" width="15" height="14" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" />
+          <circle cx="49" cy="62" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+          <path d="M 53 58 L 72 58 L 78 54 L 78 68 L 72 64 L 53 64 Z" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.8" />
+        </>
+      )}
       {/* Lower Boss Head Clamp */}
       {!hideLowerClamp && (
         <>
@@ -3270,40 +3380,272 @@ const RubberCork: React.FC<ApparatusProps> = ({
 // ── Thermometer ──────────────────────────────────────────────────
 
 const Thermometer: React.FC<ApparatusProps> = ({
+  id = 'thermometer',
   highlighted = false,
-  width = 20,
-  height = 120,
-  extraProps,
+  width = 35,
+  height = 160,
+  flags = {},
+  variables = {},
+  extraProps = {},
+  ...rest
 }) => {
-  const temperature = (extraProps?.['temperature'] as number) ?? 25;
-  const minTemp = 0;
-  const maxTemp = 100;
-  const fillFraction = Math.max(0, Math.min(1, (temperature - minTemp) / (maxTemp - minTemp)));
-  const mercuryHeight = fillFraction * 75;
+  const restProps = rest as Record<string, unknown>;
+  const rawTemp =
+    variables?.temperature !== undefined
+      ? Number(variables.temperature)
+      : (restProps.temperature !== undefined
+          ? Number(restProps.temperature)
+          : (extraProps?.['temperature'] !== undefined
+              ? Number(extraProps['temperature'])
+              : (restProps.temp !== undefined ? Number(restProps.temp) : 25)));
 
+  const temperature = isNaN(rawTemp) ? 25 : rawTemp;
+  const isClamped = Boolean(
+    restProps.isClamped ??
+    extraProps?.isClamped ??
+    flags?.thermometerInserted ??
+    flags?.['thermometerInserted'] ??
+    false
+  );
+
+  // Range -10 to 110 °C
+  const minTemp = -10;
+  const maxTemp = 110;
+  const clampedTemp = Math.max(minTemp, Math.min(maxTemp, temperature));
+  const fillFraction = (clampedTemp - minTemp) / (maxTemp - minTemp);
+  const capillaryTop = 20;
+  const capillaryBottom = 110;
+  const capillaryHeight = capillaryBottom - capillaryTop;
+  const mercuryY = capillaryBottom - fillFraction * capillaryHeight;
+
+  // Temperature phase badge info
+  const isMeltingIce = temperature <= 0;
+  const isBoiling = temperature >= 100;
+  const kelvinVal = (temperature + 273.15).toFixed(1);
+
+  if (!isClamped) {
+    // Regular standalone lab thermometer (used in toolbox or unmounted)
+    return (
+      <svg width={width} height={height} viewBox="0 0 32 150" fill="none" style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id={`thermoGlassGrad-${id}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+            <stop offset="35%" stopColor="rgba(224,242,254,0.3)" />
+            <stop offset="70%" stopColor="rgba(255,255,255,0.4)" />
+            <stop offset="100%" stopColor="rgba(148,163,184,0.6)" />
+          </linearGradient>
+          <linearGradient id={`mercuryGrad-${id}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#b91c1c" />
+            <stop offset="40%" stopColor="#ef4444" />
+            <stop offset="70%" stopColor="#f87171" />
+            <stop offset="100%" stopColor="#991b1b" />
+          </linearGradient>
+          <radialGradient id={`bulbGrad-${id}`} cx="35%" cy="35%" r="65%">
+            <stop offset="0%" stopColor="#fca5a5" />
+            <stop offset="40%" stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#7f1d1d" />
+          </radialGradient>
+        </defs>
+
+        {highlighted && (
+          <rect x="7" y="10" width="18" height="135" rx="9" stroke="#3b82f6" strokeWidth="3" opacity="0.6" filter="blur(2px)" />
+        )}
+
+        {/* Stem Glass Body */}
+        <rect x="11" y="12" width="10" height="108" rx="5" fill={`url(#thermoGlassGrad-${id})`} stroke="#94a3b8" strokeWidth="1.2" />
+
+        {/* Capillary bore */}
+        <rect x="14.5" y="18" width="3" height="98" rx="1.5" fill="rgba(15,23,42,0.12)" />
+
+        {/* Mercury thread */}
+        <rect
+          x="14.5"
+          y={mercuryY}
+          width="3"
+          height={Math.max(4, capillaryBottom - mercuryY + 4)}
+          rx="1.5"
+          fill={`url(#mercuryGrad-${id})`}
+          style={{ transition: 'y 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+        />
+
+        {/* Mercury reservoir bulb */}
+        <circle cx="16" cy="125" r="9" fill={`url(#bulbGrad-${id})`} stroke="#94a3b8" strokeWidth="1.2" />
+        <ellipse cx="14" cy="122" rx="3" ry="2" fill="rgba(255,255,255,0.6)" />
+
+        {/* Scale markings */}
+        {[-10, 0, 20, 40, 60, 80, 100, 110].map(t => {
+          const y = capillaryBottom - ((t - minTemp) / (maxTemp - minTemp)) * capillaryHeight;
+          const isMajor = t === 0 || t === 100;
+          return (
+            <g key={t}>
+              <line x1="10" y1={y} x2={isMajor ? "6" : "8"} y2={y} stroke={isMajor ? (t === 0 ? "#0284c7" : "#ea580c") : "#64748b"} strokeWidth={isMajor ? "1.2" : "0.7"} />
+              {isMajor && (
+                <text x="5" y={y + 2.5} textAnchor="end" fontSize="6" fontWeight="bold" fill={t === 0 ? "#0284c7" : "#ea580c"}>
+                  {t}°
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    );
+  }
+
+  // Clamped state (mounted inside beaker from retort stand clamp)
   return (
-    <svg width={width} height={height} viewBox="0 0 20 120" fill="none">
-      {/* Tube */}
-      <rect x="8" y="10" width="4" height="80" rx="2"
-        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1" fill="rgba(255,255,255,0.1)" />
-      {/* Bulb */}
-      <circle cx="10" cy="95" r="6"
-        stroke={highlighted ? '#2563eb' : '#94a3b8'} strokeWidth="1" fill="none" />
-      {/* Mercury */}
-      <rect x="8.5" y={90 - mercuryHeight} width="3" height={mercuryHeight + 5}
-        fill="#dc2626" rx="1.5"
-        style={{ transition: 'height 0.5s ease, y 0.5s ease' }} />
-      <circle cx="10" cy="95" r="4.5" fill="#dc2626" />
-      {/* Scale marks */}
-      {[0, 25, 50, 75, 100].map(t => {
-        const y = 90 - ((t - minTemp) / (maxTemp - minTemp)) * 75;
-        return (
-          <g key={t}>
-            <line x1="12" y1={y} x2="15" y2={y} stroke="#cbd5e1" strokeWidth="0.5" />
-            <text x="17" y={y + 2.5} fontSize="5" fill="#94a3b8">{t}°</text>
-          </g>
-        );
-      })}
+    <svg width={260} height={height} viewBox="-126 0 260 160" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id={`thermoGlassGradClamped-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.8)" />
+          <stop offset="35%" stopColor="rgba(224,242,254,0.35)" />
+          <stop offset="70%" stopColor="rgba(255,255,255,0.5)" />
+          <stop offset="100%" stopColor="rgba(148,163,184,0.7)" />
+        </linearGradient>
+        <linearGradient id={`mercuryGradClamped-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#b91c1c" />
+          <stop offset="40%" stopColor="#ef4444" />
+          <stop offset="70%" stopColor="#f87171" />
+          <stop offset="100%" stopColor="#991b1b" />
+        </linearGradient>
+        <radialGradient id={`bulbGradClamped-${id}`} cx="35%" cy="35%" r="65%">
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="40%" stopColor="#ef4444" />
+          <stop offset="100%" stopColor="#7f1d1d" />
+        </radialGradient>
+        <linearGradient id={`clampMetalGrad-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#334155" />
+          <stop offset="40%" stopColor="#94a3b8" />
+          <stop offset="70%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+        <linearGradient id={`clampJawGrad-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1e293b" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+      </defs>
+
+      {/* ── Mechanical Clamp Arm Assembly (Extending from Retort Stand on Left) ── */}
+      <g id={`thermometer-clamp-arm-${id}`}>
+        {/* Boss-Head Clamp Collar locking around Retort Stand Stainless Rod on Left */}
+        <rect x="-124" y="37" width="16" height="20" rx="3" fill="#1e293b" stroke="#0f172a" strokeWidth="1" filter="drop-shadow(0 3px 5px rgba(0,0,0,0.35))" />
+        <rect x="-120" y="35" width="8" height="24" rx="2" fill="url(#metalStandGrad)" stroke="#334155" strokeWidth="0.6" opacity="0.9" />
+        <circle cx="-116" cy="47" r="3" fill="#64748b" stroke="#334155" strokeWidth="0.6" />
+        <circle cx="-121" cy="47" r="2.8" fill="#f59e0b" stroke="#b45309" strokeWidth="0.6" />
+
+        {/* Horizontal chrome steel connecting clamp arm */}
+        <rect x="-114" y="44" width="116" height="6.5" rx="3" fill={`url(#clampMetalGrad-${id})`} stroke="#334155" strokeWidth="0.8" filter="drop-shadow(0 3px 5px rgba(0,0,0,0.3))" />
+
+        {/* Dual-prong clamp collar body around thermometer stem */}
+        <rect x="-4" y="41" width="16" height="12.5" rx="3" fill={`url(#clampJawGrad-${id})`} stroke="#0f172a" strokeWidth="1" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.35))" />
+        
+        {/* Brass adjustment knurled thumb screw on clamp */}
+        <rect x="3" y="35" width="4" height="6" rx="1" fill="#f59e0b" stroke="#b45309" strokeWidth="0.6" />
+        <circle cx="5" cy="35" r="3" fill="#fbbf24" stroke="#d97706" strokeWidth="0.6" />
+
+        {/* Heat-resistant dark silicone protective jaw pads gripping glass */}
+        <rect x="-2" y="43" width="3" height="8.5" rx="1.5" fill="#b91c1c" opacity="0.9" />
+        <rect x="7" y="43" width="3" height="8.5" rx="1.5" fill="#b91c1c" opacity="0.9" />
+
+        {/* Retort Stand Support Boss Indicator */}
+        <text x="-120" y="33" fontSize="5.5" fontWeight="700" fill="#64748b" letterSpacing="0.03em">
+          RETORT CLAMP
+        </text>
+      </g>
+
+      {/* ── Thermometer Glass Body ── */}
+      <g id={`thermometer-glass-${id}`}>
+        {/* Stem Glass Body */}
+        <rect x="-2" y="10" width="12" height="116" rx="6" fill={`url(#thermoGlassGradClamped-${id})`} stroke="#64748b" strokeWidth="1.2" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))" />
+
+        {/* Capillary bore */}
+        <rect x="2.5" y="18" width="3" height="100" rx="1.5" fill="rgba(15,23,42,0.15)" />
+
+        {/* Mercury thread */}
+        <rect
+          x="2.5"
+          y={mercuryY}
+          width="3"
+          height={Math.max(4, capillaryBottom - mercuryY + 4)}
+          rx="1.5"
+          fill={`url(#mercuryGradClamped-${id})`}
+          style={{ transition: 'y 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+        />
+
+        {/* Mercury reservoir bulb (immersed in beaker liquid, suspended above bottom) */}
+        <circle cx="4" cy="130" r="9.5" fill={`url(#bulbGradClamped-${id})`} stroke="#64748b" strokeWidth="1.2" filter="drop-shadow(0 2px 5px rgba(220,38,38,0.4))" />
+        <ellipse cx="2" cy="127" rx="3.2" ry="2.2" fill="rgba(255,255,255,0.7)" />
+
+        {/* Scale markings */}
+        {[-10, 0, 20, 40, 60, 80, 100, 110].map(t => {
+          const y = capillaryBottom - ((t - minTemp) / (maxTemp - minTemp)) * capillaryHeight;
+          const isMelting = t === 0;
+          const isBoilingMark = t === 100;
+          const isSpecial = isMelting || isBoilingMark;
+          return (
+            <g key={t}>
+              <line
+                x1="10"
+                y1={y}
+                x2={isSpecial ? "17" : "14"}
+                y2={y}
+                stroke={isMelting ? "#0284c7" : isBoilingMark ? "#ea580c" : "#475569"}
+                strokeWidth={isSpecial ? "1.5" : "0.7"}
+              />
+              <text
+                x="19"
+                y={y + 2.5}
+                fontSize={isSpecial ? "6.5" : "5"}
+                fontWeight={isSpecial ? "bold" : "normal"}
+                fill={isMelting ? "#0284c7" : isBoilingMark ? "#ea580c" : "#64748b"}
+                fontFamily="var(--font-mono, monospace)"
+              >
+                {t}°
+              </text>
+            </g>
+          );
+        })}
+      </g>
+
+      {/* ── High-Visibility Real-Time Temperature HUD Pill Badge ── */}
+      <g id={`thermometer-live-hud-${id}`} transform="translate(18, 12)">
+        {/* Glow backdrop */}
+        <rect
+          x="0"
+          y="0"
+          width="52"
+          height="23"
+          rx="6"
+          fill={isMeltingIce ? 'rgba(240, 249, 255, 0.96)' : isBoiling ? 'rgba(255, 247, 237, 0.96)' : 'rgba(248, 250, 252, 0.96)'}
+          stroke={isMeltingIce ? '#0284c7' : isBoiling ? '#ea580c' : '#3b82f6'}
+          strokeWidth="1.2"
+          filter={isMeltingIce ? 'drop-shadow(0 2px 8px rgba(14, 165, 233, 0.35))' : isBoiling ? 'drop-shadow(0 2px 8px rgba(234, 88, 12, 0.35))' : 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15))'}
+        />
+
+        {/* Temperature label */}
+        <text
+          x="6"
+          y="10.5"
+          fontSize="7.5"
+          fontWeight="800"
+          fill={isMeltingIce ? '#0369a1' : isBoiling ? '#c2410c' : '#1e293b'}
+          fontFamily="var(--font-mono, monospace)"
+        >
+          {temperature.toFixed(1)} °C
+        </text>
+
+        {/* Kelvin converted label */}
+        <text
+          x="6"
+          y="19"
+          fontSize="5.2"
+          fontWeight="600"
+          fill={isMeltingIce ? '#0284c7' : isBoiling ? '#ea580c' : '#64748b'}
+          fontFamily="var(--font-mono, monospace)"
+        >
+          {kelvinVal} K {isMeltingIce ? '• Ice Melt' : isBoiling ? '• Boiling' : ''}
+        </text>
+      </g>
     </svg>
   );
 };

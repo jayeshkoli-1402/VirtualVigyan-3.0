@@ -1102,6 +1102,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const Component = getApparatusComponent(elem.component);
         if (!Component) return null;
         const isStand = elem.component === 'RetortStand' || elem.component === 'Tripod';
+        const elemProps = elem.props as Record<string, unknown> | undefined;
+        const customOpacity = typeof elemProps?.opacity === 'number' ? elemProps.opacity : undefined;
         return (
           <div
             key={i}
@@ -1111,21 +1113,26 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               top: `${elem.position.y}%`,
               transform: `translate(-50%, -50%) scale(${(elem.scale ?? 1) * benchScale})`,
               zIndex: elem.component === 'BuretteStand' ? 12 : 2,
-              opacity: isStand ? 0.42 : (elem.component === 'BuretteStand' ? 1 : 0.95),
+              opacity: customOpacity ?? (isStand ? 0.55 : (elem.component === 'BuretteStand' ? 1 : 0.95)),
               filter: isStand ? 'drop-shadow(0 3px 6px rgba(0,0,0,0.18))' : 'drop-shadow(0 10px 10px rgba(0,0,0,0.25))',
-              pointerEvents: elem.component === 'Stopwatch' ? 'auto' : 'none',
+              pointerEvents: elem.component === 'Stopwatch' || elem.component === 'BunsenBurner' ? 'auto' : 'none',
               transition: 'opacity 0.3s ease',
             }}
           >
             <Component
               id={`bg-${elem.component}-${i}`}
-              flags={{ ...state.flags, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+              flags={{ ...state.flags, isLit: state.flags['burnerLit'] ?? true, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
               variables={{ ...state.variables, stopcockOpen }}
               extraProps={{
                 stopcockOpen,
                 onSetStopcock: (val: number) => {
                   setStopcockOpen(val);
                   dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                },
+                onToggleBurner: () => {
+                  const currentLit = state.flags['burnerLit'] ?? true;
+                  dispatch({ type: 'SET_FLAG', payload: { flag: 'burnerLit', value: !currentLit } });
+                  dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: !currentLit ? 'ignite-burner' : 'stop-burner' } });
                 },
                 onToggleStopwatch: () => {
                   const stepId = config.steps[state.currentStepIndex]?.id;
@@ -1191,7 +1198,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         // Glassware and reaction vessels (Beakers, Flasks, Evaporating Dish) have priority foreground z-index over stands
         const isBurette = apparatusConfig.component === 'Burette' || apparatusConfig.component === 'BuretteStand';
         const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'EvaporatingDish'].includes(apparatusConfig.component);
-        const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod', 'IronNail'].includes(apparatusConfig.component);
+        const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod', 'IronNail', 'Thermometer'].includes(apparatusConfig.component);
         const isHardware = ['RetortStand', 'Tripod', 'WireGauze', 'TestTubeStand'].includes(apparatusConfig.component);
         const isBurner = apparatusConfig.component === 'BunsenBurner';
         const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : isHardware ? 14 : isBurner ? 12 : 10;
@@ -1262,7 +1269,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
             </div>
 
             {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
-            {apparatusConfig.label && !isHardware && !isBurette && (
+            {apparatusConfig.label && !isHardware && !isBurette && apparatusConfig.component !== 'Thermometer' && (
               <div
                 style={{
                   position: 'absolute',

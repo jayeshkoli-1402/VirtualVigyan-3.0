@@ -39,25 +39,18 @@ export const meltingIceBoilingWater: ExperimentConfig = {
       initialProps: { width: 120, height: 145, liquidLevel: 0, label: '250 mL Beaker' },
     },
     {
+      id: 'thermometer',
+      component: 'Thermometer',
+      label: 'Lab Thermometer (-10 to 110 °C)',
+      icon: '🌡️',
+      initialProps: { width: 45, height: 175, temperature: 25 },
+    },
+    {
       id: 'crushed-ice-bottle',
       component: 'ReagentBottle',
       label: 'Crushed Ice (100 g)',
       icon: '🧊',
       initialProps: { liquidColor: 'rgba(224, 242, 254, 0.95)', label: 'Crushed Ice' },
-    },
-    {
-      id: 'thermometer',
-      component: 'Thermometer',
-      label: 'Lab Thermometer (-10 to 110 °C)',
-      icon: '🌡️',
-      initialProps: { width: 35, height: 160, temperature: 25 },
-    },
-    {
-      id: 'bunsen-burner',
-      component: 'BunsenBurner',
-      label: 'Bunsen Burner Flame',
-      icon: '🔥',
-      initialProps: { width: 85, height: 125, isLit: true },
     },
     {
       id: 'glass-rod',
@@ -66,6 +59,14 @@ export const meltingIceBoilingWater: ExperimentConfig = {
       icon: '🥢',
       initialProps: { width: 14, height: 160 },
     },
+    {
+      id: 'bunsen-burner',
+      component: 'BunsenBurner',
+      label: 'Bunsen Burner Flame',
+      icon: '🔥',
+      prePlaced: true,
+      initialProps: { width: 85, height: 125, isLit: true },
+    },
   ],
 
   // ── Drop Zones ──
@@ -73,24 +74,52 @@ export const meltingIceBoilingWater: ExperimentConfig = {
     {
       id: 'burner-top-zone',
       label: 'Over Burner on Tripod Stand',
-      accepts: ['beaker-water'],
-      position: { x: 50, y: 62 },
+      accepts: ['beaker-water', 'thermometer', 'crushed-ice-bottle', 'glass-rod'],
+      position: { x: 50, y: 56 },
       size: { width: 22, height: 28 },
       rejectMessage: 'Place the beaker over the tripod stand above the burner.',
+    },
+    {
+      id: 'thermometer-clamp-zone',
+      label: 'Clamp Thermometer into Beaker',
+      accepts: ['thermometer', 'crushed-ice-bottle', 'glass-rod'],
+      position: { x: 50, y: 44 },
+      size: { width: 22, height: 26 },
+      rejectMessage: 'Clamp the thermometer inside the beaker from the stand.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'beaker-water' },
     },
     {
       id: 'beaker-mouth-zone',
       label: 'Into Beaker',
       accepts: ['crushed-ice-bottle', 'thermometer', 'glass-rod'],
       position: { x: 50, y: 48 },
-      size: { width: 18, height: 22 },
-      rejectMessage: 'Add ice or insert thermometer into beaker.',
+      size: { width: 20, height: 24 },
+      rejectMessage: 'Add ice or stir with glass rod.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'beaker-water' },
     },
   ],
 
   bench: {
-    backgroundElements: [],
+    backgroundElements: [
+      {
+        component: 'RetortStand',
+        position: { x: 36, y: 49 },
+        scale: 1.15,
+        props: { label: 'Retort Stand & Clamp', hideLowerClamp: true, hideUpperClamp: true, opacity: 0.85 },
+      },
+      {
+        component: 'BunsenBurner',
+        position: { x: 50, y: 76 },
+        scale: 0.95,
+        props: { label: 'Bunsen Burner Flame', isLit: true },
+      },
+      {
+        component: 'Tripod',
+        position: { x: 50, y: 68 },
+        scale: 1.05,
+        props: { label: 'Tripod Stand & Wire Gauze', opacity: 0.8 },
+      },
+    ],
   },
 
   // ── Steps ──
@@ -98,7 +127,7 @@ export const meltingIceBoilingWater: ExperimentConfig = {
     {
       id: 'setup-apparatus',
       label: 'Setup Beaker & Thermometer',
-      instruction: 'Place the beaker over the burner and clamp the thermometer inside without touching the beaker bottom.',
+      instruction: 'Place the beaker over the burner on the tripod stand and clamp the thermometer inside without touching the beaker bottom.',
       requiredActions: ['place-beaker', 'insert-thermometer'],
       type: 'lab',
     },
@@ -112,16 +141,16 @@ export const meltingIceBoilingWater: ExperimentConfig = {
     {
       id: 'melt-ice',
       label: 'Observe Melting Plateau (0 °C)',
-      instruction: 'Heat gently while stirring. Notice the temperature remains constant at 0 °C (latent heat of fusion) until all ice melts.',
-      requiredActions: ['ice-melted'],
+      instruction: 'Heat gently while stirring. Notice the temperature remains constant at 0 °C (latent heat of fusion) until all ice melts. Click "Continue" after observing.',
+      requiredActions: [],
       advanceMode: 'button',
       type: 'lab',
     },
     {
       id: 'heat-to-boil',
       label: 'Boil & Observe Plateau (100 °C)',
-      instruction: 'Continue heating liquid water. Observe temperature rise to 100 °C where vigorous boiling begins and temperature stabilizes.',
-      requiredActions: ['water-boiled'],
+      instruction: 'Continue heating liquid water. Observe temperature rise to 100 °C where vigorous boiling begins and temperature stabilizes. Click "Continue" after observing.',
+      requiredActions: [],
       advanceMode: 'button',
       type: 'lab',
     },
@@ -151,10 +180,35 @@ export const meltingIceBoilingWater: ExperimentConfig = {
       completesAction: 'place-beaker',
     },
     {
-      id: 'insert-thermometer-act',
+      id: 'clamp-thermometer-tripod-act',
+      trigger: { type: 'drop', source: 'thermometer', target: 'burner-top-zone' },
+      conditions: [{ type: 'apparatusPlaced', apparatusId: 'beaker-water' }],
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'thermometer', zoneId: 'thermometer-clamp-zone' },
+        { type: 'setFlag', key: 'thermometerInserted', value: true },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'isClamped', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Beaker with Clamped Thermometer' },
+      ],
+      completesAction: 'insert-thermometer',
+    },
+    {
+      id: 'clamp-thermometer-direct-act',
+      trigger: { type: 'drop', source: 'thermometer', target: 'thermometer-clamp-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'thermometer', zoneId: 'thermometer-clamp-zone' },
+        { type: 'setFlag', key: 'thermometerInserted', value: true },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'isClamped', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Beaker with Clamped Thermometer' },
+      ],
+      completesAction: 'insert-thermometer',
+    },
+    {
+      id: 'insert-thermometer-mouth-act',
       trigger: { type: 'drop', source: 'thermometer', target: 'beaker-mouth-zone' },
       effects: [
+        { type: 'placeApparatus', apparatusId: 'thermometer', zoneId: 'thermometer-clamp-zone' },
         { type: 'setFlag', key: 'thermometerInserted', value: true },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'isClamped', value: true },
         { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Beaker with Clamped Thermometer' },
       ],
       completesAction: 'insert-thermometer',
@@ -163,36 +217,105 @@ export const meltingIceBoilingWater: ExperimentConfig = {
       id: 'add-ice-act',
       trigger: { type: 'drop', source: 'crushed-ice-bottle', target: 'beaker-mouth-zone' },
       conditions: [{ type: 'flag', key: 'thermometerInserted', equals: true }],
-      blockMessage: 'Insert the thermometer first.',
+      blockMessage: 'Clamp the thermometer inside the beaker first before adding ice.',
       effects: [
         { type: 'setFlag', key: 'iceAdded', value: true },
-        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidLevel', value: 0.45 },
-        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.85)' },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidLevel', value: 0.50 },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.88)' },
         { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 0 },
         { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Crushed Ice (T = 0.0 °C)' },
       ],
       completesAction: 'added-ice',
     },
     {
+      id: 'add-ice-clamp-zone-act',
+      trigger: { type: 'drop', source: 'crushed-ice-bottle', target: 'thermometer-clamp-zone' },
+      conditions: [{ type: 'flag', key: 'thermometerInserted', equals: true }],
+      blockMessage: 'Clamp the thermometer inside the beaker first before adding ice.',
+      effects: [
+        { type: 'setFlag', key: 'iceAdded', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidLevel', value: 0.50 },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.88)' },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Crushed Ice (T = 0.0 °C)' },
+      ],
+      completesAction: 'added-ice',
+    },
+    {
+      id: 'add-ice-tripod-act',
+      trigger: { type: 'drop', source: 'crushed-ice-bottle', target: 'burner-top-zone' },
+      conditions: [{ type: 'flag', key: 'thermometerInserted', equals: true }],
+      blockMessage: 'Clamp the thermometer inside the beaker first before adding ice.',
+      effects: [
+        { type: 'setFlag', key: 'iceAdded', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidLevel', value: 0.50 },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.88)' },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 0 },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Crushed Ice (T = 0.0 °C)' },
+      ],
+      completesAction: 'added-ice',
+    },
+    {
+      id: 'stir-ice-mouth-act',
+      trigger: { type: 'drop', source: 'glass-rod', target: 'beaker-mouth-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'glass-rod', zoneId: 'beaker-mouth-zone' },
+        { type: 'setFlag', key: 'glassRodUsed', value: true },
+        { type: 'setFlag', key: 'stirring', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'isStirring', value: true },
+      ],
+    },
+    {
+      id: 'stir-ice-clamp-act',
+      trigger: { type: 'drop', source: 'glass-rod', target: 'thermometer-clamp-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'glass-rod', zoneId: 'beaker-mouth-zone' },
+        { type: 'setFlag', key: 'glassRodUsed', value: true },
+        { type: 'setFlag', key: 'stirring', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'isStirring', value: true },
+      ],
+    },
+    {
+      id: 'stir-ice-tripod-act',
+      trigger: { type: 'drop', source: 'glass-rod', target: 'burner-top-zone' },
+      conditions: [{ type: 'apparatusPlaced', apparatusId: 'beaker-water' }],
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'glass-rod', zoneId: 'beaker-mouth-zone' },
+        { type: 'setFlag', key: 'glassRodUsed', value: true },
+        { type: 'setFlag', key: 'stirring', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'isStirring', value: true },
+      ],
+    },
+    {
       id: 'melt-ice-btn',
       trigger: { type: 'click', elementId: 'advance-step' },
-      conditions: [{ type: 'flag', key: 'iceAdded', equals: true }],
+      conditions: [
+        { type: 'flag', key: 'iceAdded', equals: true },
+        { type: 'flag', key: 'iceMelted', equals: false },
+      ],
       effects: [
         { type: 'setFlag', key: 'iceMelted', value: true },
+        { type: 'setVariable', key: 'iceMeltProgress', value: 1.0 },
         { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.45)' },
-        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Melted Water (0 °C Latent Heat of Fusion Plateau)' },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Melted Liquid Water (0.0 °C Latent Heat Plateau)' },
+        { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 0 },
       ],
       completesAction: 'ice-melted',
     },
     {
       id: 'boil-water-btn',
       trigger: { type: 'click', elementId: 'advance-step' },
-      conditions: [{ type: 'flag', key: 'iceMelted', equals: true }],
+      conditions: [
+        { type: 'flag', key: 'iceMelted', equals: true },
+        { type: 'flag', key: 'waterBoiled', equals: false },
+      ],
       effects: [
         { type: 'setFlag', key: 'waterBoiled', value: true },
+        { type: 'setVariable', key: 'temperature', value: 100.0 },
         { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 100 },
         { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'isReacting', value: true },
-        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Vigorous Boiling at 100 °C (Steam bubbles, Latent Heat)' },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'gasEvolving', value: true },
+        { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Vigorous Boiling at 100.0 °C (Steam bubbles, Latent Heat)' },
       ],
       completesAction: 'water-boiled',
     },
@@ -312,4 +435,100 @@ export const meltingIceBoilingWater: ExperimentConfig = {
     },
   ],
   validation: [],
+
+  // ── Continuous Updates (100ms TICK engine loop) ──
+  continuousUpdates: [
+    {
+      // Melting ice plateau: ice melts into water at constant 0.0 °C (latent heat of fusion)
+      condition: {
+        type: 'and',
+        conditions: [
+          { type: 'flag', key: 'iceAdded', equals: true },
+          { type: 'flag', key: 'iceMelted', equals: false },
+          { type: 'variable', key: 'iceMeltProgress', op: '<', value: 1.0 },
+        ],
+      },
+      increments: {
+        iceMeltProgress: 0.12, // Melts in ~8 seconds
+      },
+      onConditionMet: [
+        {
+          condition: {
+            type: 'variable',
+            key: 'iceMeltProgress',
+            op: '>=',
+            value: 1.0,
+          },
+          effects: [
+            { type: 'setFlag', key: 'iceMelted', value: true },
+            { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.45)' },
+            { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Melted Liquid Water (0.0 °C Latent Heat Plateau)' },
+            { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 0 },
+          ],
+          completesAction: 'ice-melted',
+        },
+      ],
+    },
+    {
+      // Active stirring with glass rod accelerates ice melting rate
+      condition: {
+        type: 'and',
+        conditions: [
+          { type: 'flag', key: 'iceAdded', equals: true },
+          { type: 'flag', key: 'iceMelted', equals: false },
+          { type: 'flag', key: 'glassRodUsed', equals: true },
+          { type: 'variable', key: 'iceMeltProgress', op: '<', value: 1.0 },
+        ],
+      },
+      increments: {
+        iceMeltProgress: 0.15,
+      },
+    },
+    {
+      // Heating liquid water towards 100 °C boiling point
+      condition: {
+        type: 'and',
+        conditions: [
+          { type: 'flag', key: 'iceMelted', equals: true },
+          { type: 'flag', key: 'waterBoiled', equals: false },
+          { type: 'variable', key: 'temperature', op: '<', value: 100.0 },
+        ],
+      },
+      increments: {
+        temperature: 9.5, // Climbs smoothly to 100 °C in ~10 seconds
+      },
+      onConditionMet: [
+        {
+          condition: {
+            type: 'variable',
+            key: 'temperature',
+            op: '>=',
+            value: 100.0,
+          },
+          effects: [
+            { type: 'setFlag', key: 'waterBoiled', value: true },
+            { type: 'setApparatusProp', apparatusId: 'thermometer', prop: 'temperature', value: 100 },
+            { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'isReacting', value: true },
+            { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'gasEvolving', value: true },
+            { type: 'setApparatusProp', apparatusId: 'beaker-water', prop: 'label', value: 'Vigorous Boiling at 100.0 °C (Steam bubbles, Latent Heat)' },
+          ],
+          completesAction: 'water-boiled',
+        },
+      ],
+    },
+  ],
+
+  // ── Initial State ──
+  initialVariables: {
+    iceMeltProgress: 0,
+    temperature: 0,
+  },
+  initialFlags: {
+    thermometerInserted: false,
+    iceAdded: false,
+    glassRodUsed: false,
+    stirring: false,
+    iceMelted: false,
+    waterBoiled: false,
+  },
 };

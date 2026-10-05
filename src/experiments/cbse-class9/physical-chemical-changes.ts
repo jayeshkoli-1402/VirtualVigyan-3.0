@@ -27,8 +27,8 @@ export const physicalChemicalChanges: ExperimentConfig = {
   themeColor: '#059669',
   icon: '⚡',
   estimatedMinutes: 30,
-  underDevelopment: true,
-  adminOnly: true,
+  underDevelopment: false,
+  adminOnly: false,
 
   // ── Apparatus ──
   apparatus: [
@@ -182,7 +182,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'test-displacement',
       label: '1. Fe + CuSO₄ Reaction',
-      instruction: 'Add blue CuSO₄ solution to the test tube, then dip the iron nail. Observe the nail getting a reddish copper coating and solution turning pale green.',
+      instruction: 'Add blue CuSO₄ solution to the test tube, then dip the iron nail. Observe the displacement reaction: solution turns pale green (FeSO₄) and a reddish-brown copper layer deposits on the nail (Chemical Change).',
       requiredActions: ['added-cuso4', 'dipped-nail'],
       advanceMode: 'button',
       type: 'lab',
@@ -190,7 +190,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'test-magnesium',
       label: '2. Burning Magnesium',
-      instruction: 'Bring the magnesium ribbon over the burner. Observe the dazzling white flame producing white ash of MgO.',
+      instruction: 'Bring the magnesium ribbon over the burner. Observe the dazzling white flame producing white ash of MgO (Chemical Change).',
       requiredActions: ['burned-mg'],
       advanceMode: 'button',
       type: 'lab',

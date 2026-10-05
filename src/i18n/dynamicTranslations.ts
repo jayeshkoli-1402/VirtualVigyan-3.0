@@ -538,6 +538,76 @@ const DYNAMIC_MESSAGES: Record<string, Record<Exclude<Language, 'en'>, string>> 
   'Beaker A: No Tyndall Beam (True Solution)': { hi: 'बीकर A: कोई प्रकाश पथ नहीं (वास्तविक विलयन)', mr: 'बीकर A: कोणताही प्रकाश मार्ग नाही (खरे द्रावण)' },
   'Beaker B: Beam Blocked by Coarse Mud (Suspension)': { hi: 'बीकर B: मोटे कणों/कीचड़ द्वारा प्रकाश अवरुद्ध (निलंबन)', mr: 'बीकर B: जाड कणांनी प्रकाश अडवला (निलंबन)' },
   'Beaker C: ✨ Brilliant Tyndall Beam Scattered (Colloid)': { hi: 'बीकर C: ✨ स्पष्ट टिंडल प्रभाव का प्रकाश पथ (कोलॉइड)', mr: 'बीकर C: ✨ स्पष्ट टिंडल परिणामाचा प्रकाश मार्ग (कलिल)' },
+
+  // Physical and Chemical Changes dynamic feedback & apparatus labels
+  'Place Test Tube A on the left rack position.': {
+    hi: 'टेस्ट ट्यूब A को बाईं स्टैंड स्थिति पर रखें।',
+    mr: 'चाचणी नळी A डाव्या स्टँडवर ठेवा.',
+  },
+  'Place Test Tube B on the middle rack position.': {
+    hi: 'टेस्ट ट्यूब B को मध्य स्टैंड स्थिति पर रखें।',
+    mr: 'चाचणी नळी B मध्यभागी स्टँडवर ठेवा.',
+  },
+  'Place China dish over the Bunsen burner flame.': {
+    hi: 'चीन की मिट्टी की प्याली (China Dish) को बंसन बर्नर की ज्वाला पर रखें।',
+    mr: 'चायना डिश (बाष्पन पात्र) बुन्सेन बर्नरच्या ज्वालेवर ठेवा.',
+  },
+  'Add CuSO₄ solution or Iron nail into Test Tube A.': {
+    hi: 'टेस्ट ट्यूब A में कॉपर सल्फेट का घोल या लोहे की कील डालें।',
+    mr: 'चाचणी नळी A मध्ये कॉपर सल्फेटचे द्रावण किंवा लोखंडी खिळा टाका.',
+  },
+  'Add Zinc granules and Dilute H₂SO₄ into Test Tube B.': {
+    hi: 'टेस्ट ट्यूब B में जिंक के दाने और तनु सल्फ्यूरिक अम्ल डालें।',
+    mr: 'चाचणी नळी B मध्ये जस्ताचे तुकडे आणि विरल सल्फ्यूरिक आम्ल टाका.',
+  },
+  'Place test substance into the China dish.': {
+    hi: 'चीन की मिट्टी की प्याली में पदार्थ रखें।',
+    mr: 'चायना डिशमध्ये परीक्षा पदार्थ ठेवा.',
+  },
+  'Add CuSO₄ solution to Test Tube A first.': {
+    hi: 'पहले टेस्ट ट्यूब A में कॉपर सल्फेट का घोल डालें।',
+    mr: 'प्रथम चाचणी नळी A मध्ये कॉपर सल्फेटचे द्रावण टाका.',
+  },
+  'Add zinc granules to Test Tube B first.': {
+    hi: 'पहले टेस्ट ट्यूब B में जिंक के दाने डालें।',
+    mr: 'प्रथम चाचणी नळी B मध्ये जस्ताचे तुकडे टाका.',
+  },
+  'Heat the CuSO₄ crystals in China dish first before rehydrating.': {
+    hi: 'जल मिलाने से पहले प्याली में कॉपर सल्फेट के क्रिस्टल को गर्म करें।',
+    mr: 'पाणी टाकण्यापूर्वी चायना डिशमधील कॉपर सल्फेट स्फटिकांना गरम करा.',
+  },
+  'CuSO₄ Solution (Blue)': {
+    hi: 'CuSO₄ विलयन (नीला)',
+    mr: 'CuSO₄ द्रावण (निळे)',
+  },
+  'FeSO₄ (Pale Green) + Reddish Cu on Nail': {
+    hi: 'FeSO₄ (हल्का हरा) + कील पर तांबे की लाल परत',
+    mr: 'FeSO₄ (फिकट हिरवे) + खिळ्यावर तांब्याचा थर',
+  },
+  '✨ Dazzling White Flame → White MgO Ash (Chemical)': {
+    hi: '✨ चमकदार सफेद ज्वाला → सफेद MgO भस्म (रासायनिक परिवर्तन)',
+    mr: '✨ चमकदार पांढरी ज्वाला → पांढरी MgO राख (रासायनिक बदल)',
+  },
+  'Zinc Granules in Tube B': {
+    hi: 'ट्यूब B में जिंक के दाने',
+    mr: 'नळी B मध्ये जस्ताचे तुकडे',
+  },
+  'ZnSO₄ + H₂↑ Gas Effervescence (Chemical)': {
+    hi: 'ZnSO₄ + H₂↑ गैस का तीव्र उत्सर्जन (रासायनिक परिवर्तन)',
+    mr: 'ZnSO₄ + H₂↑ वायूचे बुडबुडे (रासायनिक बदल)',
+  },
+  'CuSO₄·5H₂O heated → White Anhydrous CuSO₄ + Steam': {
+    hi: 'CuSO₄·5H₂O गर्म → सफेद निर्जल CuSO₄ + भाप',
+    mr: 'CuSO₄·5H₂O उष्णता → पांढरे निर्जल CuSO₄ + वाफ',
+  },
+  'Water added → Restored Hydrated Blue CuSO₄ (Chemical)': {
+    hi: 'जल मिलाया → पुनः नीला जलयोजित CuSO₄ प्राप्त (रासायनिक)',
+    mr: 'पाणी टाकले → पुन्हा निळे जलयोजित CuSO₄ प्राप्त (रासायनिक)',
+  },
+  'NH₄Cl Sublimed! Direct Solid ⇌ Vapour phase change (Physical)': {
+    hi: 'NH₄Cl का उर्ध्वपातन! ठोस ⇌ वाष्प अवस्था परिवर्तन (भौतिक परिवर्तन)',
+    mr: 'NH₄Cl चे संप्लवन! स्थायू ⇌ बाष्प अवस्था बदल (भौतिक बदल)',
+  },
 };
 
 /**

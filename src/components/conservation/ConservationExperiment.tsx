@@ -265,7 +265,7 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
 
         {/* RESULTS screen */}
         {state.step === ConservationStep.RESULTS && (
-          <div style={{ flex: 1, padding: 20 }}>
+          <div style={{ flex: 1, padding: '20px 16px', overflowY: 'auto' }}>
             <ConservationResults
               state={state}
               dispatch={dispatch}

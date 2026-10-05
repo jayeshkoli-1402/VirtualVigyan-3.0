@@ -414,6 +414,77 @@ test('EXPERIMENT_TRANSLATIONS has comprehensive en, hi, mr entries for conservat
   }
 });
 
+// ── 7. Conservation Results & Lab Report Generator Verification ──
+console.log('\n--- Test Suite 7: Conservation Results & Lab Report Generation ---');
+test('buildConservationReportData generates complete structured academic report', async () => {
+  const { buildConservationReportData } = await import('../src/services/reportService');
+  const mockState = {
+    ...conservationInitialState,
+    step: ConservationStep.RESULTS,
+    flaskPlaced: true,
+    na2so4Poured: true,
+    tubeFilled: true,
+    tubeSuspended: true,
+    flaskSealed: true,
+    initialMass: 125.40,
+    reactantsMixed: true,
+    hasObserved: true,
+    precipitateFormed: true,
+    finalMass: 125.40,
+    studentDeltaM: 0.00,
+    studentDeviationPercent: 0.00,
+    mistakes: [],
+    score: 100,
+  };
+
+  const mockUser = {
+    id: 'student-123',
+    name: 'Ananya Sharma',
+    email: 'ananya@example.com',
+    role: 'student' as const,
+    grade: 'Class 9',
+    rollNumber: 'MH9-2026-042',
+  };
+
+  const report = buildConservationReportData(
+    mockState as any,
+    mockUser,
+    'en',
+    (key: string, fallback?: any) => (typeof fallback === 'string' ? fallback : key),
+    (s: any) => s || ''
+  );
+
+  assert.ok(report, 'Report data must be generated');
+  assert.strictEqual(report.student.name, 'Ananya Sharma');
+  assert.strictEqual(report.student.rollNo, 'MH9-2026-042');
+  assert.strictEqual(report.student.className, 'Class 9');
+  assert.strictEqual(report.score, 100);
+  assert.strictEqual(report.maxScore, 100);
+  assert.strictEqual(report.grade, 'Excellent');
+  assert.ok(report.apparatus.length >= 5, 'Apparatus list must contain all items');
+  assert.ok(report.chemicals.length >= 2, 'Chemicals list must contain BaCl2 and Na2SO4');
+  assert.ok(report.observations.some(o => o.label.includes('Initial Mass') && o.value === '125.40'));
+  assert.ok(report.observations.some(o => o.label.includes('Final Mass') && o.value === '125.40'));
+  assert.ok(report.calculations.length >= 2, 'Calculations must include Delta M and Deviation %');
+  assert.ok(report.rubricBreakdown.length === 7, 'Rubric must contain 7 categories');
+  assert.strictEqual(report.rubricBreakdown.reduce((sum, r) => sum + r.points, 0), 100);
+  assert.ok(report.filename.includes('VirtualVigyan_Lab_Report_Law_of_Conservation_of_Mass'));
+});
+
+test('evaluateCalculation validates accurate vs erroneous mass difference calculations', async () => {
+  const { evaluateCalculation } = await import('../src/engine/conservationValidation');
+  
+  const perfect = evaluateCalculation(0.00, 0.00, 0.00, 0.00);
+  assert.strictEqual(perfect.accuracy, 'excellent');
+  
+  const good = evaluateCalculation(0.01, 0.00, 0.01, 0.00);
+  assert.strictEqual(good.accuracy, 'good');
+
+  const needsPractice = evaluateCalculation(0.50, 0.00, 0.40, 0.00);
+  assert.strictEqual(needsPractice.accuracy, 'needs_practice');
+});
+
 console.log(`\n=============================================`);
 console.log(`✨ All ${passCount} Engine Tests Passed Successfully!`);
 console.log(`=============================================\n`);
+

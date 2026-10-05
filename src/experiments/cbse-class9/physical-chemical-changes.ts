@@ -103,23 +103,32 @@ export const physicalChemicalChanges: ExperimentConfig = {
       id: 'stand-tube-zone',
       label: 'Place Test Tube on Stand',
       accepts: ['tube-displacement'],
-      position: { x: 30, y: 65 },
+      position: { x: 28, y: 62 },
       size: { width: 18, height: 35 },
       rejectMessage: 'Place the test tube on the left stand.',
     },
     {
+      id: 'burner-stand-zone',
+      label: 'Place Bunsen Burner on Heating Station',
+      accepts: ['bunsen-burner'],
+      position: { x: 72, y: 72 },
+      size: { width: 20, height: 28 },
+      rejectMessage: 'Place the Bunsen burner on the right heating station.',
+    },
+    {
       id: 'burner-dish-zone',
-      label: 'Place China Dish over Burner',
+      label: 'Mount China Dish over Burner',
       accepts: ['china-dish'],
-      position: { x: 70, y: 55 },
-      size: { width: 22, height: 26 },
-      rejectMessage: 'Place China dish over the heating source.',
+      position: { x: 72, y: 44 },
+      size: { width: 22, height: 24 },
+      rejectMessage: 'Place the Bunsen burner on the heating station first before mounting the China dish.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'bunsen-burner' },
     },
     {
       id: 'tube-mouth',
       label: 'Into Test Tube',
       accepts: ['cuso4-bottle', 'iron-nail', 'zinc-granules', 'dil-h2so4-bottle'],
-      position: { x: 30, y: 48 },
+      position: { x: 28, y: 48 },
       size: { width: 16, height: 22 },
       rejectMessage: 'Add reagents into test tube mouth.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'tube-displacement' },
@@ -128,7 +137,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       id: 'dish-mouth',
       label: 'Into China Dish',
       accepts: ['mg-ribbon', 'nh4cl-bottle'],
-      position: { x: 70, y: 45 },
+      position: { x: 72, y: 40 },
       size: { width: 18, height: 20 },
       rejectMessage: 'Place test substance into China dish.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'china-dish' },
@@ -144,8 +153,8 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'setup-lab',
       label: 'Setup Apparatus',
-      instruction: 'Place the test tube on the left stand and China dish over the burner.',
-      requiredActions: ['place-tube', 'place-dish'],
+      instruction: 'Place the test tube on the stand, position the Bunsen burner on the heating station, then mount the China dish over the burner.',
+      requiredActions: ['place-tube', 'place-burner', 'place-dish'],
       type: 'lab',
     },
     {
@@ -195,9 +204,23 @@ export const physicalChemicalChanges: ExperimentConfig = {
       completesAction: 'place-tube',
     },
     {
+      id: 'place-burner-act',
+      trigger: { type: 'drop', source: 'bunsen-burner', target: 'burner-stand-zone' },
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'bunsen-burner', zoneId: 'burner-stand-zone' },
+        { type: 'setFlag', key: 'burnerPlaced', value: true },
+      ],
+      completesAction: 'place-burner',
+    },
+    {
       id: 'place-dish-act',
       trigger: { type: 'drop', source: 'china-dish', target: 'burner-dish-zone' },
-      effects: [{ type: 'placeApparatus', apparatusId: 'china-dish', zoneId: 'burner-dish-zone' }],
+      conditions: [{ type: 'apparatusPlaced', apparatusId: 'bunsen-burner' }],
+      blockMessage: 'Place the Bunsen burner on the heating station first before mounting the China dish.',
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'china-dish', zoneId: 'burner-dish-zone' },
+        { type: 'setFlag', key: 'dishPlaced', value: true },
+      ],
       completesAction: 'place-dish',
     },
     {
@@ -338,25 +361,52 @@ export const physicalChemicalChanges: ExperimentConfig = {
   // ── Scoring ──
   scoring: [
     {
-      name: 'Apparatus Setup',
+      name: 'Apparatus Setup & Heating Assembly',
       maxPoints: 20,
-      evaluator: { type: 'booleanCheck', flag: 'hasCuSO4', truePoints: 20 },
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Reaction test tube placed on stand', points: 6, action: 'place-tube' },
+          { label: 'Bunsen burner positioned first on heating station', points: 7, flag: 'burnerPlaced' },
+          { label: 'China dish mounted securely over burner', points: 7, flag: 'dishPlaced' },
+        ],
+      },
     },
     {
-      name: 'Chemical Transformations',
-      maxPoints: 40,
-      evaluator: { type: 'booleanCheck', flag: 'nailDipped', truePoints: 40 },
+      name: 'Chemical Transformations (Fe + CuSO₄)',
+      maxPoints: 35,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Blue CuSO₄ solution added to test tube', points: 15, flag: 'hasCuSO4' },
+          { label: 'Iron nail dipped & copper displacement observed', points: 20, flag: 'nailDipped' },
+        ],
+      },
     },
     {
-      name: 'Sublimation & Heating Tests',
-      maxPoints: 25,
-      evaluator: { type: 'booleanCheck', flag: 'nh4clSublimed', truePoints: 25 },
+      name: 'Combustion & Sublimation Tests',
+      maxPoints: 30,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Magnesium ribbon burned (dazzling white flame & MgO ash)', points: 15, flag: 'mgBurned' },
+          { label: 'Ammonium chloride heated & sublimed (Physical change)', points: 15, flag: 'nh4clSublimed' },
+        ],
+      },
     },
     {
-      name: 'Viva Voce Evaluation',
+      name: 'Viva Voce Conceptual Examination',
       maxPoints: 15,
       evaluator: { type: 'vivaQuiz' },
     },
   ],
-  validation: [],
+  validation: [
+    {
+      id: 'dish-before-burner',
+      trigger: 'drop:china-dish→burner-dish-zone',
+      condition: { type: 'flag', key: 'burnerPlaced', equals: false },
+      message: 'Safety rule: Place the Bunsen burner on the bench first before mounting the China dish.',
+      blocking: true,
+    },
+  ],
 };

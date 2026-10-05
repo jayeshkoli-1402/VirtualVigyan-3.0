@@ -10,7 +10,6 @@ import { canMixReactants } from '../../engine/conservationValidation';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { getStepWhyExplanation } from '../../data/experimentWhyData';
 import ContextualWhyModal from '../common/ContextualWhyModal';
-import ExperimentSafetyModal from '../common/ExperimentSafetyModal';
 
 interface ConservationInstructionsProps {
   state: ConservationState;
@@ -29,7 +28,7 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
 }) => {
   const { t, tStep, language } = useLanguage();
   const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
-  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
+  const currentStepIndex = CONSERVATION_STEP_ORDER.indexOf(state.step);
 
   const progressSteps = CONSERVATION_STEP_ORDER.filter(
     (s) => s !== ConservationStep.SELECT && s !== ConservationStep.RESULTS
@@ -38,7 +37,9 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
     ? (progressSteps as ConservationStep[]).indexOf(state.step) + 1
     : 1;
 
-  const currentStepIndex = CONSERVATION_STEP_ORDER.indexOf(state.step);
+  const showMixButton = state.step === ConservationStep.MIX_REACTANTS && !state.isMixing;
+  const showObserveButton = state.step === ConservationStep.OBSERVE && state.precipitateFormed;
+  const showProceedCalcButton = state.finalMass !== null;
 
   const stepData = tStep(
     'conservation-of-mass',
@@ -67,10 +68,6 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
   const whyExplanation =
     getStepWhyExplanation('conservation-of-mass', state.step as any, language) ||
     getStepWhyExplanation('conservation', state.step as any, language);
-
-  const showMixButton = state.step === ConservationStep.MIX_REACTANTS && !state.isMixing;
-  const showObserveButton = state.step === ConservationStep.OBSERVE && state.precipitateFormed;
-  const showProceedCalcButton = state.finalMass !== null;
 
   if (isCollapsed) {
     return (
@@ -106,55 +103,20 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
         gap: 12,
       }}
     >
-      {/* ── Header: INSTRUCTIONS & Safety Button (Matching Reference UI) ── */}
+      {/* ── Header: INSTRUCTIONS ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2
-            style={{
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              color: 'var(--text-secondary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              margin: 0,
-            }}
-          >
-            {t('conservation.instructions', 'INSTRUCTIONS')}
-          </h2>
-          <button
-            id="btn-instructions-safety-conservation"
-            type="button"
-            onClick={() => setSafetyModalOpen(true)}
-            aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
-            title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              color: '#d97706',
-              background: 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              padding: '2px 7px',
-              borderRadius: 5,
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <span>🛡️</span>
-            <span>{t('safety.buttonLabel', 'Safety')}</span>
-          </button>
-        </div>
+        <h2
+          style={{
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--text-secondary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            margin: 0,
+          }}
+        >
+          {t('conservation.instructions', 'INSTRUCTIONS')}
+        </h2>
         <button
           onClick={onToggleCollapse}
           style={{
@@ -478,33 +440,6 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
         </div>
       </div>
 
-      {/* Reset Experiment link at very bottom */}
-      <div style={{ textAlign: 'center', paddingTop: 4 }}>
-        <button
-          id="btn-instructions-reset-conservation"
-          type="button"
-          onClick={() => dispatch({ type: 'RESET' })}
-          style={{
-            all: 'unset',
-            cursor: 'pointer',
-            fontSize: '0.68rem',
-            color: 'var(--text-muted)',
-            fontWeight: 600,
-            padding: '4px 8px',
-            borderRadius: 4,
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#ef4444';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--text-muted)';
-          }}
-        >
-          🔄 {t('common.reset', 'Reset Experiment')}
-        </button>
-      </div>
-
       {/* Contextual Why Explanation Modal */}
       <ContextualWhyModal
         isOpen={whyModalOpen}
@@ -512,14 +447,6 @@ const ConservationInstructions: React.FC<ConservationInstructionsProps> = ({
         stepTitle={stepData.title}
         conceptTitle={whyExplanation?.conceptTitle}
         explanation={whyExplanation?.explanation || ''}
-      />
-
-      {/* Experiment Safety Center Modal */}
-      <ExperimentSafetyModal
-        isOpen={safetyModalOpen}
-        onClose={() => setSafetyModalOpen(false)}
-        experimentId="conservation-of-mass"
-        experimentTitle={stepData.title}
       />
     </div>
   );

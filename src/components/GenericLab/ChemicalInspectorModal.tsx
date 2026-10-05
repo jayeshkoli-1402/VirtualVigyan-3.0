@@ -21,25 +21,59 @@ import type { VesselMixture, ChemicalAddition } from '../../engine/stoichiometry
 import { CHEMICAL_DATABASE } from '../../engine/chemicalDatabase';
 import { useLanguage } from '../../i18n/LanguageContext';
 
-interface ChemicalInspectorModalProps {
+export interface VesselInspectionItem {
+  id: string;
+  label: string;
+  component: string;
+  isPlaced: boolean;
+  mixture: VesselMixture;
+  chemicalSummary?: string;
+  volumeMl?: number;
+  physicalState?: string;
+  ph?: number;
+}
+
+export interface ChemicalInspectorModalProps {
   mixture: VesselMixture;
   vesselLabel: string;
+  vessels?: VesselInspectionItem[];
+  initialVesselId?: string;
   onClose: () => void;
-  onAddChemical: (addition: ChemicalAddition) => void;
+  onAddChemical: (addition: ChemicalAddition, targetVesselId?: string) => void;
 }
+
+const getApparatusEmoji = (component: string): string => {
+  const c = component.toLowerCase();
+  if (c.includes('beaker')) return '🥛';
+  if (c.includes('flask')) return '🧪';
+  if (c.includes('tube')) return '🧪';
+  if (c.includes('burette')) return '⚗️';
+  if (c.includes('pipette')) return '💉';
+  if (c.includes('cylinder')) return '📏';
+  if (c.includes('bottle')) return '🍶';
+  if (c.includes('dish') || c.includes('watchglass')) return '🥣';
+  return '🧪';
+};
 
 export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
   mixture,
   vesselLabel,
+  vessels,
+  initialVesselId,
   onClose,
   onAddChemical,
 }) => {
   const { t, tDynamic } = useLanguage();
+  const [currentVesselId, setCurrentVesselId] = useState<string>(initialVesselId || vessels?.[0]?.id || '');
+  const activeVesselItem = vessels?.find(v => v.id === currentVesselId);
+  const activeMixture = activeVesselItem ? activeVesselItem.mixture : mixture;
+  const activeVesselLabel = activeVesselItem ? activeVesselItem.label : vesselLabel;
+
   const [selectedSubstance, setSelectedSubstance] = useState('hcl');
   const [volumeMl, setVolumeMl] = useState(10);
   const [molarity, setMolarity] = useState(0.1);
   const [massGrams, setMassGrams] = useState(1.0);
-  const [activeTab, setActiveTab] = useState<'composition' | 'history' | 'test'>('composition');
+  const [activeTab, setActiveTab] = useState<'overview' | 'composition' | 'history' | 'test'>('overview');
 
   const selectedSpecies = CHEMICAL_DATABASE[selectedSubstance];
   const isSolid = selectedSpecies?.stateAtRoomTemp === 'solid';
@@ -50,22 +84,22 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
       onAddChemical({
         substanceId: selectedSubstance,
         massGrams,
-      });
+      }, currentVesselId);
     } else {
       onAddChemical({
         substanceId: selectedSubstance,
         volumeMl,
         molarity,
-      });
+      }, currentVesselId);
     }
   };
 
   // Convert dissolved moles to array for table display
-  const dissolvedSpeciesList = Object.entries(mixture.moles)
+  const dissolvedSpeciesList = Object.entries(activeMixture.moles)
     .filter(([, mol]) => mol > 1e-7)
     .map(([id, mol]) => {
       const spec = CHEMICAL_DATABASE[id];
-      const volumeL = Math.max(0.001, mixture.volumeMl / 1000);
+      const volumeL = Math.max(0.001, activeMixture.volumeMl / 1000);
       const concM = mol / volumeL;
       return {
         id,
@@ -80,7 +114,7 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
     })
     .sort((a, b) => b.moles - a.moles);
 
-  const precipitateList = Object.entries(mixture.precipitateGrams)
+  const precipitateList = Object.entries(activeMixture.precipitateGrams)
     .filter(([, grams]) => grams > 0.001)
     .map(([id, grams]) => {
       const spec = CHEMICAL_DATABASE[id];
@@ -168,7 +202,9 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
                 {tDynamic('Chemical & Stoichiometry Engine')}
               </h2>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary, #64748b)' }}>
-                {tDynamic('Live Reaction Diagnostics for')} <strong style={{ color: '#2563eb' }}>{tDynamic(vesselLabel)}</strong>
+                {activeTab === 'overview'
+                  ? tDynamic('Overview of all vessels and chemical contents on the workbench')
+                  : <>{tDynamic('Live Reaction Diagnostics for')} <strong style={{ color: '#2563eb' }}>{tDynamic(activeVesselLabel)}</strong></>}
               </div>
             </div>
           </div>
@@ -191,97 +227,184 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
           </button>
         </div>
 
-        {/* ── Live Metric Ribbon ── */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-            gap: 12,
-            padding: '14px 24px',
-            backgroundColor: 'var(--bg-secondary, #f8fafc)',
-            borderBottom: '1px solid var(--border, #cbd5e1)',
-          }}
-        >
-          {/* Volume */}
-          <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Total Volume')}</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: mixture.volumeMl > 0 ? '#0284c7' : '#94a3b8' }}>
-              {mixture.volumeMl === 0 ? '0.0' : mixture.volumeMl.toFixed(mixture.volumeMl % 0.1 !== 0 ? 2 : 1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>mL</span>
-            </div>
-          </div>
+        {/* ── Apparatus / Vessel Selector Ribbon ── */}
+        {vessels && vessels.length > 0 && (
+          <div
+            id="inspector-vessel-selector-ribbon"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 24px',
+              backgroundColor: 'var(--bg-secondary, #f8fafc)',
+              borderBottom: '1px solid var(--border, #cbd5e1)',
+              overflowX: 'auto',
+            }}
+          >
+            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>
+              {tDynamic('Apparatus')}:
+            </span>
 
-          {/* Temperature */}
-          <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Temperature')}</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: mixture.temperatureC > 35 ? '#ea580c' : '#059669' }}>
-              {mixture.temperatureC.toFixed(1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>°C</span>
-              {mixture.temperatureC > 25.5 && (
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, marginLeft: 4, color: '#ea580c' }}>
-                  (+{(mixture.temperatureC - 25.0).toFixed(1)}°C)
-                </span>
-              )}
-            </div>
-          </div>
+            <button
+              type="button"
+              id="inspector-tab-all-overview"
+              onClick={() => setActiveTab('overview')}
+              style={{
+                fontSize: '0.76rem',
+                fontWeight: activeTab === 'overview' ? 700 : 500,
+                padding: '5px 12px',
+                borderRadius: 8,
+                border: activeTab === 'overview' ? '1.5px solid #4f46e5' : '1px solid var(--border, #cbd5e1)',
+                background: activeTab === 'overview' ? 'linear-gradient(135deg, rgba(79, 70, 229, 0.15), rgba(99, 102, 241, 0.22))' : 'var(--bg-card, #ffffff)',
+                color: activeTab === 'overview' ? '#4338ca' : 'var(--text-secondary, #64748b)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                whiteSpace: 'nowrap',
+                boxShadow: activeTab === 'overview' ? '0 2px 6px rgba(79, 70, 229, 0.2)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>📋</span>
+              <span>{tDynamic('All Apparatus Overview')}</span>
+            </button>
 
-          {/* pH */}
-          <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('pH Value')}</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: getPhColor(mixture.pH), display: 'flex', alignItems: 'center', gap: 6 }}>
-              {mixture.pH.toFixed(2)}
-              <span
-                style={{
-                  fontSize: '0.68rem',
-                  padding: '1px 6px',
-                  borderRadius: 6,
-                  color: '#fff',
-                  backgroundColor: getPhColor(mixture.pH),
-                  fontWeight: 700,
-                }}
-              >
-                {mixture.pH < 6.5 ? tDynamic('Acidic') : mixture.pH > 7.5 ? tDynamic('Alkaline') : tDynamic('Neutral')}
-              </span>
-            </div>
-          </div>
-
-          {/* Precipitate Mass */}
-          <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Precipitate')}</div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: precipitateList.length > 0 ? '#d97706' : '#64748b' }}>
-              {precipitateList.reduce((acc, p) => acc + p.grams, 0).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>g</span>
-            </div>
-          </div>
-
-          {/* Effervescence / Gas Evolution */}
-          {(() => {
-            const latestGasEvent = mixture.recentEvents.find(
-              (e) => (e.gasEvolvedMl !== undefined && e.gasEvolvedMl > 0) || Boolean(e.gasName)
-            );
-            const activeGas = mixture.effervescenceGas || latestGasEvent?.gasName;
-            const isBubbling = mixture.effervescenceRate > 0;
-            const hasGas = isBubbling || Boolean(latestGasEvent);
-
-            return (
-              <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
-                <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Gas Evolution')}</div>
-                <div style={{ fontSize: '0.92rem', fontWeight: 700, color: hasGas ? '#2563eb' : '#94a3b8' }}>
-                  {isBubbling ? (
-                    `🫧 ${tDynamic(activeGas ?? 'Gas')} (${tDynamic('Bubbling')})`
-                  ) : latestGasEvent ? (
-                    `🫧 ${tDynamic(latestGasEvent.gasName ?? 'Gas')} (~${latestGasEvent.gasEvolvedMl?.toFixed(1) ?? '0'} mL)`
-                  ) : (
-                    tDynamic('None')
+            {vessels.map((v) => {
+              const isSelected = activeTab !== 'overview' && v.id === currentVesselId;
+              const emoji = getApparatusEmoji(v.component);
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  id={`inspector-vessel-btn-${v.id}`}
+                  onClick={() => {
+                    setCurrentVesselId(v.id);
+                    if (activeTab === 'overview') setActiveTab('composition');
+                  }}
+                  style={{
+                    fontSize: '0.76rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    padding: '5px 12px',
+                    borderRadius: 8,
+                    border: isSelected ? '1.5px solid #2563eb' : '1px solid var(--border, #cbd5e1)',
+                    background: isSelected ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(59, 130, 246, 0.22))' : 'var(--bg-card, #ffffff)',
+                    color: isSelected ? '#1d4ed8' : 'var(--text-secondary, #64748b)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    whiteSpace: 'nowrap',
+                    boxShadow: isSelected ? '0 2px 6px rgba(37, 99, 235, 0.2)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>{emoji}</span>
+                  <span>{tDynamic(v.label)}</span>
+                  {v.volumeMl !== undefined && v.volumeMl > 0 && (
+                    <span style={{ fontSize: '0.68rem', padding: '1px 5px', borderRadius: 4, background: isSelected ? '#bfdbfe' : 'var(--bg-secondary, #f1f5f9)', color: isSelected ? '#1e3a8a' : '#475569' }}>
+                      {v.volumeMl.toFixed(0)} mL
+                    </span>
                   )}
-                </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── Live Metric Ribbon (Shown for selected vessel) ── */}
+        {activeTab !== 'overview' && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+              gap: 12,
+              padding: '14px 24px',
+              backgroundColor: 'var(--bg-secondary, #f8fafc)',
+              borderBottom: '1px solid var(--border, #cbd5e1)',
+            }}
+          >
+            {/* Volume */}
+            <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+              <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Total Volume')}</div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: activeMixture.volumeMl > 0 ? '#0284c7' : '#94a3b8' }}>
+                {activeMixture.volumeMl === 0 ? '0.0' : activeMixture.volumeMl.toFixed(activeMixture.volumeMl % 0.1 !== 0 ? 2 : 1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>mL</span>
               </div>
-            );
-          })()}
-        </div>
+            </div>
+
+            {/* Temperature */}
+            <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+              <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Temperature')}</div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: activeMixture.temperatureC > 35 ? '#ea580c' : '#059669' }}>
+                {activeMixture.temperatureC.toFixed(1)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>°C</span>
+                {activeMixture.temperatureC > 25.5 && (
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, marginLeft: 4, color: '#ea580c' }}>
+                    (+{(activeMixture.temperatureC - 25.0).toFixed(1)}°C)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* pH */}
+            <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+              <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('pH Value')}</div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: getPhColor(activeMixture.pH), display: 'flex', alignItems: 'center', gap: 6 }}>
+                {activeMixture.pH.toFixed(2)}
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    padding: '1px 6px',
+                    borderRadius: 6,
+                    color: '#fff',
+                    backgroundColor: getPhColor(activeMixture.pH),
+                    fontWeight: 700,
+                  }}
+                >
+                  {activeMixture.pH < 6.5 ? tDynamic('Acidic') : activeMixture.pH > 7.5 ? tDynamic('Alkaline') : tDynamic('Neutral')}
+                </span>
+              </div>
+            </div>
+
+            {/* Precipitate Mass */}
+            <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+              <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Precipitate')}</div>
+              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: precipitateList.length > 0 ? '#d97706' : '#64748b' }}>
+                {precipitateList.reduce((acc, p) => acc + p.grams, 0).toFixed(2)} <span style={{ fontSize: '0.8rem', fontWeight: 500 }}>g</span>
+              </div>
+            </div>
+
+            {/* Effervescence / Gas Evolution */}
+            {(() => {
+              const latestGasEvent = activeMixture.recentEvents.find(
+                (e) => (e.gasEvolvedMl !== undefined && e.gasEvolvedMl > 0) || Boolean(e.gasName)
+              );
+              const activeGas = activeMixture.effervescenceGas || latestGasEvent?.gasName;
+              const isBubbling = activeMixture.effervescenceRate > 0;
+              const hasGas = isBubbling || Boolean(latestGasEvent);
+
+              return (
+                <div style={{ padding: '8px 12px', borderRadius: '10px', background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e8f0)' }}>
+                  <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary, #64748b)', fontWeight: 600 }}>{tDynamic('Gas Evolution')}</div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: hasGas ? '#2563eb' : '#94a3b8' }}>
+                    {isBubbling ? (
+                      `🫧 ${tDynamic(activeGas ?? 'Gas')} (${tDynamic('Bubbling')})`
+                    ) : latestGasEvent ? (
+                      `🫧 ${tDynamic(latestGasEvent.gasName ?? 'Gas')} (~${latestGasEvent.gasEvolvedMl?.toFixed(1) ?? '0'} mL)`
+                    ) : (
+                      tDynamic('None')
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* ── Active Hazard Alerts ── */}
-        {mixture.activeHazards.length > 0 && (
+        {activeTab !== 'overview' && activeMixture.activeHazards.length > 0 && (
           <div style={{ padding: '8px 24px', backgroundColor: 'rgba(239, 68, 68, 0.08)', borderBottom: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#dc2626' }}>⚠️ {tDynamic('Lab Hazards Detected')}:</span>
-            {mixture.activeHazards.map((haz, i) => (
+            {activeMixture.activeHazards.map((haz, i) => (
               <span key={i} style={{ fontSize: '0.72rem', backgroundColor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', padding: '2px 8px', borderRadius: 12, fontWeight: 600 }}>
                 {tDynamic(haz)}
               </span>
@@ -292,17 +415,33 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
         {/* ── Navigation Tabs ── */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border, #cbd5e1)', backgroundColor: 'var(--bg-card, #fff)' }}>
           <button
+            onClick={() => setActiveTab('overview')}
+            style={{
+              flex: 1,
+              padding: '12px 14px',
+              border: 'none',
+              background: activeTab === 'overview' ? 'var(--bg-card, #fff)' : 'transparent',
+              borderBottom: activeTab === 'overview' ? '2px solid #4f46e5' : 'none',
+              fontWeight: activeTab === 'overview' ? 700 : 500,
+              color: activeTab === 'overview' ? '#4f46e5' : 'var(--text-secondary, #64748b)',
+              cursor: 'pointer',
+              fontSize: '0.86rem',
+            }}
+          >
+            📋 {tDynamic('All Apparatus Overview')}
+          </button>
+          <button
             onClick={() => setActiveTab('composition')}
             style={{
               flex: 1,
-              padding: '12px 16px',
+              padding: '12px 14px',
               border: 'none',
               background: activeTab === 'composition' ? 'var(--bg-card, #fff)' : 'transparent',
               borderBottom: activeTab === 'composition' ? '2px solid #2563eb' : 'none',
               fontWeight: activeTab === 'composition' ? 700 : 500,
               color: activeTab === 'composition' ? '#2563eb' : 'var(--text-secondary, #64748b)',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.86rem',
             }}
           >
             📊 {tDynamic('Chemical Composition')} ({dissolvedSpeciesList.length + precipitateList.length})
@@ -311,38 +450,155 @@ export const ChemicalInspectorModal: React.FC<ChemicalInspectorModalProps> = ({
             onClick={() => setActiveTab('history')}
             style={{
               flex: 1,
-              padding: '12px 16px',
+              padding: '12px 14px',
               border: 'none',
               background: activeTab === 'history' ? 'var(--bg-card, #fff)' : 'transparent',
               borderBottom: activeTab === 'history' ? '2px solid #2563eb' : 'none',
               fontWeight: activeTab === 'history' ? 700 : 500,
               color: activeTab === 'history' ? '#2563eb' : 'var(--text-secondary, #64748b)',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.86rem',
             }}
           >
-            📜 {tDynamic('Reaction Events & Explanations')} ({mixture.recentEvents.length})
+            📜 {tDynamic('Reaction Events & Explanations')} ({activeMixture.recentEvents.length})
           </button>
           <button
             onClick={() => setActiveTab('test')}
             style={{
               flex: 1,
-              padding: '12px 16px',
+              padding: '12px 14px',
               border: 'none',
               background: activeTab === 'test' ? 'var(--bg-card, #fff)' : 'transparent',
               borderBottom: activeTab === 'test' ? '2px solid #2563eb' : 'none',
               fontWeight: activeTab === 'test' ? 700 : 500,
               color: activeTab === 'test' ? '#2563eb' : 'var(--text-secondary, #64748b)',
               cursor: 'pointer',
-              fontSize: '0.88rem',
+              fontSize: '0.86rem',
             }}
           >
-            ⚗️ {tDynamic('Add Any Chemical Reagent (Playground)')}
+            ⚗️ {tDynamic('Add Chemical Reagent')}
           </button>
         </div>
 
         {/* ── Tab Contents ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+          {/* TAB 0: ALL APPARATUS OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+                  {tDynamic('All Laboratory Apparatus & Chemical Contents')}
+                </h3>
+                <p style={{ margin: '4px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                  {tDynamic('Live summary of what chemicals, solutions, solutes, and physical states exist in each apparatus on the workbench.')}
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                {(vessels && vessels.length > 0 ? vessels : [{
+                  id: 'primary',
+                  label: vesselLabel,
+                  component: 'Flask',
+                  isPlaced: true,
+                  mixture: activeMixture,
+                  chemicalSummary: 'Active reaction vessel',
+                  volumeMl: activeMixture.volumeMl,
+                  physicalState: 'Aqueous solution',
+                  ph: activeMixture.pH,
+                }]).map((v) => {
+                  const emoji = getApparatusEmoji(v.component);
+                  return (
+                    <div
+                      key={v.id}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--border, #e2e8f0)',
+                        background: 'var(--bg-card, #ffffff)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 10,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: 24 }}>{emoji}</span>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1e293b' }}>
+                              {tDynamic(v.label)}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              {v.isPlaced ? `📍 ${tDynamic('Placed on bench')}` : `🧰 ${tDynamic('In apparatus tray')}`}
+                            </div>
+                          </div>
+                        </div>
+
+                        {v.volumeMl !== undefined && (
+                          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: v.volumeMl > 0 ? '#0284c7' : '#94a3b8', background: 'rgba(2, 132, 199, 0.08)', padding: '3px 8px', borderRadius: 6 }}>
+                            {v.volumeMl > 0 ? `${v.volumeMl.toFixed(0)} mL` : tDynamic('Empty')}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Chemical Contents summary */}
+                      <div style={{ background: 'var(--bg-secondary, #f8fafc)', padding: '10px', borderRadius: 8, fontSize: '0.76rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <div style={{ fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <span>🧪</span>
+                          <span>{tDynamic('Chemical Contents')}:</span>
+                        </div>
+                        <div style={{ color: '#475569', lineHeight: 1.35 }}>
+                          {tDynamic(v.chemicalSummary || 'No chemical species detected yet.')}
+                        </div>
+                      </div>
+
+                      {/* Physical & Optical State */}
+                      {v.physicalState && (
+                        <div style={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35, padding: '0 4px' }}>
+                          <strong style={{ color: '#334155' }}>{tDynamic('State')}:</strong> {tDynamic(v.physicalState)}
+                        </div>
+                      )}
+
+                      {/* pH and inspect button */}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'auto', paddingTop: 6, alignItems: 'center' }}>
+                        {v.ph !== undefined && v.volumeMl !== undefined && v.volumeMl > 0 && (
+                          <span style={{ fontSize: '0.7rem', padding: '2px 7px', borderRadius: 6, backgroundColor: getPhColor(v.ph), color: '#fff', fontWeight: 700 }}>
+                            pH {v.ph.toFixed(1)}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentVesselId(v.id);
+                            setActiveTab('composition');
+                          }}
+                          style={{
+                            marginLeft: 'auto',
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            padding: '4px 10px',
+                            borderRadius: 6,
+                            border: '1px solid #3b82f6',
+                            background: 'rgba(59, 130, 246, 0.08)',
+                            color: '#2563eb',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}
+                        >
+                          <span>{tDynamic('Inspect Details')}</span>
+                          <span>➔</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* TAB 1: CHEMICAL COMPOSITION */}
           {activeTab === 'composition' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

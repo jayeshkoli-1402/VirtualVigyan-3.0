@@ -49,6 +49,8 @@ import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { LanguageSelector } from './components/common/LanguageSelector';
 import { getLocalizedExperimentTitle } from './i18n/experimentTranslations';
 import ExperimentSafetyModal from './components/common/ExperimentSafetyModal';
+import ExitConfirmationModal from './components/common/ExitConfirmationModal';
+import ResetConfirmationModal from './components/common/ResetConfirmationModal';
 
 type ActiveExperiment = 'select' | 'auth' | 'admin' | 'teacher' | 'titration' | 'conservation' | 'conservation-vr' | string;
 
@@ -82,6 +84,9 @@ const AppContent: React.FC = () => {
     return (sessionStorage.getItem('vv_activeTab') as NavItem) || 'experiments';
   });
   const [headerSafetyModalOpen, setHeaderSafetyModalOpen] = useState(false);
+  const [exitModalOpen, setExitModalOpen] = useState(false);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
+  const [labResetNonce, setLabResetNonce] = useState(0);
 
   // When user is authenticated, keep landing hidden and route properly
   useEffect(() => {
@@ -195,6 +200,27 @@ const AppContent: React.FC = () => {
     if (isActualExperiment) {
       setHeaderSafetyModalOpen(true);
     }
+  }, [activeExperiment, showLanding]);
+
+  // Warn when user attempts to exit platform (close tab, reload page, navigate away) during an experiment
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const isActualExperiment =
+        !showLanding &&
+        activeExperiment !== 'select' &&
+        activeExperiment !== 'admin' &&
+        activeExperiment !== 'teacher' &&
+        activeExperiment !== 'auth';
+
+      if (isActualExperiment) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [activeExperiment, showLanding]);
 
   // dnd-kit sensors: pointer (mouse) + touch
@@ -359,6 +385,31 @@ const AppContent: React.FC = () => {
     setActivePrivateLabContext(null);
     sessionStorage.removeItem('vv_active_private_lab_context');
     dispatch({ type: 'RESET' });
+  };
+
+  const handleExitRequest = () => {
+    const isActualExperiment =
+      !showLanding &&
+      activeExperiment !== 'select' &&
+      activeExperiment !== 'admin' &&
+      activeExperiment !== 'teacher' &&
+      activeExperiment !== 'auth';
+
+    if (isActualExperiment) {
+      setExitModalOpen(true);
+    } else {
+      handleBackToSelector();
+    }
+  };
+
+  const handleConfirmReset = () => {
+    setResetModalOpen(false);
+    if (activeExperiment === 'titration') {
+      dispatch({ type: 'RESET' });
+      dispatch({ type: 'START_EXPERIMENT' });
+    } else {
+      setLabResetNonce((prev) => prev + 1);
+    }
   };
 
   const currentStepIndex = STEP_ORDER.indexOf(state.step);
@@ -695,7 +746,7 @@ const AppContent: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             id="btn-back-to-selector"
-            onClick={handleBackToSelector}
+            onClick={handleExitRequest}
             style={{
               all: 'unset',
               cursor: 'pointer',
@@ -816,6 +867,42 @@ const AppContent: React.FC = () => {
             </button>
           )}
 
+          {/* Reset Experiment Header Button */}
+          {activeExperiment !== 'select' && activeExperiment !== 'admin' && activeExperiment !== 'teacher' && activeExperiment !== 'auth' && (
+            <button
+              id="btn-top-reset-lab"
+              onClick={() => setResetModalOpen(true)}
+              title={t('lab.resetExperiment', 'Reset Experiment')}
+              aria-label={t('lab.resetExperiment', 'Reset Experiment')}
+              style={{
+                all: 'unset',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                color: '#d97706',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.35)',
+                padding: '5px 11px',
+                borderRadius: 'var(--radius-md)',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <span>🔄</span>
+              <span>{t('lab.resetLab', 'Reset')}</span>
+            </button>
+          )}
+
           {/* Language Selector */}
           <LanguageSelector variant="pill" />
 
@@ -875,6 +962,7 @@ const AppContent: React.FC = () => {
           const engineConfig = getExperimentById(activeExperiment);
           return engineConfig ? (
             <GenericLab
+              key={`${activeExperiment}-${labResetNonce}`}
               config={engineConfig}
               onBackToSelector={handleBackToSelector}
               privateLabContext={activePrivateLabContext || undefined}
@@ -885,6 +973,7 @@ const AppContent: React.FC = () => {
         {/* Conservation Experiment (2D Lab) */}
         {(activeExperiment === 'conservation' || activeExperiment === 'conservation-of-mass') && (
           <ConservationExperiment
+            key={`conservation-${labResetNonce}`}
             onBackToSelector={handleBackToSelector}
             privateLabContext={activePrivateLabContext || undefined}
           />
@@ -893,6 +982,7 @@ const AppContent: React.FC = () => {
         {/* Conservation Experiment (3D VR Mode) */}
         {activeExperiment === 'conservation-vr' && (
           <ConservationExperiment
+            key={`conservation-vr-${labResetNonce}`}
             initialVRMode={true}
             onBackToSelector={handleBackToSelector}
             privateLabContext={activePrivateLabContext || undefined}
@@ -1058,6 +1148,23 @@ const AppContent: React.FC = () => {
         onClose={() => setHeaderSafetyModalOpen(false)}
         experimentId={activeExperiment === 'conservation-vr' || activeExperiment === 'conservation-of-mass' ? 'conservation-of-mass' : activeExperiment}
         experimentTitle={headerInfo.subtitle}
+      />
+
+      {/* Exit Experiment Confirmation Modal */}
+      <ExitConfirmationModal
+        isOpen={exitModalOpen}
+        onConfirm={() => {
+          setExitModalOpen(false);
+          handleBackToSelector();
+        }}
+        onCancel={() => setExitModalOpen(false)}
+      />
+
+      {/* Reset Experiment Global Confirmation Modal */}
+      <ResetConfirmationModal
+        isOpen={resetModalOpen}
+        onConfirm={handleConfirmReset}
+        onCancel={() => setResetModalOpen(false)}
       />
     </div>
   );

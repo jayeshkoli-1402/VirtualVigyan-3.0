@@ -6,12 +6,12 @@
 
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import type { ExperimentConfig, ExperimentState, ExperimentAction, DropZoneConfig } from '../../engine/experimentConfig';
+import type { ExperimentConfig, ExperimentState, ExperimentAction, DropZoneConfig, ApparatusConfig } from '../../engine/experimentConfig';
 import { getApparatusComponent } from '../../apparatus';
 import { getSolutionColor } from '../../engine/chemistryLib';
 import { evaluateCondition } from '../../engine/experimentRunner';
 import { FluidDynamicsLayer } from './FluidDynamicsLayer';
-import { ChemicalInspectorModal } from './ChemicalInspectorModal';
+import { ChemicalInspectorModal, type VesselInspectionItem } from './ChemicalInspectorModal';
 import { createEmptyMixture } from '../../engine/stoichiometrySolver';
 import { useLanguage } from '../../i18n/LanguageContext';
 
@@ -20,6 +20,7 @@ type GenericBenchProps = {
   state: ExperimentState;
   dispatch: React.Dispatch<ExperimentAction>;
   activeDropZone: string | null;
+  activeDragId?: string | null;
 };
 
 const GenericBench: React.FC<GenericBenchProps> = ({
@@ -27,11 +28,26 @@ const GenericBench: React.FC<GenericBenchProps> = ({
   state,
   dispatch,
   activeDropZone,
+  activeDragId,
 }) => {
   const { t, tDynamic } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
   const [isStirring, setIsStirring] = React.useState(false);
   const [stopcockOpen, setStopcockOpen] = React.useState(0);
+
+  // Persisted state to show/hide the dark workbench table surface
+  const [showTableSurface, setShowTableSurface] = React.useState<boolean>(() => {
+    const stored = localStorage.getItem('vv_show_bench_table');
+    return stored !== null ? stored === 'true' : true;
+  });
+
+  const handleToggleTable = React.useCallback(() => {
+    setShowTableSurface((prev) => {
+      const next = !prev;
+      localStorage.setItem('vv_show_bench_table', String(next));
+      return next;
+    });
+  }, []);
 
   // Sync with state.variables.stopcockOpen if updated by reducer
   React.useEffect(() => {
@@ -183,9 +199,106 @@ const GenericBench: React.FC<GenericBenchProps> = ({
   });
   const configVessel = config.apparatus.find(a => vesselComponents.includes(a.component));
   const primaryVesselId = placedVesselId ?? configVessel?.id ?? 'flask';
-  const primaryVesselLabel = config.apparatus.find(a => a.id === primaryVesselId)?.label ?? 'Reaction Vessel';
 
+  // Find all apparatus that hold liquid or chemicals
+  const allVesselConfigs = config.apparatus.filter(a => {
+    const comp = a.component.toLowerCase();
+    return comp.includes('beaker') || comp.includes('flask') || comp.includes('tube') || comp.includes('bottle') || comp.includes('cylinder') || comp.includes('burette');
+  });
 
+  const vesselsList: VesselInspectionItem[] = allVesselConfigs.map(a => {
+    const isPlaced = Boolean(state.placedApparatus[a.id]);
+    const mixture = state.vesselMixtures?.[a.id] ?? createEmptyMixture(a.id, 0);
+    const dynamicProps = state.apparatusProps[a.id] ?? {};
+    const label = (dynamicProps.label as string) || a.label;
+
+    let chemicalSummary = '';
+    let physicalState = '';
+    const isBeakerA = a.id.includes('solution') || a.id.includes('beaker-a') || a.id === 'beaker-1';
+    const isBeakerB = a.id.includes('suspension') || a.id.includes('beaker-b') || a.id === 'beaker-2';
+    const isBeakerC = a.id.includes('colloid') || a.id.includes('beaker-c') || a.id === 'beaker-3';
+
+    if (isBeakerA) {
+      const hasWater = state.flags['hasWaterA'] || state.completedActions.includes('water-added-a');
+      const hasSalt = state.flags['hasSalt'] || state.completedActions.includes('solute-added-a');
+      const stirred = state.flags['stirredA'] || state.completedActions.includes('stirred-a');
+      if (hasSalt && stirred) {
+        chemicalSummary = 'Water (50 mL) + Sodium Chloride (NaCl 0.5 g). Fully dissociated Na⁺ & Cl⁻ ions.';
+        physicalState = 'True Solution (<1 nm particles). Completely transparent and homogeneous; invisible 650 nm laser path.';
+      } else if (hasWater && hasSalt) {
+        chemicalSummary = 'Water (50 mL) + Undissolved Salt crystals (NaCl).';
+        physicalState = 'Dissolution in progress; needs stirring.';
+      } else if (hasWater) {
+        chemicalSummary = 'Distilled Water (H₂O, 50 mL).';
+        physicalState = 'Pure solvent, clear liquid.';
+      } else {
+        chemicalSummary = 'Empty vessel.';
+        physicalState = 'Clean borosilicate glass.';
+      }
+    } else if (isBeakerB) {
+      const hasWater = state.flags['hasWaterB'] || state.completedActions.includes('water-added-b');
+      const hasSoil = state.flags['hasSoil'] || state.completedActions.includes('solute-added-b');
+      const stirred = state.flags['stirredB'] || state.completedActions.includes('stirred-b');
+      if (hasSoil && stirred) {
+        chemicalSummary = 'Water (50 mL) + Fine Garden Soil / Sand grains.';
+        physicalState = 'Suspension (>1000 nm particles). Coarse mud sediment gradually settling at bottom; opaque and blocks laser beam.';
+      } else if (hasWater && hasSoil) {
+        chemicalSummary = 'Water (50 mL) + Soil resting at bottom.';
+        physicalState = 'Heterogeneous mixture; unmixed sediment.';
+      } else if (hasWater) {
+        chemicalSummary = 'Distilled Water (H₂O, 50 mL).';
+        physicalState = 'Pure solvent, clear liquid.';
+      } else {
+        chemicalSummary = 'Empty vessel.';
+        physicalState = 'Clean borosilicate glass.';
+      }
+    } else if (isBeakerC) {
+      const hasWater = state.flags['hasWaterC'] || state.completedActions.includes('water-added-c');
+      const hasStarch = state.flags['hasStarch'] || state.completedActions.includes('solute-added-c');
+      const stirred = state.flags['stirredC'] || state.completedActions.includes('stirred-c');
+      if (hasStarch && stirred) {
+        chemicalSummary = 'Water (50 mL) + Soluble Starch macromolecules (Amylose & Amylopectin).';
+        physicalState = 'Colloid (1–1000 nm particles). Stable translucent sol; scatters 650 nm light brilliantly (Tyndall Effect).';
+      } else if (hasWater && hasStarch) {
+        chemicalSummary = 'Water (50 mL) + Starch paste resting at bottom.';
+        physicalState = 'Colloidal dispersion in progress; needs stirring.';
+      } else if (hasWater) {
+        chemicalSummary = 'Distilled Water (H₂O, 50 mL).';
+        physicalState = 'Pure solvent, clear liquid.';
+      } else {
+        chemicalSummary = 'Empty vessel.';
+        physicalState = 'Clean borosilicate glass.';
+      }
+    } else {
+      const speciesNames = Object.entries(mixture.moles)
+        .filter(([, m]) => m > 1e-6)
+        .map(([id]) => id);
+      chemicalSummary = speciesNames.length > 0 ? speciesNames.join(', ') : (mixture.volumeMl > 0 ? 'Aqueous solution' : 'Empty vessel');
+      physicalState = mixture.volumeMl > 0 ? `Liquid volume: ${mixture.volumeMl.toFixed(1)} mL, pH: ${mixture.pH.toFixed(1)}` : 'Empty';
+    }
+
+    return {
+      id: a.id,
+      label,
+      component: a.component,
+      isPlaced,
+      mixture,
+      chemicalSummary,
+      physicalState,
+      volumeMl: mixture.volumeMl > 0 ? mixture.volumeMl : ((dynamicProps.liquidLevel as number ?? 0) * 100),
+      ph: mixture.pH,
+    };
+  });
+
+  const hasBottomBarContent = Boolean(
+    hasSwirlableApparatus ||
+    hasMagneticStirrer ||
+    hasBurette ||
+    (primaryVesselId && Boolean(config?.chemistry?.reaction)) ||
+    showSwirlPrompt ||
+    Boolean(state.flags.buretteEmpty || (!state.flags.buretteFilled && hasBurette && ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) <= 0.02))) ||
+    stopcockOpen > 0
+  );
 
   return (
     <div
@@ -200,66 +313,70 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       }}
     >
       {/* ── Realistic Lab Workbench Table Surface ── */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: '28%',
-          background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
-          borderTop: '2px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: 'inset 0 8px 16px rgba(0, 0, 0, 0.4)',
-          zIndex: 1,
-        }}
-      >
-        {/* Tabletop depth / glossy reflection plane */}
+      {showTableSurface && (
         <div
+          id="bench-table-surface"
           style={{
             position: 'absolute',
-            top: 0,
+            bottom: 0,
             left: 0,
             right: 0,
-            height: '20px',
-            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
-            borderBottom: '1px solid rgba(0, 0, 0, 0.4)',
-          }}
-        />
-
-        {/* Specular front edge highlight */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 95%)',
-          }}
-        />
-
-        {/* Cabinet / Drawer Grooves on table apron */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            height: '100%',
-            paddingTop: '20px',
-            opacity: 0.25,
+            height: '28%',
+            background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+            borderTop: '2px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: 'inset 0 8px 16px rgba(0, 0, 0, 0.4)',
+            zIndex: 1,
+            animation: 'fadeIn 0.25s ease-out',
           }}
         >
-          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
-          </div>
-          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
-          </div>
-          <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
+          {/* Tabletop depth / glossy reflection plane */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '20px',
+              background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 100%)',
+              borderBottom: '1px solid rgba(0, 0, 0, 0.4)',
+            }}
+          />
+
+          {/* Specular front edge highlight */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent 5%, rgba(255, 255, 255, 0.3) 25%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 95%)',
+            }}
+          />
+
+          {/* Cabinet / Drawer Grooves on table apron */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              height: '100%',
+              paddingTop: '20px',
+              opacity: 0.25,
+            }}
+          >
+            <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
+            </div>
+            <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
+            </div>
+            <div style={{ width: '28%', height: '55%', border: '1px solid #94a3b8', borderRadius: 4, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <div style={{ width: '30%', height: 4, background: '#94a3b8', borderRadius: 2 }} />
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── High-Fidelity Fluid Dynamics & Pouring Physics Simulation ── */}
       <FluidDynamicsLayer
@@ -328,6 +445,78 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               }}
             >
               {t('common.continue')} →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Stability & Settling Observation Banner (True Solution, Suspension & Colloid) ── */}
+      {config.steps[state.currentStepIndex]?.id === 'observe-stability' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 14,
+            zIndex: 30,
+            background: 'linear-gradient(135deg, rgba(254, 243, 199, 0.98), rgba(255, 255, 255, 0.98))',
+            border: '1.5px solid #d97706',
+            borderRadius: 'var(--radius-lg)',
+            padding: '10px 16px',
+            boxShadow: '0 10px 25px -5px rgba(217, 119, 6, 0.25), 0 4px 10px rgba(0, 0, 0, 0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            animation: 'fadeIn 0.3s ease-out',
+            maxWidth: '460px',
+          }}
+        >
+          <div style={{ fontSize: 20 }}>⏳</div>
+          <div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {state.flags['stabilityObserved']
+                ? tDynamic('Settling Observed • Suspension is Unstable')
+                : tDynamic('Step 4: Leave Mixtures Undisturbed')}
+            </div>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>
+              {state.flags['stabilityObserved']
+                ? tDynamic('Soil particles in Beaker B have settled into mud sediment. Beakers A & C remain uniform and stable.')
+                : tDynamic('Allow mixtures to stand undisturbed for 5 minutes to test stability.')}
+            </div>
+          </div>
+          {!state.flags['stabilityObserved'] ? (
+            <button
+              id="btn-bench-settle-action"
+              className="btn-primary"
+              onClick={() => {
+                dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'observe-settling' } });
+              }}
+              style={{
+                fontSize: '0.75rem',
+                padding: '6px 14px',
+                whiteSpace: 'nowrap',
+                background: 'linear-gradient(135deg, #d97706, #b45309)',
+                boxShadow: '0 4px 12px rgba(217, 119, 6, 0.3)',
+              }}
+            >
+              ⏳ {tDynamic('Wait 5 Mins (Let Settle)')}
+            </button>
+          ) : (
+            <button
+              id="btn-bench-proceed-stability"
+              className="btn-primary"
+              onClick={() => {
+                dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'advance-step' } });
+                dispatch({ type: 'ADVANCE_STEP' });
+              }}
+              style={{
+                fontSize: '0.75rem',
+                padding: '6px 14px',
+                whiteSpace: 'nowrap',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
+              }}
+            >
+              {tDynamic('Tyndall Test')} →
             </button>
           )}
         </div>
@@ -686,6 +875,228 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         );
       })()}
 
+      {/* ── Tyndall Effect Laser Scattering & Real-World Optics Observation Toolbar ── */}
+      {config.steps[state.currentStepIndex]?.id === 'test-tyndall' && (() => {
+        const activeTarget = state.flags['tyndallTargetAll']
+          ? 'all'
+          : state.flags['tyndallTargetA']
+            ? 'a'
+            : state.flags['tyndallTargetB']
+              ? 'b'
+              : state.flags['tyndallTargetC']
+                ? 'c'
+                : (state.flags['tyndallTestedC'] ? 'c' : state.flags['tyndallTestedB'] ? 'b' : state.flags['tyndallTestedA'] ? 'a' : 'none');
+        const testedA = Boolean(state.flags['tyndallTestedA'] || state.completedActions.includes('tested-tyndall-a'));
+        const testedB = Boolean(state.flags['tyndallTestedB'] || state.completedActions.includes('tested-tyndall-b'));
+        const testedC = Boolean(state.flags['tyndallTestedC'] || state.completedActions.includes('tested-tyndall-c'));
+        const allTested = testedA && testedB && testedC;
+
+        const handleTarget = (targetId: 'a' | 'b' | 'c' | 'all') => {
+          dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: `btn-tyndall-${targetId}` } });
+        };
+
+        const handleAdvance = () => {
+          dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'advance-step' } });
+          dispatch({ type: 'ADVANCE_STEP' });
+        };
+
+        return (
+          <div
+            id="tyndall-observation-banner"
+            style={{
+              position: 'absolute',
+              top: 14,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 35,
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.96))',
+              border: '1.5px solid rgba(239, 68, 68, 0.45)',
+              borderRadius: 14,
+              padding: '10px 18px',
+              boxShadow: '0 12px 32px rgba(220, 38, 38, 0.25), 0 4px 14px rgba(0, 0, 0, 0.55)',
+              backdropFilter: 'blur(12px)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              maxWidth: '94%',
+              color: '#f8fafc',
+              animation: 'fadeIn 0.3s ease-out',
+            }}
+          >
+            {/* Header row */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 18, filter: 'drop-shadow(0 0 6px #ef4444)' }}>🔴</span>
+                <div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#f87171' }}>
+                    {tDynamic('650 nm Laser Scattering & Tyndall Effect')}
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                    {tDynamic('Aim the ruby laser at each beaker to observe beam path visibility across different particle sizes.')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Ready to Advance CTA Button (User Controls When To Proceed) */}
+              {allTested && (
+                <button
+                  id="btn-advance-from-tyndall"
+                  onClick={handleAdvance}
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    padding: '7px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <span>{tDynamic('Proceed to Analysis')}</span>
+                  <span>➔</span>
+                </button>
+              )}
+            </div>
+
+            {/* Interactive Target Selector Buttons */}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                id="btn-shine-a"
+                onClick={() => handleTarget('a')}
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  border: activeTarget === 'a' ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: activeTarget === 'a' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                  color: activeTarget === 'a' ? '#fca5a5' : '#e2e8f0',
+                  boxShadow: activeTarget === 'a' ? '0 0 10px rgba(239, 68, 68, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>{testedA ? '✅' : '⚪'}</span>
+                <span>{tDynamic('Beaker A (True Solution)')}</span>
+              </button>
+
+              <button
+                id="btn-shine-b"
+                onClick={() => handleTarget('b')}
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  border: activeTarget === 'b' ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: activeTarget === 'b' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                  color: activeTarget === 'b' ? '#fca5a5' : '#e2e8f0',
+                  boxShadow: activeTarget === 'b' ? '0 0 10px rgba(239, 68, 68, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>{testedB ? '✅' : '⚪'}</span>
+                <span>{tDynamic('Beaker B (Suspension)')}</span>
+              </button>
+
+              <button
+                id="btn-shine-c"
+                onClick={() => handleTarget('c')}
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  border: activeTarget === 'c' ? '1.5px solid #ef4444' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: activeTarget === 'c' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(255, 255, 255, 0.06)',
+                  color: activeTarget === 'c' ? '#fca5a5' : '#e2e8f0',
+                  boxShadow: activeTarget === 'c' ? '0 0 10px rgba(239, 68, 68, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>{testedC ? '✅' : '⚪'}</span>
+                <span>{tDynamic('Beaker C (Colloid)')}</span>
+              </button>
+
+              <button
+                id="btn-shine-all"
+                onClick={() => handleTarget('all')}
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  padding: '5px 12px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  border: activeTarget === 'all' ? '1.5px solid #38bdf8' : '1px solid rgba(56, 189, 248, 0.3)',
+                  background: activeTarget === 'all' ? 'rgba(56, 189, 248, 0.22)' : 'rgba(56, 189, 248, 0.08)',
+                  color: activeTarget === 'all' ? '#7dd3fc' : '#bae6fd',
+                  boxShadow: activeTarget === 'all' ? '0 0 10px rgba(56, 189, 248, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>🔬</span>
+                <span>{tDynamic('Compare All 3 Side-by-Side')}</span>
+              </button>
+            </div>
+
+            {/* Scientific Observation Insight Box */}
+            <div
+              style={{
+                fontSize: '0.72rem',
+                lineHeight: 1.4,
+                padding: '6px 10px',
+                borderRadius: 6,
+                background: 'rgba(0, 0, 0, 0.35)',
+                borderLeft: '3px solid #ef4444',
+                color: '#cbd5e1',
+              }}
+            >
+              {activeTarget === 'a' && (
+                <span>
+                  <strong style={{ color: '#67e8f9' }}>Beaker A (True Solution, &lt;1 nm):</strong> Ions are completely dissolved and smaller than the wavelength of light. Rayleigh scattering is zero — <em>the beam path through the liquid is completely INVISIBLE</em>, passing straight through to the exit wall.
+                </span>
+              )}
+              {activeTarget === 'b' && (
+                <span>
+                  <strong style={{ color: '#fb923c' }}>Beaker B (Suspension, &gt;1000 nm):</strong> Coarse mud/soil particles block, absorb, and diffusely scatter photons at the entrance surface. The laser beam is <em>totally extinguished</em> within a few millimeters — zero light emerges.
+                </span>
+              )}
+              {activeTarget === 'c' && (
+                <span>
+                  <strong style={{ color: '#f472b6' }}>Beaker C (Colloid, 1–1000 nm):</strong> Intermediate starch macromolecules scatter light in all directions (<strong>Tyndall Effect</strong>). A <em>brilliant luminous red beam cone</em> with scintillating Brownian particles is visible across the entire beaker!
+                </span>
+              )}
+              {activeTarget === 'all' && (
+                <span>
+                  <strong style={{ color: '#38bdf8' }}>Comparative Observation:</strong> Notice how identical 650 nm laser light reveals particle nature: <em>Invisible</em> in True Solution (&lt;1 nm) vs <em>Extinguished</em> in Suspension (&gt;1000 nm) vs <em>Glowing Tyndall Corridor</em> in Colloid (1–1000 nm)!
+                </span>
+              )}
+              {activeTarget === 'none' && (
+                <span>
+                  Select any beaker above or drag the Laser Pointer from the tray onto a beaker to test.
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Background elements (retort stand, etc. - dimmed for glassware focus) */}
       {config.bench.backgroundElements?.map((elem, i) => {
         const Component = getApparatusComponent(elem.component);
@@ -746,11 +1157,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           return null;
         }
 
+        const isDragCompatible = Boolean(activeDragId && zone.accepts?.includes(activeDragId));
+
         return (
           <DropZone
             key={zone.id}
             zone={zone}
             isActive={activeDropZone === zone.id}
+            isDragCompatible={isDragCompatible}
             state={state}
             config={config}
             solutionColor={solutionColor}
@@ -781,6 +1195,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         const isHardware = ['RetortStand', 'Tripod', 'WireGauze'].includes(apparatusConfig.component);
         const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : 10;
 
+        const isAnimationTarget =
+          !state.activeAnimation?.targetZoneId ||
+          state.activeAnimation.targetZoneId === zoneId ||
+          (state.activeAnimation.targetZoneId === 'beaker-a-mouth' && (apparatusId.includes('solution') || apparatusId.includes('beaker-a'))) ||
+          (state.activeAnimation.targetZoneId === 'beaker-b-mouth' && (apparatusId.includes('suspension') || apparatusId.includes('beaker-b'))) ||
+          (state.activeAnimation.targetZoneId === 'beaker-c-mouth' && (apparatusId.includes('colloid') || apparatusId.includes('beaker-c')));
+
+        const isApparatusStirring = Boolean(
+          (isStirring && hasMagneticStirrer) ||
+          (Boolean(state.animations['isStirring'] || state.flags['isStirring']) && isAnimationTarget)
+        );
+
         return (
           <div
             key={`placed-${apparatusId}`}
@@ -807,10 +1233,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               <Component
                 id={apparatusId}
                 liquidColor={(dynamicProps.liquidColor as string | undefined) ?? solutionColor}
-                flags={{ ...state.flags, ...state.animations, swirling: isSwirling, stirring: isStirring, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+                flags={{
+                  ...state.flags,
+                  ...state.animations,
+                  swirling: isSwirling,
+                  stirring: isApparatusStirring,
+                  isTitrating: stopcockOpen > 0 || state.flags['isTitrating'],
+                  isObserveStabilityStep: config.steps[state.currentStepIndex]?.id === 'observe-stability',
+                }}
                 variables={{ ...state.variables, stopcockOpen }}
                 extraProps={{
                   stopcockOpen,
+                  currentStepId: config.steps[state.currentStepIndex]?.id,
                   onSetStopcock: (val: number) => {
                     setStopcockOpen(val);
                     dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
@@ -852,37 +1286,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                     pointerEvents: 'none',
                   }}
                 >
-                  {tDynamic(apparatusConfig.label)}
+                  {tDynamic((dynamicProps.label as string) || apparatusConfig.label)}
                 </span>
-
-                {isVessel && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: apparatusId } });
-                    }}
-                    title={`${t('bench.inspect', 'Inspect')} ${tDynamic(apparatusConfig.label)}`}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 2,
-                      fontSize: '0.62rem',
-                      fontWeight: 700,
-                      color: '#4f46e5',
-                      background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
-                      padding: '2px 7px',
-                      borderRadius: 10,
-                      border: '1px solid rgba(129, 140, 248, 0.8)',
-                      boxShadow: '0 2px 5px rgba(79, 70, 229, 0.15)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span>🧪</span>
-                    <span>{t('bench.inspect', 'Inspect')}</span>
-                  </button>
-                )}
               </div>
             )}
           </div>
@@ -890,16 +1295,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       })}
 
       {/* ── Interactive Workbench Action Bar (Shake / Swirl, Stirrer & Burette Cork Tap) ── */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 12,
-          left: 12,
-          zIndex: 35,
-          display: 'flex',
-          gap: 6,
-          background: 'var(--bg-card)',
-          backdropFilter: 'blur(12px)',
+      {hasBottomBarContent && (
+        <div
+          id="generic-bench-action-toolbar"
+          style={{
+            position: 'absolute',
+            bottom: 12,
+            left: 12,
+            zIndex: 35,
+            display: 'flex',
+            gap: 6,
+            background: 'var(--bg-card)',
+            backdropFilter: 'blur(12px)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: '4px 6px',
@@ -1153,9 +1560,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           type="button"
           id="btn-generic-inspect-chemistry"
           onClick={() => {
-            dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: primaryVesselId } });
+            const firstVessel = vesselsList[0]?.id ?? primaryVesselId;
+            dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: firstVessel } });
           }}
-          title={`Inspect live molecular concentrations, reactions, and volume for ${primaryVesselLabel}`}
+          title={t('bench.inspectAllApparatus', 'Inspect all apparatus and chemicals on the bench')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -1173,9 +1581,86 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           }}
         >
           <span style={{ fontSize: '0.85rem' }}>🧪</span>
-          <span>{t('bench.inspect')} {primaryVesselLabel.length > 18 ? tDynamic('Reaction') : tDynamic(primaryVesselLabel)}</span>
+          <span>{t('bench.inspectApparatus', 'Inspect Apparatus & Chemicals')}</span>
         </button>
       </div>
+      )}
+
+      {/* ── Single Central Workbench Apparatus & Chemicals Inspector Button ── */}
+      <button
+        type="button"
+        id="btn-bench-inspect-all-apparatus"
+        onClick={() => {
+          const firstVessel = vesselsList[0]?.id ?? primaryVesselId;
+          dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: firstVessel } });
+        }}
+        title={t('bench.inspectAllApparatus', 'Inspect all apparatus and chemicals on the bench')}
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: (hasBurette && (isBuretteFilled || (state.variables['volumeAdded'] ?? 0) > 0) ? 140 : 12) + 115,
+          zIndex: 25,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '5px 12px',
+          borderRadius: 'var(--radius-md)',
+          background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
+          border: '1.5px solid #6366f1',
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          color: '#4338ca',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
+          backdropFilter: 'blur(8px)',
+          transition: 'all 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+      >
+        <span style={{ fontSize: '0.85rem' }}>🧪</span>
+        <span>{t('bench.inspectApparatus', 'Inspect Chemicals & Apparatus')}</span>
+      </button>
+
+      {/* Quick Workbench Table Surface Corner Toggle */}
+      <button
+        type="button"
+        id="btn-bench-table-corner-toggle"
+        onClick={handleToggleTable}
+        title={showTableSurface ? t('bench.hideTable', 'Hide Table') : t('bench.showTable', 'Show Table')}
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: hasBurette && (isBuretteFilled || (state.variables['volumeAdded'] ?? 0) > 0) ? 140 : 12,
+          zIndex: 25,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '5px 10px',
+          borderRadius: 'var(--radius-md)',
+          background: showTableSurface ? 'var(--bg-card)' : 'rgba(59, 130, 246, 0.15)',
+          border: showTableSurface ? '1px solid var(--border)' : '1px solid #3b82f6',
+          fontSize: '0.72rem',
+          fontWeight: 600,
+          color: showTableSurface ? 'var(--text-secondary)' : '#2563eb',
+          cursor: 'pointer',
+          boxShadow: 'var(--shadow-xs)',
+          transition: 'all 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-1px)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+        }}
+      >
+        <span style={{ fontSize: '0.85rem' }}>{showTableSurface ? '🪵' : '✨'}</span>
+        <span>{showTableSurface ? t('bench.hideTable', 'Hide Table') : t('bench.showTable', 'Show Table')}</span>
+      </button>
 
       {/* Live volume reading indicator (Positioned in top-right empty space) */}
       {hasBurette && (isBuretteFilled || (state.variables['volumeAdded'] ?? 0) > 0) && (
@@ -1238,9 +1723,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           <ChemicalInspectorModal
             mixture={mixture}
             vesselLabel={vesselLabel}
+            vessels={vesselsList}
+            initialVesselId={vesselId}
             onClose={() => dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: null } })}
-            onAddChemical={(addition) => {
-              dispatch({ type: 'MIX_CHEMICAL', payload: { vesselId, addition } });
+            onAddChemical={(addition, targetVesselId) => {
+              dispatch({ type: 'MIX_CHEMICAL', payload: { vesselId: targetVesselId || vesselId, addition } });
             }}
           />
         );
@@ -1255,79 +1742,199 @@ const GenericBench: React.FC<GenericBenchProps> = ({
 type DropZoneProps = {
   zone: DropZoneConfig;
   isActive: boolean;
+  isDragCompatible?: boolean;
   state: ExperimentState;
   config: ExperimentConfig;
   solutionColor: string;
   benchScale?: number;
 };
 
-const DropZone: React.FC<DropZoneProps> = ({ zone, isActive, state }) => {
+const DropZone: React.FC<DropZoneProps> = ({
+  zone,
+  isActive,
+  isDragCompatible = false,
+  state,
+  config,
+}) => {
   const { tDynamic } = useLanguage();
   const hasItem = Object.values(state.placedApparatus).includes(zone.id);
 
-  const { setNodeRef, isOver } = useDroppable({ id: zone.id });
+  // Look up accepted apparatus details from config
+  const acceptedApparatuses = (zone.accepts ?? [])
+    .map(id => config?.apparatus?.find(a => a.id === id))
+    .filter(Boolean) as ApparatusConfig[];
 
-  // Reagent drop targets over placed apparatuses should only display when actively dragging a compatible item
-  const isReagentTarget = zone.accepts?.some(a => !['viscometer', 'burette', 'conical-flask', 'beaker'].includes(a)) ?? false;
-  const isZoneVisible = isOver || isActive || (!hasItem && !isReagentTarget);
+  const primaryApparatus = acceptedApparatuses[0];
+
+  const isMouthOrOpening =
+    zone.id.includes('mouth') ||
+    zone.id.includes('opening') ||
+    zone.id.includes('neck') ||
+    (!zone.id.includes('top-zone') && zone.id.includes('top'));
+
+  const reagentComponentTypes = ['ReagentBottle', 'Dropper', 'Matchstick', 'GlassRod', 'RubberCork'];
+
+  // A zone is an apparatus placement zone if:
+  // 1. It explicitly accepts non-reagent apparatus equipment, OR
+  // 2. Its ID indicates a bench/stand placement position (e.g. bench-zone-a, balance-zone, stand-tube-zone, burner-top-zone)
+  // 3. And it is not an opening/mouth of an already-placed vessel
+  const isBenchPlacementZone =
+    !isMouthOrOpening &&
+    (
+      acceptedApparatuses.some(app => !reagentComponentTypes.includes(app.component)) ||
+      zone.id.startsWith('bench-') ||
+      zone.id.endsWith('-zone')
+    );
+
+  const { setNodeRef, isOver } = useDroppable({
+    id: zone.id,
+    disabled: Boolean(hasItem && isBenchPlacementZone),
+  });
+
+  // Bench placement zones waiting for apparatus are always visible so students know where to place items!
+  const isZoneVisible = isOver || isActive || isDragCompatible || (!hasItem && isBenchPlacementZone);
 
   return (
     <div
       ref={setNodeRef}
+      id={`dropzone-${zone.id}`}
       style={{
         position: 'absolute',
         left: `${zone.position.x - zone.size.width / 2}%`,
         top: `${zone.position.y - zone.size.height / 2}%`,
         width: `${zone.size.width}%`,
         height: `${zone.size.height}%`,
-        borderRadius: zone.shape === 'circle' ? '50%' : 'var(--radius-md)',
+        borderRadius: zone.shape === 'circle' ? '50%' : 'var(--radius-lg, 12px)',
         border: `2px dashed ${
-          isOver ? '#2563eb' :
-          isActive ? '#60a5fa' :
-          hasItem || (!isZoneVisible) ? 'transparent' :
-          'rgba(148, 163, 184, 0.22)'
+          isOver
+            ? '#2563eb'
+            : isActive || isDragCompatible
+              ? '#3b82f6'
+              : isBenchPlacementZone && !hasItem
+                ? 'rgba(59, 130, 246, 0.55)'
+                : hasItem || !isZoneVisible
+                  ? 'transparent'
+                  : 'rgba(148, 163, 184, 0.22)'
         }`,
         background: isOver
-          ? 'rgba(37, 99, 235, 0.12)'
-          : isActive
-            ? 'rgba(96, 165, 250, 0.08)'
-            : 'transparent',
-        transition: 'all 0.2s ease',
+          ? 'rgba(37, 99, 235, 0.18)'
+          : isActive || isDragCompatible
+            ? 'rgba(59, 130, 246, 0.12)'
+            : isBenchPlacementZone && !hasItem
+              ? 'rgba(59, 130, 246, 0.04)'
+              : 'transparent',
+        boxShadow: isOver
+          ? '0 0 20px rgba(37, 99, 235, 0.45)'
+          : isActive || isDragCompatible
+            ? '0 0 16px rgba(59, 130, 246, 0.35)'
+            : isBenchPlacementZone && !hasItem
+              ? '0 2px 10px rgba(59, 130, 246, 0.08)'
+              : 'none',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: isOver || isActive ? 22 : 5,
+        zIndex: isOver || isActive ? 22 : isBenchPlacementZone && !hasItem ? 12 : 5,
         pointerEvents: hasItem && !isActive ? 'none' : 'auto',
       }}
     >
-      {/* Drop Zone Label: Positioned in clean empty space with dedicated opaque pill to avoid colliding with instruments */}
-      {!hasItem && !isOver && isZoneVisible && (
+      {/* Drop Zone Label: Dedicated opaque pill pinned above the zone */}
+      {!hasItem && isZoneVisible && (
         <div
           style={{
             position: 'absolute',
-            top: zone.position.y < 25 ? '105%' : '-14px',
+            top: zone.position.y < 25 ? '105%' : '-15px',
             left: '50%',
             transform: 'translateX(-50%)',
             pointerEvents: 'none',
-            zIndex: 10,
+            zIndex: 14,
             whiteSpace: 'nowrap',
           }}
         >
           <span
             style={{
-              display: 'inline-block',
-              fontSize: '0.60rem',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: '0.68rem',
               fontWeight: 700,
-              color: '#1e40af',
+              color: isOver ? '#1e3a8a' : isActive || isDragCompatible ? '#1d4ed8' : '#2563eb',
               background: 'rgba(255, 255, 255, 0.96)',
-              padding: '2px 8px',
-              borderRadius: 10,
-              border: '1.2px solid rgba(59, 130, 246, 0.45)',
-              boxShadow: '0 2px 5px rgba(0, 0, 0, 0.12)',
+              padding: '3px 10px',
+              borderRadius: 12,
+              border: `1.5px solid ${
+                isOver ? '#2563eb' : isActive || isDragCompatible ? '#60a5fa' : 'rgba(59, 130, 246, 0.45)'
+              }`,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
               letterSpacing: '0.02em',
+              transition: 'all 0.2s ease',
             }}
           >
-            📍 {tDynamic(zone.label)}
+            <span style={{ fontSize: '0.75rem' }}>📍</span>
+            <span>{tDynamic(zone.label)}</span>
+          </span>
+        </div>
+      )}
+
+      {/* Central placement watermark & apparatus silhouette */}
+      {!hasItem && isBenchPlacementZone && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            opacity: isOver ? 0.95 : isActive || isDragCompatible ? 0.9 : 0.7,
+            transition: 'all 0.2s ease',
+            textAlign: 'center',
+            padding: '6px',
+            maxWidth: '100%',
+          }}
+        >
+          <span
+            style={{
+              fontSize: '1.9rem',
+              lineHeight: 1,
+              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12))',
+              transform: isOver ? 'scale(1.15)' : isDragCompatible ? 'scale(1.08)' : 'scale(1)',
+              transition: 'transform 0.2s ease',
+            }}
+          >
+            {primaryApparatus?.icon ?? '🥛'}
+          </span>
+          <span
+            style={{
+              fontSize: '0.64rem',
+              fontWeight: 700,
+              color: '#1d4ed8',
+              background: 'rgba(239, 246, 255, 0.92)',
+              padding: '2px 8px',
+              borderRadius: 8,
+              border: '1px solid rgba(191, 219, 254, 0.9)',
+              whiteSpace: 'nowrap',
+              maxWidth: '96%',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {primaryApparatus ? tDynamic(primaryApparatus.label) : tDynamic(zone.label)}
+          </span>
+          <span
+            style={{
+              fontSize: '0.55rem',
+              fontWeight: 600,
+              color: isOver ? '#1e40af' : isActive || isDragCompatible ? '#2563eb' : '#64748b',
+              letterSpacing: '0.01em',
+            }}
+          >
+            {isOver
+              ? tDynamic('Drop to place')
+              : isDragCompatible
+                ? tDynamic('Place here')
+                : tDynamic('Drag here')}
           </span>
         </div>
       )}

@@ -308,7 +308,7 @@ export type InteractionEffect =
 
 export type AnimationConfig = {
   /** Animation type from the built-in library */
-  type: 'pour' | 'fill' | 'dispense' | 'drip' | 'titrate' | 'suction' | 'mix' | 'heat' | 'bubble' | 'precipitate' | 'color-change' | 'settle';
+  type: 'pour' | 'fill' | 'dispense' | 'drip' | 'titrate' | 'suction' | 'mix' | 'stir' | 'heat' | 'bubble' | 'precipitate' | 'color-change' | 'settle';
 
   /** Duration in milliseconds */
   durationMs: number;

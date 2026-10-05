@@ -248,6 +248,18 @@ export const en: TranslationDictionary = {
   'lab.recordMass': 'Record Mass',
   'lab.dragHint': 'Drag items from toolbox to the bench',
   'lab.emptyBench': 'Drag apparatus here to begin setup',
+  'lab.exitConfirmTitle': 'Exit Experiment?',
+  'lab.exitConfirmMessage': 'Do you want to exit? Any unsaved experiment progress and measurements will be lost.',
+  'lab.exitStay': 'Stay in Lab',
+  'lab.exitConfirm': 'Yes, Exit',
+  'lab.resetExperiment': 'Reset Experiment',
+  'lab.resetLab': 'Reset',
+  'lab.resetConfirmTitle': 'Reset Experiment?',
+  'lab.resetConfirmMessage': 'Are you sure you want to reset this experiment to the beginning? All placed apparatus, solutions, and actions will be cleared.',
+  'lab.resetConfirm': 'Reset Experiment',
+  'lab.resetToast': 'Experiment reset to beginning.',
+  'bench.hideTable': 'Hide Table',
+  'bench.showTable': 'Show Table',
 
   // Apparatus Names
   'apparatus.burette': 'Burette (50 mL)',

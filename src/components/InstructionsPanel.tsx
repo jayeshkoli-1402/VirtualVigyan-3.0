@@ -5,7 +5,6 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { EXPERIMENT_TRANSLATIONS } from '../i18n/experimentTranslations';
 import { getStepWhyExplanation } from '../data/experimentWhyData';
 import ContextualWhyModal from './common/ContextualWhyModal';
-import ExperimentSafetyModal from './common/ExperimentSafetyModal';
 
 interface InstructionsPanelProps {
   state: TitrationState;
@@ -24,7 +23,6 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
 }) => {
   const { t, language, tDynamic } = useLanguage();
   const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
-  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
   const currentStepIndex = STEP_ORDER.indexOf(state.step);
 
   const getLocalizedInstruction = (): string => {
@@ -97,39 +95,6 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
             >
               {t('lab.instructions', 'Instructions')}
             </h2>
-            <button
-              id="btn-instructions-safety-titration"
-              type="button"
-              onClick={() => setSafetyModalOpen(true)}
-              aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
-              title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
-              style={{
-                all: 'unset',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: '0.68rem',
-                fontWeight: 700,
-                color: '#d97706',
-                background: 'rgba(245, 158, 11, 0.12)',
-                border: '1px solid rgba(245, 158, 11, 0.35)',
-                padding: '2px 7px',
-                borderRadius: 5,
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
-                e.currentTarget.style.transform = 'translateY(-1px)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              <span>🛡️</span>
-              <span>{t('safety.buttonLabel', 'Safety')}</span>
-            </button>
           </div>
         )}
         {onToggleCollapse && (
@@ -450,14 +415,6 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
           />
         );
       })()}
-
-      {/* Experiment Safety Center Modal */}
-      <ExperimentSafetyModal
-        isOpen={safetyModalOpen}
-        onClose={() => setSafetyModalOpen(false)}
-        experimentId="titration"
-        experimentTitle={EXPERIMENT_TRANSLATIONS['titration']?.[language]?.title || 'Acid-Base Titration (HCl vs NaOH)'}
-      />
     </div>
   );
 };

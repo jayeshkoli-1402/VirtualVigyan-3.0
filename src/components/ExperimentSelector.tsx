@@ -175,8 +175,6 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     difficulty: 'Medium',
     thumbnailType: 'acid-value-oil',
     order: 14,
-    underDevelopment: true,
-    adminOnly: true,
   },
   {
     id: 'physical-chemical-changes',

@@ -25,8 +25,8 @@ export const mixtureCompoundIronSulphur: ExperimentConfig = {
   themeColor: '#b45309',
   icon: '🧲',
   estimatedMinutes: 35,
-  underDevelopment: true,
-  adminOnly: true,
+  underDevelopment: false,
+  adminOnly: false,
   hidePlacedApparatusLabels: true,
 
   // ── Apparatus ──

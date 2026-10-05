@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { VirtualVigyanLogo } from '../common/VirtualVigyanLogo';
 import { useLanguage } from '../../i18n/LanguageContext';
 import { LanguageSelector } from '../common/LanguageSelector';
+import { useAuth } from '../../auth/AuthContext';
 
 interface LandingNavbarProps {
   theme: 'light' | 'dark';
@@ -13,8 +14,10 @@ interface LandingNavbarProps {
 const LandingNavbar: React.FC<LandingNavbarProps> = ({
   theme,
   onToggleTheme,
+  onLogin,
   onStartExperiment,
 }) => {
+  const { user } = useAuth();
   const { t } = useLanguage();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -96,9 +99,31 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
             {theme === 'light' ? '🌙' : '☀️'}
           </button>
 
-          <button onClick={onStartExperiment} className="ln-btn ln-btn-primary ln-btn-sm">
-            {t('landing.nav.startExperiment', 'Start Experiment')}
-          </button>
+          {user ? (
+            <button
+              onClick={onStartExperiment}
+              className="ln-btn ln-btn-primary ln-btn-sm"
+              title={`Logged in as ${user.name}`}
+            >
+              <span>🚀</span>
+              <span>{t('landing.nav.openDashboard', 'Open Dashboard')}</span>
+            </button>
+          ) : (
+            <>
+              {onLogin && (
+                <button
+                  onClick={onLogin}
+                  className="ln-btn ln-btn-secondary ln-btn-sm"
+                  style={{ padding: '6px 14px' }}
+                >
+                  {t('landing.nav.login', 'Login')}
+                </button>
+              )}
+              <button onClick={onStartExperiment} className="ln-btn ln-btn-primary ln-btn-sm">
+                {t('landing.nav.startExperiment', 'Start Experiment')}
+              </button>
+            </>
+          )}
 
           <button
             className="ln-hamburger"
@@ -125,9 +150,34 @@ const LandingNavbar: React.FC<LandingNavbarProps> = ({
         ))}
         <div className="ln-mobile-actions" style={{ flexDirection: 'column', gap: 10 }}>
           <LanguageSelector variant="buttons" style={{ width: '100%', marginBottom: 4 }} />
-          <button onClick={() => { setMobileOpen(false); onStartExperiment(); }} className="ln-btn ln-btn-primary" style={{ width: '100%' }}>
-            {t('landing.nav.startExperiment', 'Start Experiment')}
-          </button>
+          {user ? (
+            <button
+              onClick={() => { setMobileOpen(false); onStartExperiment(); }}
+              className="ln-btn ln-btn-primary"
+              style={{ width: '100%' }}
+            >
+              🚀 {t('landing.nav.openDashboard', 'Open Dashboard')}
+            </button>
+          ) : (
+            <>
+              {onLogin && (
+                <button
+                  onClick={() => { setMobileOpen(false); onLogin(); }}
+                  className="ln-btn ln-btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  {t('landing.nav.login', 'Login')}
+                </button>
+              )}
+              <button
+                onClick={() => { setMobileOpen(false); onStartExperiment(); }}
+                className="ln-btn ln-btn-primary"
+                style={{ width: '100%' }}
+              >
+                {t('landing.nav.startExperiment', 'Start Experiment')}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </header>

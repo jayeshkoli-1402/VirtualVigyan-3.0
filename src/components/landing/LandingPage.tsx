@@ -25,6 +25,7 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({
   onEnterApp,
+  onOpenLogin,
   onOpenTeacherPortal,
   onStartExperiment,
   theme,
@@ -85,6 +86,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
         theme={theme}
         onToggleTheme={onToggleTheme}
         onStartExperiment={handleStart}
+        onLogin={onOpenLogin}
       />
 
       {/* 2. Hero */}

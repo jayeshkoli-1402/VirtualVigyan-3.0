@@ -60,12 +60,8 @@ const AppContent: React.FC = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
   const [authRole, setAuthRole] = useState<'student' | 'teacher'>('student');
-  const [showLanding, setShowLanding] = useState(() => {
-    const stored = sessionStorage.getItem('vv_showLanding');
-    if (stored !== null) return stored === 'true';
-    const cachedUser = localStorage.getItem('vv_active_user');
-    return cachedUser ? false : true;
-  });
+  // Always open directly on the landing page whenever anyone opens the platform
+  const [showLanding, setShowLanding] = useState(true);
 
   const [activeExperiment, setActiveExperiment] = useState<ActiveExperiment>(() => {
     const stored = sessionStorage.getItem('vv_activeExperiment');
@@ -88,20 +84,18 @@ const AppContent: React.FC = () => {
   const [resetModalOpen, setResetModalOpen] = useState(false);
   const [labResetNonce, setLabResetNonce] = useState(0);
 
-  // When user is authenticated, keep landing hidden and route properly
+  // When user is on the dedicated auth page and successfully logs in, route them to their role
   useEffect(() => {
-    if (user) {
+    if (user && activeExperiment === 'auth') {
       setShowLanding(false);
       sessionStorage.setItem('vv_showLanding', 'false');
-      if (activeExperiment === 'auth') {
-        if (user.role === 'admin') {
-          setActiveExperiment('admin');
-        } else if (user.role === 'teacher') {
-          setActiveExperiment('teacher');
-        } else {
-          setActiveExperiment('select');
-          setActiveTab('experiments');
-        }
+      if (user.role === 'admin') {
+        setActiveExperiment('admin');
+      } else if (user.role === 'teacher') {
+        setActiveExperiment('teacher');
+      } else {
+        setActiveExperiment('select');
+        setActiveTab('experiments');
       }
     }
   }, [user, activeExperiment]);
@@ -468,40 +462,7 @@ const AppContent: React.FC = () => {
     setActiveExperiment('auth');
   };
 
-  // ── Dedicated Authentication Page (Student & Teacher Login) ──
-  if (activeExperiment === 'auth') {
-    return (
-      <AuthPage
-        initialRole={authRole}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onBackToLab={() => {
-          setShowLanding(false);
-          setActiveExperiment('select');
-          setActiveTab('experiments');
-        }}
-        onRoleRedirect={(role) => {
-          setShowLanding(false);
-          if (role === 'admin') {
-            setActiveExperiment('admin');
-          } else if (role === 'teacher') {
-            setActiveExperiment('teacher');
-          } else {
-            setActiveExperiment('select');
-            setActiveTab('experiments');
-          }
-        }}
-        onOpenProfileSetup={() => {
-          setShowLanding(false);
-          setActiveExperiment('select');
-          setActiveTab('experiments');
-          setProfileSetupOpen(true);
-        }}
-      />
-    );
-  }
-
-  // If landing page is active, render LandingPage with AuthModal
+  // ── 1. Landing Page (Always the direct opening screen for the platform) ──
   if (showLanding) {
     return (
       <>
@@ -510,6 +471,7 @@ const AppContent: React.FC = () => {
             setShowLanding(false);
             sessionStorage.setItem('vv_showLanding', 'false');
             setActiveTab('experiments');
+            setActiveExperiment('select');
           }}
           onOpenLogin={() => {
             setAuthModalTab('login');
@@ -565,6 +527,39 @@ const AppContent: React.FC = () => {
           onClose={() => setProfileSetupOpen(false)}
         />
       </>
+    );
+  }
+
+  // ── 2. Dedicated Authentication Page (Student & Teacher Login) ──
+  if (activeExperiment === 'auth') {
+    return (
+      <AuthPage
+        initialRole={authRole}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onBackToLab={() => {
+          setShowLanding(true);
+          setActiveExperiment('select');
+          setActiveTab('experiments');
+        }}
+        onRoleRedirect={(role) => {
+          setShowLanding(false);
+          if (role === 'admin') {
+            setActiveExperiment('admin');
+          } else if (role === 'teacher') {
+            setActiveExperiment('teacher');
+          } else {
+            setActiveExperiment('select');
+            setActiveTab('experiments');
+          }
+        }}
+        onOpenProfileSetup={() => {
+          setShowLanding(false);
+          setActiveExperiment('select');
+          setActiveTab('experiments');
+          setProfileSetupOpen(true);
+        }}
+      />
     );
   }
 

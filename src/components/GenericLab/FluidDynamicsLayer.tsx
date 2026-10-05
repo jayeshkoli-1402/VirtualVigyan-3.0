@@ -59,17 +59,12 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
     ? config.dropZones.find((z) => z.id === targetZoneId)
     : null;
 
-  // SAFETY: If dropped to beaker zone, target MUST be beaker drop zone, never burette!
   const triggerTarget = interaction?.trigger.type === 'drop' ? interaction.trigger.target : null;
-  if (targetZoneId?.includes('beaker') || triggerTarget?.includes('beaker')) {
-    const beakerZone = config.dropZones.find(z => z.id.includes('beaker'));
-    if (beakerZone) targetZone = beakerZone;
-  } else if (targetZoneId?.includes('flask') || triggerTarget?.includes('flask')) {
-    const flaskZone = config.dropZones.find(z => z.id.includes('flask'));
-    if (flaskZone) targetZone = flaskZone;
-  } else if (targetZoneId?.includes('burette') || triggerTarget?.includes('burette')) {
-    const buretteZone = config.dropZones.find(z => z.id.includes('burette'));
-    if (buretteZone) targetZone = buretteZone;
+  if (!targetZone && (targetZoneId || triggerTarget)) {
+    const rawTarget = targetZoneId ?? triggerTarget ?? '';
+    targetZone = config.dropZones.find(z => z.id === rawTarget) ??
+      config.dropZones.find(z => z.id.includes(rawTarget) || rawTarget.includes(z.id)) ??
+      null;
   }
 
   // Resolve Source Component (Reagent bottle or Dropper if not explicitly in config apparatus)
@@ -632,8 +627,129 @@ export const FluidDynamicsLayer: React.FC<FluidDynamicsLayerProps> = ({
         </div>
       )}
 
+      {/* ── 5. GLASS STIRRING ROD DYNAMIC STIRRING ANIMATION ── */}
+      {animType === 'stir' && (() => {
+        const rodScale = benchScale * 0.95;
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${targetX}%`,
+              top: `${targetY}%`,
+              transform: 'translate(-50%, -65%)',
+              width: 0,
+              height: 0,
+              overflow: 'visible',
+              zIndex: 35,
+              pointerEvents: 'none',
+            }}
+          >
+            {/* Swirling Glass Stirring Rod */}
+            <div
+              style={{
+                position: 'absolute',
+                left: -18 * rodScale,
+                top: -125 * rodScale,
+                transformOrigin: '50% 120px',
+                animation: 'stirDipOrbit 2.4s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+                filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))',
+              }}
+            >
+              <svg width={36 * rodScale} height={140 * rodScale} viewBox="0 0 36 140" fill="none" style={{ overflow: 'visible' }}>
+                <defs>
+                  <linearGradient id="glassRodGleam" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+                    <stop offset="30%" stopColor="rgba(224,242,254,0.3)" />
+                    <stop offset="70%" stopColor="rgba(148,163,184,0.3)" />
+                    <stop offset="100%" stopColor="rgba(255,255,255,0.8)" />
+                  </linearGradient>
+                </defs>
+                {/* Slanted Glass Stirring Rod Body */}
+                <rect
+                  x="15"
+                  y="6"
+                  width="6"
+                  height="124"
+                  rx="3"
+                  fill="url(#glassRodGleam)"
+                  stroke="#94a3b8"
+                  strokeWidth="1.2"
+                />
+                {/* Internal reflection core line */}
+                <line x1="17" y1="10" x2="17" y2="126" stroke="rgba(255,255,255,0.9)" strokeWidth="1" strokeLinecap="round" />
+                {/* Rounded glass tips */}
+                <circle cx="18" cy="8" r="2.8" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.8" />
+                <circle cx="18" cy="128" r="3.2" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1" />
+              </svg>
+            </div>
+
+            {/* Dynamic Swirl Vortex Ring & Ripples at liquid surface */}
+            <svg
+              width={160 * benchScale}
+              height={100 * benchScale}
+              viewBox="0 0 160 100"
+              style={{
+                position: 'absolute',
+                left: -80 * benchScale,
+                top: -15 * benchScale,
+                overflow: 'visible',
+              }}
+            >
+              {/* Elliptical liquid vortex lines */}
+              <ellipse cx="80" cy="50" rx="22" ry="7" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5">
+                <animateTransform attributeName="transform" type="rotate" from="0 80 50" to="360 80 50" dur="0.55s" repeatCount="indefinite" />
+              </ellipse>
+              <ellipse cx="80" cy="50" rx="14" ry="4.5" fill="none" stroke={fluidColor} strokeWidth="1.4" opacity="0.85">
+                <animateTransform attributeName="transform" type="rotate" from="360 80 50" to="0 80 50" dur="0.45s" repeatCount="indefinite" />
+              </ellipse>
+              {/* Expanding swirl ripples */}
+              <ellipse cx="80" cy="50" rx="6" ry="2" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.2">
+                <animate attributeName="rx" values="6;28" dur="0.8s" repeatCount="indefinite" />
+                <animate attributeName="ry" values="2;9" dur="0.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.9;0" dur="0.8s" repeatCount="indefinite" />
+              </ellipse>
+            </svg>
+          </div>
+        );
+      })()}
+
       {/* Embedded keyframe styles for smooth physics */}
       <style>{`
+        @keyframes stirDipOrbit {
+          0% {
+            transform: translate(-10px, -70px) rotate(22deg);
+            opacity: 0;
+          }
+          15% {
+            transform: translate(-5px, 0px) rotate(16deg);
+            opacity: 1;
+          }
+          25% {
+            transform: translate(-12px, 8px) rotate(20deg);
+            opacity: 1;
+          }
+          40% {
+            transform: translate(10px, 12px) rotate(10deg);
+            opacity: 1;
+          }
+          55% {
+            transform: translate(-10px, 10px) rotate(18deg);
+            opacity: 1;
+          }
+          70% {
+            transform: translate(8px, 12px) rotate(12deg);
+            opacity: 1;
+          }
+          85% {
+            transform: translate(-4px, 4px) rotate(15deg);
+            opacity: 0.9;
+          }
+          100% {
+            transform: translate(0px, -50px) rotate(5deg);
+            opacity: 0;
+          }
+        }
+
         @keyframes pourTilt {
           0% {
             transform: rotate(0deg);

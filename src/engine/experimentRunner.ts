@@ -206,7 +206,8 @@ export function detectChemicalAddition(
     return { substanceId: 'cacl2', volumeMl: 25, molarity: 0.01 };
   }
   if (norm.includes('water') || norm.includes('distilled') || norm === 'h2o' || norm.includes('cond-water')) {
-    return { substanceId: 'h2o', volumeMl: 25 };
+    const waterVol = (config?.chemistry?.constants?.waterVolume as number | undefined) ?? 50;
+    return { substanceId: 'h2o', volumeMl: waterVol };
   }
   if (norm.includes('sample')) {
     return { substanceId: 'h2o', volumeMl: 25 };
@@ -280,25 +281,59 @@ export function findTargetVesselId(
     return null;
   }
 
-  // 1. Precise keyword matching in zoneId against apparatus IDs and components
+  // 1. Check if the dropZone explicitly specifies which apparatus it belongs to via visibleWhen
+  const targetDropZone = config.dropZones.find(z => z.id === zoneId);
+  if (targetDropZone?.visibleWhen?.type === 'apparatusPlaced' && targetDropZone.visibleWhen.apparatusId) {
+    return targetDropZone.visibleWhen.apparatusId;
+  }
+
+  // 2. Spatial matching: if a reaction vessel is placed directly beneath/at this drop zone (same x coordinate)
+  if (targetDropZone) {
+    for (const [placedAppId, benchZoneId] of Object.entries(state.placedApparatus)) {
+      const benchZone = config.dropZones.find(z => z.id === benchZoneId);
+      if (benchZone && Math.abs(benchZone.position.x - targetDropZone.position.x) < 5) {
+        const app = config.apparatus.find(a => a.id === placedAppId);
+        if (app && REACTION_VESSEL_COMPONENTS.includes(app.component)) {
+          return placedAppId;
+        }
+      }
+    }
+  }
+
+  // 3. Exact ID substring match (e.g. zoneId contains the full apparatus ID)
   for (const app of config.apparatus) {
     if (!REACTION_VESSEL_COMPONENTS.includes(app.component)) continue;
     const appId = app.id.toLowerCase();
-    const appComp = app.component.toLowerCase();
-
-    if (
-      (zLower.includes('beaker') && (appId.includes('beaker') || appComp.includes('beaker'))) ||
-      ((zLower.includes('flask') || zLower.includes('conical')) && (appId.includes('flask') || appComp.includes('flask'))) ||
-      (zLower.includes('visco') && (appId.includes('visco') || appComp.includes('visco'))) ||
-      (zLower.includes('tube') && (appId.includes('tube') || appComp.includes('tube'))) ||
-      (zLower.includes('bottle') && (appId.includes('bottle') || appComp.includes('bottle'))) ||
-      (zLower.includes('cylinder') && (appId.includes('cylinder') || appComp.includes('cylinder')))
-    ) {
+    if (zLower.includes(appId)) {
       return app.id;
     }
   }
 
-  // 2. Check if zoneId directly matches a placed vessel
+  // 4. Letter suffix matching (e.g. 'beaker-a-mouth' -> 'Beaker A' or 'beaker-solution', 'beaker-b' -> 'Beaker B', 'beaker-c' -> 'Beaker C')
+  for (const letter of ['a', 'b', 'c', 'd', '1', '2', '3']) {
+    if (zLower.includes(`-${letter}-`) || zLower.endsWith(`-${letter}`) || zLower.includes(`_${letter}_`) || zLower.endsWith(`_${letter}`)) {
+      for (const app of config.apparatus) {
+        if (!REACTION_VESSEL_COMPONENTS.includes(app.component)) continue;
+        const appLabel = (app.label || '').toLowerCase();
+        const appId = app.id.toLowerCase();
+        const initLabel = String(app.initialProps?.label || '').toLowerCase();
+        if (
+          appLabel.includes(`beaker ${letter}`) ||
+          appLabel.includes(`flask ${letter}`) ||
+          appLabel.includes(`tube ${letter}`) ||
+          initLabel.includes(`beaker ${letter}`) ||
+          initLabel.includes(`flask ${letter}`) ||
+          initLabel.includes(`tube ${letter}`) ||
+          appId.includes(`-${letter}`) ||
+          appId.includes(`_${letter}`)
+        ) {
+          return app.id;
+        }
+      }
+    }
+  }
+
+  // 5. Check if zoneId directly matches a placed vessel
   for (const [appId, placedZone] of Object.entries(state.placedApparatus)) {
     if (placedZone === zoneId) {
       const app = config.apparatus.find(a => a.id === appId);
@@ -308,15 +343,17 @@ export function findTargetVesselId(
     }
   }
 
-  // 3. If zone explicitly specifies a vessel mouth or opening, match with active placed vessel
-  if (zLower.includes('mouth') || zLower.includes('limb') || zLower.includes('opening')) {
-    for (const preferred of REACTION_VESSEL_COMPONENTS) {
-      for (const appId of Object.keys(state.placedApparatus)) {
-        const app = config.apparatus.find(a => a.id === appId);
-        if (app && app.component === preferred) {
-          return appId;
-        }
-      }
+  // 6. Generic vessel component match if there's a placed vessel of that type
+  for (const app of config.apparatus) {
+    if (!REACTION_VESSEL_COMPONENTS.includes(app.component)) continue;
+    const appComp = app.component.toLowerCase();
+    if (zLower.includes(appComp)) {
+      const placedMatch = Object.keys(state.placedApparatus).find(id => {
+        const a = config.apparatus.find(x => x.id === id);
+        return a?.component === app.component;
+      });
+      if (placedMatch) return placedMatch;
+      return app.id;
     }
   }
 

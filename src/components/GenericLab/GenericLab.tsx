@@ -369,12 +369,13 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
               order: isMobile ? 0 : 1,
               background: 'var(--bg-secondary)',
             }}>
-              <GenericBench
-                config={config}
-                state={state}
-                dispatch={dispatch}
-                activeDropZone={activeDropZone}
-              />
+                <GenericBench
+                  config={config}
+                  state={state}
+                  dispatch={dispatch}
+                  activeDropZone={activeDropZone}
+                  activeDragId={activeDragId}
+                />
             </div>
 
             {/* Right: Instructions */}

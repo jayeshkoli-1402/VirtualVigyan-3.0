@@ -313,6 +313,7 @@ const Beaker: React.FC<ApparatusProps> = ({
   flags = {},
   extraProps = {},
   effervescenceRate,
+  ...rest
 }) => {
   const isStirring = Boolean(flags?.stirring || extraProps?.stirring);
   const effRate = typeof effervescenceRate === 'number'
@@ -320,28 +321,173 @@ const Beaker: React.FC<ApparatusProps> = ({
     : (typeof extraProps?.effervescenceRate === 'number' ? (extraProps.effervescenceRate as number) : 0);
   const isEvolvingGas = Boolean(flags?.gasEvolving || flags?.reactionStarted || effRate > 0);
   const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
-  // Total fillable height in beaker is ~80px (from y=108 up to y=28)
-  const fillHeight = 80 * effectiveLevel;
+  // Total fillable height in beaker aligns with 100 mL graduation mark (y=32 to y=108 => 76px)
+  const fillHeight = 76 * effectiveLevel;
   const fillY = 108 - fillHeight;
+  const beamY = fillY + (108 - fillY) * 0.45;
   const gradId = `beakerLiquid-${id || 'def'}`;
+
+  // Multi-mixture & physical dispersion props (True Solution, Suspension, Colloid)
+  const restProps = rest as Record<string, unknown>;
+  const isBeakerA = id.includes('solution') || id.includes('beaker-a') || id === 'beaker-1';
+  const isBeakerB = id.includes('suspension') || id.includes('beaker-b') || id === 'beaker-2';
+  const isBeakerC = id.includes('colloid') || id.includes('beaker-c') || id === 'beaker-3';
+
+  const explicitSalt = restProps.hasSaltCrystals ?? extraProps?.hasSaltCrystals;
+  const explicitSediment = restProps.hasSediment ?? extraProps?.hasSediment;
+  const explicitSuspension = restProps.hasSuspension ?? extraProps?.hasSuspension;
+  const explicitTyndallBeam = restProps.tyndallBeam ?? extraProps?.tyndallBeam;
+  const explicitTyndallBlocked = restProps.tyndallBlocked ?? extraProps?.tyndallBlocked;
+
+  // Salt crystals (NaCl) only in Beaker A (or single default beaker), never in B or C
+  const isSaltVisible =
+    effectiveLevel > 0 &&
+    (explicitSalt !== undefined
+      ? Boolean(explicitSalt)
+      : (isBeakerA || (!isBeakerB && !isBeakerC)) && Boolean(flags.hasSalt) && !flags.stirredAll && !flags.stirredA);
+
+  // Step-aware settling: only in post-stability steps ('test-tyndall', 'calculation', 'results') or when flags.stabilityObserved is true
+  const currentStep = extraProps?.currentStepId as string | undefined;
+  const isPostStabilityStep =
+    currentStep === 'test-tyndall' ||
+    currentStep === 'calculation' ||
+    currentStep === 'results';
+
+  // Mud sediment settles at bottom of Beaker B (suspension) ONLY after Beaker B was actually stirred (flags.stirredB) and stability is observed (or subsequent steps)!
+  const isMudSettled =
+    effectiveLevel > 0 &&
+    (explicitSediment !== undefined
+      ? Boolean(explicitSediment)
+      : isBeakerB && Boolean(flags.hasSoil) && Boolean(flags.stirredB) && (Boolean(flags.stabilityObserved) || isPostStabilityStep));
+
+  // Soil particles suspended in water in Beaker B (only after soil added AND stirred, before settling)
+  const isSoilSuspended =
+    !isMudSettled &&
+    effectiveLevel > 0 &&
+    (explicitSuspension !== undefined
+      ? Boolean(explicitSuspension)
+      : isBeakerB && Boolean(flags.hasSoil) && Boolean(flags.stirredB));
+
+  // Soil granules resting at the bottom of Beaker B before stirring
+  const explicitSoilGrains = restProps.hasSoilGrains ?? extraProps?.hasSoilGrains;
+  const isSoilGrainsVisible =
+    effectiveLevel > 0 &&
+    !flags.stirredB &&
+    (explicitSoilGrains !== undefined
+      ? Boolean(explicitSoilGrains)
+      : isBeakerB && Boolean(flags.hasSoil));
+
+  // Starch paste resting at bottom of Beaker C before stirring
+  const explicitStarchPaste = restProps.hasStarchPaste ?? extraProps?.hasStarchPaste;
+  const isStarchPasteVisible =
+    effectiveLevel > 0 &&
+    !flags.stirredC &&
+    (explicitStarchPaste !== undefined
+      ? Boolean(explicitStarchPaste)
+      : isBeakerC && Boolean(flags.hasStarch));
+
+  // Liquid color clarification for supernatant in Beaker B once mud settles
+  const displayLiquidColor =
+    isBeakerB && isMudSettled && (liquidColor.includes('105, 55, 15') || liquidColor.includes('0.90'))
+      ? 'rgba(180, 145, 80, 0.48)'
+      : liquidColor;
+
+  // Check if laser is actively pointing at this beaker or in compare-all mode
+  const isTargeted =
+    Boolean(flags.tyndallTargetAll)
+      ? true
+      : Boolean(flags.tyndallTargetA)
+        ? isBeakerA
+        : Boolean(flags.tyndallTargetB)
+          ? isBeakerB
+          : Boolean(flags.tyndallTargetC)
+            ? isBeakerC
+            : true;
+
+  // Tyndall beam scattering in Beaker C (colloid)
+  const isTyndallBeamActive =
+    effectiveLevel > 0 &&
+    isTargeted &&
+    (explicitTyndallBeam !== undefined
+      ? Boolean(explicitTyndallBeam)
+      : isBeakerC && Boolean(flags.tyndallTestedC) && Boolean(flags.hasStarch));
+
+  // Tyndall beam blocked in Beaker B (suspension)
+  const isTyndallBlockedActive =
+    effectiveLevel > 0 &&
+    isTargeted &&
+    (explicitTyndallBlocked !== undefined
+      ? Boolean(explicitTyndallBlocked)
+      : isBeakerB && Boolean(flags.tyndallTestedB) && (Boolean(flags.hasSoil) || Boolean(explicitSuspension)));
+
+  // Tyndall test in Beaker A (true solution): light passes straight through without beam path scattering
+  const explicitTyndallPassed = restProps.tyndallPassed ?? extraProps?.tyndallPassed;
+  const isTyndallPassedActive =
+    effectiveLevel > 0 &&
+    isTargeted &&
+    (explicitTyndallPassed !== undefined
+      ? Boolean(explicitTyndallPassed)
+      : isBeakerA && Boolean(flags.tyndallTestedA));
 
   return (
     <svg width={width} height={height} viewBox="0 0 100 120" fill="none" style={{ overflow: 'visible' }}>
       <defs>
+        <style>{`
+          @keyframes sedimentSettle {
+            0% {
+              transform: translateY(16px) scaleY(0.05);
+              opacity: 0.2;
+            }
+            100% {
+              transform: translateY(0) scaleY(1);
+              opacity: 1;
+            }
+          }
+        `}</style>
+
         <clipPath id={`beakerInnerClip-${id || 'def'}`}>
           <path d="M 18 16 L 18 102 Q 18 110 26 110 L 74 110 Q 82 110 82 102 L 82 16 Z" />
         </clipPath>
 
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
-          <stop offset="40%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
-          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+          <stop offset="0%" stopColor={displayLiquidColor} style={{ stopColor: displayLiquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
+          <stop offset="40%" stopColor={displayLiquidColor} style={{ stopColor: displayLiquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={displayLiquidColor} style={{ stopColor: displayLiquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+        </linearGradient>
+
+        <linearGradient id={`mudGradient-${id || 'def'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#542e0d" />
+          <stop offset="35%" stopColor="#3d1f07" />
+          <stop offset="100%" stopColor="#261203" />
         </linearGradient>
 
         <linearGradient id={`beakerGleam-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
           <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.25)" />
+        </linearGradient>
+
+        <linearGradient id={`laserEmitterBodyGrad-${id || 'def'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="30%" stopColor="#64748b" />
+          <stop offset="70%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+
+        {/* 650 nm Ruby Red Laser Photonic Bloom & Scattering Filters */}
+        <filter id={`laserBloom-${id || 'def'}`} x="-30%" y="-100%" width="160%" height="300%">
+          <feGaussianBlur stdDeviation="3.5" result="glow" />
+          <feMerge>
+            <feMergeNode in="glow" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        <linearGradient id={`tyndallBeamGrad-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="15%" stopColor="#ff003c" stopOpacity="0.9" />
+          <stop offset="85%" stopColor="#ff1744" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#d50000" stopOpacity="0.8" />
         </linearGradient>
       </defs>
 
@@ -387,7 +533,7 @@ const Beaker: React.FC<ApparatusProps> = ({
           rx="31"
           ry="3"
           fill="rgba(255, 255, 255, 0.3)"
-          stroke={liquidColor}
+          stroke={displayLiquidColor}
           strokeWidth="0.8"
           clipPath={`url(#beakerInnerClip-${id || 'def'})`}
           style={{
@@ -410,13 +556,15 @@ const Beaker: React.FC<ApparatusProps> = ({
           }}
         />
 
-        {/* ── Dynamic Magnetic Stirring Vortex & Spin Bar ── */}
+        {/* ── Dynamic Stirring Vortex ── */}
         {isStirring && (
           <g transform="translate(50, 105)">
-            {/* Rapidly spinning PTFE magnetic stir bar */}
-            <rect x="-7" y="-2.5" width="14" height="5" rx="2.5" fill="#ffffff" stroke="#475569" strokeWidth="0.8">
-              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="0.3s" repeatCount="indefinite" />
-            </rect>
+            {/* Rapidly spinning PTFE magnetic stir bar only if magnetic stirrer instrument present */}
+            {Boolean(flags.hasMagneticStirrer || extraProps?.hasMagneticStirrer) && (
+              <rect x="-7" y="-2.5" width="14" height="5" rx="2.5" fill="#ffffff" stroke="#475569" strokeWidth="0.8">
+                <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="0.3s" repeatCount="indefinite" />
+              </rect>
+            )}
 
             {/* Central vortex streamlines */}
             {effectiveLevel > 0 && (
@@ -460,6 +608,260 @@ const Beaker: React.FC<ApparatusProps> = ({
             <circle cx="60" cy={fillY - 1} r="2" fill="rgba(255,255,255,0.9)" stroke="#38bdf8" strokeWidth="0.5">
               <animate attributeName="r" values="1;2.2;0" dur="0.42s" repeatCount="indefinite" />
             </circle>
+          </g>
+        )}
+
+        {/* ── Solid Salt Crystals (NaCl) at bottom before dissolution ── */}
+        {isSaltVisible && (
+          <g id={`beaker-salt-crystals-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            <polygon points="46,108 48,103 52,103 54,108" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.95" />
+            <polygon points="41,109 43,105 46,105 48,109" fill="#f8fafc" stroke="#94a3b8" strokeWidth="0.4" opacity="0.92" />
+            <polygon points="51,109 53,104 57,104 59,109" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.95" />
+            <circle cx="45" cy="107" r="0.9" fill="#ffffff" />
+            <circle cx="50" cy="106" r="1.1" fill="#ffffff" />
+            <circle cx="55" cy="107" r="1.0" fill="#ffffff" />
+          </g>
+        )}
+
+        {/* ── Unstirred Soil Grains (dark granules resting at bottom before stirring) ── */}
+        {isSoilGrainsVisible && (
+          <g id={`beaker-soil-grains-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            <polygon points="44,109 47,104 53,104 56,109" fill="#3e1d08" stroke="#261202" strokeWidth="0.5" opacity="0.95" />
+            <polygon points="38,110 41,106 45,106 48,110" fill="#542e0d" stroke="#381e09" strokeWidth="0.4" opacity="0.92" />
+            <polygon points="52,110 55,105 60,105 63,110" fill="#2b1404" stroke="#1c0b01" strokeWidth="0.5" opacity="0.95" />
+            <ellipse cx="50" cy="107" rx="3.5" ry="1.5" fill="#432107" />
+            <circle cx="43" cy="107.5" r="1.3" fill="#261202" />
+            <circle cx="57" cy="107" r="1.4" fill="#381e09" />
+            <circle cx="49" cy="106" r="1.0" fill="#6d3911" />
+          </g>
+        )}
+
+        {/* ── Unstirred Starch Paste (translucent white gel layer at bottom before stirring) ── */}
+        {isStarchPasteVisible && (
+          <g id={`beaker-starch-paste-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            <ellipse cx="50" cy="107" rx="14" ry="3.5" fill="rgba(255,255,255,0.85)" stroke="#cbd5e1" strokeWidth="0.6" />
+            <ellipse cx="50" cy="106.5" rx="9" ry="2" fill="rgba(255,255,255,0.95)" />
+          </g>
+        )}
+
+        {/* ── Suspended Coarse Soil Particles (Cloudy Suspension) ── */}
+        {isSoilSuspended && (
+          <g id={`beaker-suspension-particles-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            {[
+              { cx: 28, cy: 75, r: 1.2, color: '#381e09' },
+              { cx: 38, cy: 85, r: 1.6, color: '#542e0d' },
+              { cx: 48, cy: 72, r: 1.0, color: '#2b1404' },
+              { cx: 58, cy: 82, r: 1.8, color: '#432107' },
+              { cx: 68, cy: 76, r: 1.3, color: '#6d3911' },
+              { cx: 32, cy: 92, r: 1.5, color: '#261202' },
+              { cx: 44, cy: 96, r: 2.0, color: '#3e1d08' },
+              { cx: 56, cy: 90, r: 1.4, color: '#5a2d0c' },
+              { cx: 66, cy: 94, r: 1.7, color: '#2b1405' },
+              { cx: 36, cy: 65, r: 0.9, color: '#4a250a' },
+              { cx: 52, cy: 62, r: 1.1, color: '#381e09' },
+              { cx: 62, cy: 66, r: 0.8, color: '#5e320e' },
+            ].map((p, idx) => (
+              <circle key={idx} cx={p.cx} cy={Math.max(fillY + 3, p.cy)} r={p.r} fill={p.color} opacity="0.88">
+                <animate
+                  attributeName="cy"
+                  values={`${p.cy};${p.cy + 3};${p.cy - 2};${p.cy}`}
+                  dur={`${2 + (idx % 3) * 0.7}s`}
+                  repeatCount="indefinite"
+                />
+              </circle>
+            ))}
+          </g>
+        )}
+
+        {/* ── Sediment / Mud Layer at Bottom (Settled Soil Suspension Formation) ── */}
+        {isMudSettled && (
+          <g id={`beaker-sediment-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            {/* Base thick mud cake filling the bottom curve with an organic contoured upper surface */}
+            <path
+              d="M 16 96 Q 30 93, 46 96 T 70 94 Q 78 95, 84 94 L 84 112 L 16 112 Z"
+              fill={`url(#mudGradient-${id || 'def'})`}
+              style={{
+                animation: 'sedimentSettle 2.2s cubic-bezier(0.2, 0.8, 0.4, 1) forwards',
+                transformOrigin: '50% 112px',
+              }}
+            />
+            {/* Silt & fine sediment highlight ridge */}
+            <path
+              d="M 18 96 Q 32 93, 46 96 T 70 94 Q 78 95, 82 94"
+              stroke="#7c3f13"
+              strokeWidth="1.2"
+              fill="none"
+              opacity="0.9"
+            />
+            {/* Sedimented organic silt and grit speckles */}
+            <ellipse cx="28" cy="103" rx="2.5" ry="1.2" fill="#261202" opacity="0.85" />
+            <ellipse cx="40" cy="101" rx="1.8" ry="1.0" fill="#6d3911" opacity="0.9" />
+            <ellipse cx="52" cy="104" rx="3.0" ry="1.4" fill="#1c0b01" opacity="0.85" />
+            <ellipse cx="64" cy="102" rx="2.2" ry="1.1" fill="#713f17" opacity="0.85" />
+            <ellipse cx="73" cy="104" rx="2.0" ry="1.2" fill="#2b1404" opacity="0.8" />
+            <circle cx="34" cy="98.5" r="0.8" fill="#8c511e" />
+            <circle cx="48" cy="98.5" r="0.9" fill="#2d1303" />
+            <circle cx="61" cy="97.5" r="0.8" fill="#8c511e" />
+            {/* Fine settling silt specks slowly descending into the mud bed */}
+            <circle cx="38" cy="88" r="0.9" fill="#542e0d" opacity="0.6">
+              <animate attributeName="cy" values="84;95" dur="3s" fill="freeze" />
+              <animate attributeName="opacity" values="0.7;0" dur="3s" fill="freeze" />
+            </circle>
+            <circle cx="58" cy="85" r="1.1" fill="#381e09" opacity="0.7">
+              <animate attributeName="cy" values="79;95" dur="3.5s" fill="freeze" />
+              <animate attributeName="opacity" values="0.7;0" dur="3.5s" fill="freeze" />
+            </circle>
+          </g>
+        )}
+
+        {/* ── Real-World Physics Inspired Laser Beam & Tyndall Optics (650 nm Ruby Red) ── */}
+
+        {/* Incoming horizontal collimated laser beam from left emitter striking beaker */}
+        {(isTyndallBeamActive || isTyndallBlockedActive || isTyndallPassedActive) && (
+          <g id={`beaker-laser-incoming-${id || 'def'}`}>
+            {/* Mounted Benchtop Laser Pointer Emitter at beaker entrance */}
+            <g id={`laser-pointer-emitter-${id || 'def'}`}>
+              {/* Laser pointer barrel body */}
+              <rect
+                x="-46"
+                y={beamY - 5}
+                width="30"
+                height="10"
+                rx="2"
+                fill={`url(#laserEmitterBodyGrad-${id || 'def'})`}
+                stroke="#0f172a"
+                strokeWidth="0.8"
+                filter="drop-shadow(0 2px 4px rgba(0,0,0,0.5))"
+              />
+              {/* Knurled grip grooves */}
+              <line x1="-40" y1={beamY - 4.5} x2="-40" y2={beamY + 4.5} stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+              <line x1="-37" y1={beamY - 4.5} x2="-37" y2={beamY + 4.5} stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+              <line x1="-34" y1={beamY - 4.5} x2="-34" y2={beamY + 4.5} stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+              {/* Gold collimation aperture ring */}
+              <rect x="-16.5" y={beamY - 4} width="4.5" height="8" rx="1" fill="#d97706" stroke="#92400e" strokeWidth="0.6" />
+              {/* Laser Warning Sticker */}
+              <rect x="-31" y={beamY - 3.8} width="9.5" height="7.6" rx="0.5" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.4" />
+              <polygon points={`-26.25,${beamY - 3} -29,${beamY + 2} -23.5,${beamY + 2}`} fill="#000" />
+              {/* Active Green Power LED */}
+              <circle cx="-43" cy={beamY} r="1.3" fill="#22c55e" filter="drop-shadow(0 0 2px #22c55e)" />
+              {/* Laser Aperture red glow */}
+              <ellipse cx="-12" cy={beamY} rx="0.8" ry="2" fill="#ff003c" filter="drop-shadow(0 0 2px #ff003c)" />
+            </g>
+
+            {/* Atmospheric laser beam blooming halo in air */}
+            <line x1="-12" y1={beamY} x2="18" y2={beamY} stroke="rgba(255, 0, 60, 0.45)" strokeWidth="5" filter={`url(#laserBloom-${id || 'def'})`} />
+            <line x1="-12" y1={beamY} x2="18" y2={beamY} stroke="#ff003c" strokeWidth="2.2" />
+            <line x1="-12" y1={beamY} x2="18" y2={beamY} stroke="#ffffff" strokeWidth="0.8" />
+            {/* Cylindrical glass wall entrance specular refraction flare */}
+            <circle cx="18" cy={beamY} r="3.2" fill="#ffffff" filter="drop-shadow(0 0 5px #ff003c)" />
+            <ellipse cx="18" cy={beamY} rx="1.6" ry="5.5" fill="rgba(255, 255, 255, 0.95)" />
+          </g>
+        )}
+
+        {/* ── COLLOID (Beaker C): Brilliant Tyndall Scattering Cone & Glowing Path ── */}
+        {isTyndallBeamActive && (
+          <g id={`beaker-tyndall-beam-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            {/* Wide volumetric luminous scattering halo cone across the milky liquid */}
+            <path
+              d={`M 18,${beamY - 4.5} L 82,${beamY - 8} L 82,${beamY + 8} L 18,${beamY + 4.5} Z`}
+              fill="rgba(255, 0, 60, 0.32)"
+              filter={`url(#laserBloom-${id || 'def'})`}
+            />
+            {/* Saturated illuminated colloidal laser corridor */}
+            <path
+              d={`M 18,${beamY - 2.2} L 82,${beamY - 3.6} L 82,${beamY + 3.6} L 18,${beamY + 2.2} Z`}
+              fill={`url(#tyndallBeamGrad-${id || 'def'})`}
+            />
+            {/* Brilliant core laser filament */}
+            <line
+              x1="18"
+              y1={beamY}
+              x2="82"
+              y2={beamY}
+              stroke="#ffffff"
+              strokeWidth="1.3"
+              filter="drop-shadow(0 0 4px #ff003c)"
+            />
+            {/* Twinkling starch colloidal micelle particles scattering photons (Brownian scintillation) */}
+            {[
+              { cx: 23, cy: beamY - 1.8, dur: '0.8s', r: 1.2 },
+              { cx: 28, cy: beamY + 2.5, dur: '1.2s', r: 1.0 },
+              { cx: 34, cy: beamY - 1.2, dur: '0.7s', r: 1.4 },
+              { cx: 40, cy: beamY + 1.8, dur: '0.9s', r: 1.1 },
+              { cx: 46, cy: beamY - 2.4, dur: '1.3s', r: 1.3 },
+              { cx: 52, cy: beamY + 1.2, dur: '0.6s', r: 1.0 },
+              { cx: 57, cy: beamY - 1.6, dur: '1.0s', r: 1.3 },
+              { cx: 63, cy: beamY + 2.8, dur: '0.8s', r: 1.2 },
+              { cx: 69, cy: beamY - 1.0, dur: '1.1s', r: 1.4 },
+              { cx: 75, cy: beamY + 2.0, dur: '0.7s', r: 1.1 },
+            ].map((p, idx) => (
+              <circle
+                key={idx}
+                cx={p.cx}
+                cy={p.cy}
+                r={p.r}
+                fill="#ffffff"
+                filter="drop-shadow(0 0 2px #ff3366)"
+              >
+                <animate
+                  attributeName="opacity"
+                  values="0.3;1;0.3"
+                  dur={p.dur}
+                  repeatCount="indefinite"
+                />
+              </circle>
+            ))}
+            {/* Exit Wall Specular Refraction Flare & Transmitted Ray */}
+            <circle cx="82" cy={beamY} r="3.2" fill="#ffffff" filter="drop-shadow(0 0 5px #ff003c)" />
+            <ellipse cx="82" cy={beamY} rx="1.8" ry="6" fill="rgba(255, 255, 255, 0.95)" />
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="rgba(255, 0, 60, 0.45)" strokeWidth="6" filter={`url(#laserBloom-${id || 'def'})`} />
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="#ff003c" strokeWidth="2.5" />
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="#ffffff" strokeWidth="0.9" />
+          </g>
+        )}
+
+        {/* ── SUSPENSION (Beaker B): Beam Blocked & Absorbed by Coarse Mud ── */}
+        {isTyndallBlockedActive && (
+          <g id={`beaker-tyndall-blocked-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            {/* Intense turbid entry glow cloud — total scattering/absorption at surface */}
+            <ellipse cx="23" cy={beamY} rx="7" ry="9" fill="rgba(239, 68, 68, 0.85)" filter={`url(#laserBloom-${id || 'def'})`} />
+            <path
+              d={`M 18,${beamY - 3.5} L 31,${beamY - 4.5} Q 36,${beamY} 31,${beamY + 4.5} L 18,${beamY + 3.5} Z`}
+              fill="#ef4444"
+              opacity="0.9"
+            />
+            {/* Core laser dies abruptly inside the muddy suspension */}
+            <line x1="18" y1={beamY} x2="30" y2={beamY} stroke="#ffffff" strokeWidth="1.5" />
+            {/* Mud particles absorbing light and casting shadows */}
+            <circle cx="26" cy={beamY - 2.5} r="1.6" fill="#3e1d08" />
+            <circle cx="28" cy={beamY + 2.5} r="2.0" fill="#2b1404" />
+            <circle cx="32" cy={beamY} r="1.4" fill="#542e0d" />
+            {/* Notice: Extinction! No light reaches beyond x=33, and exit glass remains dark! */}
+          </g>
+        )}
+
+        {/* ── TRUE SOLUTION (Beaker A): No Scattering — Beam Path is INVISIBLE ── */}
+        {isTyndallPassedActive && (
+          <g id={`beaker-tyndall-passed-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
+            {/* Solute particles (<1 nm) do NOT scatter visible light!
+                The beam path through the liquid is completely dark and invisible.
+                Only a hairline dashed guide indicates the optical ray passing through. */}
+            <line
+              x1="18"
+              y1={beamY}
+              x2="82"
+              y2={beamY}
+              stroke="rgba(255, 0, 60, 0.16)"
+              strokeWidth="0.8"
+              strokeDasharray="3 4"
+            />
+            {/* Sharp exit refraction spot on the right glass wall where uninterrupted light leaves */}
+            <circle cx="82" cy={beamY} r="3.2" fill="#ffffff" filter="drop-shadow(0 0 5px #ff003c)" />
+            <ellipse cx="82" cy={beamY} rx="1.6" ry="6" fill="rgba(255, 255, 255, 0.95)" />
+            {/* Unattenuated transmitted laser ray continuing through air on the right */}
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="rgba(255, 0, 60, 0.45)" strokeWidth="6" filter={`url(#laserBloom-${id || 'def'})`} />
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="#ff003c" strokeWidth="2.5" />
+            <line x1="82" y1={beamY} x2="116" y2={beamY} stroke="#ffffff" strokeWidth="0.9" />
           </g>
         )}
       </g>
@@ -2682,6 +3084,121 @@ const Matchstick: React.FC<ApparatusProps> = ({
 );
 
 
+// ── Laser Pointer (Class 3R 650 nm Ruby Red Diode Source) ──────────
+
+const LaserPointer: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 30,
+  height = 115,
+  label,
+  flags = {},
+  ...rest
+}) => {
+  const isOn = rest.isLit !== false && rest.isOn !== false && flags.laserOff !== true;
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 30 115" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Metallic cylindrical gradient for aluminum pen barrel */}
+        <linearGradient id="laserBodyGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#0f172a" />
+          <stop offset="25%" stopColor="#334155" />
+          <stop offset="55%" stopColor="#64748b" />
+          <stop offset="80%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#090d16" />
+        </linearGradient>
+
+        <linearGradient id="laserGoldGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#92400e" />
+          <stop offset="35%" stopColor="#fde047" />
+          <stop offset="70%" stopColor="#d97706" />
+          <stop offset="100%" stopColor="#78350f" />
+        </linearGradient>
+
+        <linearGradient id="laserChromeGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="45%" stopColor="#f8fafc" />
+          <stop offset="75%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+
+        {/* Emitter Glow Filter */}
+        <filter id="laserRayGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Focus halo when dragged/highlighted */}
+      {highlighted && (
+        <rect x="7" y="16" width="16" height="88" rx="8" stroke="#3b82f6" strokeWidth="4" opacity="0.6" filter="blur(2px)" />
+      )}
+
+      {/* Main Pen Cylindrical Barrel */}
+      <rect x="9" y="24" width="12" height="74" rx="2" fill="url(#laserBodyGrad)" stroke="#090d16" strokeWidth="0.8" />
+
+      {/* Knurled Anti-Slip Grip Ridges */}
+      {[48, 52, 56, 60].map(y => (
+        <line key={y} x1="9" y1={y} x2="21" y2={y} stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+      ))}
+
+      {/* Chrome Pocket Clip */}
+      <path d="M 9 32 L 6 34 L 6 62 Q 6 64 8 64" stroke="url(#laserChromeGrad)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <circle cx="7" cy="63" r="1.1" fill="#94a3b8" />
+
+      {/* Gold Trim Ring Accents */}
+      <rect x="8.5" y="24" width="13" height="2.5" fill="url(#laserGoldGrad)" rx="0.5" />
+      <rect x="8.5" y="68" width="13" height="1.8" fill="url(#laserGoldGrad)" rx="0.5" />
+
+      {/* Laser Radiation Warning Hazard Label */}
+      <rect x="10.5" y="34" width="9" height="11" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.4" rx="0.8" />
+      <polygon points="15,36 12,41 18,41" fill="#000000" />
+      <line x1="15" y1="37.5" x2="15" y2="39.5" stroke="#fef08a" strokeWidth="0.5" />
+      <circle cx="15" cy="40.3" r="0.3" fill="#fef08a" />
+
+      {/* Tactile Push-Button Switch */}
+      <rect x="12.5" y="74" width="5" height="9" rx="2" fill={isOn ? '#dc2626' : '#475569'} stroke="#0f172a" strokeWidth="0.6" />
+      {isOn && (
+        <circle cx="15" cy="78.5" r="1.4" fill="#fef2f2" filter="drop-shadow(0 0 3px #ef4444)" />
+      )}
+
+      {/* Tail Cap */}
+      <path d="M 9 98 L 21 98 L 19 104 L 11 104 Z" fill="url(#laserChromeGrad)" stroke="#475569" strokeWidth="0.6" />
+
+      {/* Optical Diode Aperture Housing */}
+      <path d="M 9 24 L 21 24 L 18 16 L 12 16 Z" fill="url(#laserChromeGrad)" stroke="#475569" strokeWidth="0.6" />
+      <rect x="12" y="12" width="6" height="4" fill="#090d16" stroke="#475569" strokeWidth="0.5" rx="0.5" />
+      <ellipse cx="15" cy="12" rx="2.2" ry="1.2" fill={isOn ? '#ff003c' : '#334155'} />
+
+      {/* Active Collimated Laser Ray Projection */}
+      {isOn && (
+        <g id="laser-projected-ray">
+          {/* Intense core laser beam */}
+          <line x1="15" y1="12" x2="15" y2="-4" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" />
+          {/* Saturated 650nm Ruby Red corridor */}
+          <line x1="15" y1="12" x2="15" y2="-4" stroke="#ff003c" strokeWidth="3" opacity="0.95" strokeLinecap="round" />
+          {/* Soft outer Gaussian beam blooming halo */}
+          <line x1="15" y1="12" x2="15" y2="-4" stroke="rgba(255, 0, 60, 0.45)" strokeWidth="7" filter="url(#laserRayGlow)" strokeLinecap="round" />
+          {/* Aperture specular flare */}
+          <circle cx="15" cy="12" r="3.2" fill="#ffffff" filter="drop-shadow(0 0 6px #ff003c)" />
+          <ellipse cx="15" cy="12" rx="6" ry="1.4" fill="rgba(255, 255, 255, 0.95)" />
+        </g>
+      )}
+
+      {/* Label */}
+      {label && (
+        <text x="15" y="112" textAnchor="middle" fontSize="6.2" fill="#64748b" fontWeight="700" fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
 
 // ── Test Tube Stand ──────────────────────────────────────────────
 
@@ -4213,6 +4730,8 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   ReagentBottle,
   GlassRod,
   Matchstick,
+  LaserPointer,
+  LaserTorch: LaserPointer,
   OstwaldViscometer,
 
   // Heating & Temperature

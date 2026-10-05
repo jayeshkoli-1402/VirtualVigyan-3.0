@@ -248,6 +248,18 @@ export const mr: TranslationDictionary = {
   'lab.recordMass': 'वस्तुमान नोंदवा',
   'lab.dragHint': 'टूलबॉक्समधून उपकरणे बेंचवर ओढा',
   'lab.emptyBench': 'सेटअप सुरू करण्यासाठी उपकरणे येथे ओढा',
+  'lab.exitConfirmTitle': 'प्रयोग सोडायचा आहे का?',
+  'lab.exitConfirmMessage': 'तुम्हाला बाहेर पडायचे आहे का? तुमची चालू प्रयोगाची प्रगती आणि मोजमापे जतन होणार नाहीत.',
+  'lab.exitStay': 'प्रयोगात राहा',
+  'lab.exitConfirm': 'होय, बाहेर पडा',
+  'lab.resetExperiment': 'प्रयोग रीसेट करा',
+  'lab.resetLab': 'रीसेट',
+  'lab.resetConfirmTitle': 'प्रयोग रीसेट करायचा आहे का?',
+  'lab.resetConfirmMessage': 'तुम्हाला हा प्रयोग सुरुवातीपासून रीसेट करायचा आहे का? सर्व मांडलेली उपकरणे आणि द्रावणे सुरुवातीच्या स्थितीत परत येतील.',
+  'lab.resetConfirm': 'प्रयोग रीसेट करा',
+  'lab.resetToast': 'प्रयोग सुरुवातीच्या स्थितीत रीसेट केला.',
+  'bench.hideTable': 'टेबल लपवा',
+  'bench.showTable': 'टेबल दाखवा',
 
   // Apparatus Names
   'apparatus.burette': 'ब्युरेट (50 mL)',

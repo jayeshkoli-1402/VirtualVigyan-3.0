@@ -500,6 +500,44 @@ const DYNAMIC_MESSAGES: Record<string, Record<Exclude<Language, 'en'>, string>> 
   'Endothermic': { hi: 'ऊष्माशोषी', mr: 'उष्णताशोषक' },
   'Step': { hi: 'चरण', mr: 'पायरी' },
   'Progress': { hi: 'प्रगति', mr: 'प्रगती' },
+
+  // True Solution, Suspension and Colloid
+  'Beaker A (True Solution)': { hi: 'बीकर A (वास्तविक विलयन)', mr: 'बीकर A (खरे द्रावण)' },
+  'Beaker B (Suspension)': { hi: 'बीकर B (निलंबन)', mr: 'बीकर B (निलंबन)' },
+  'Beaker C (Colloid)': { hi: 'बीकर C (कोलॉइड)', mr: 'बीकर C (कलिल)' },
+  'Beaker A (True Solution Test)': { hi: 'बीकर A (वास्तविक विलयन चाचणी)', mr: 'बीकर A (खरे द्रावण चाचणी)' },
+  'Beaker B (Suspension Test)': { hi: 'बीकर B (निलंबन चाचणी)', mr: 'बीकर B (निलंबन चाचणी)' },
+  'Beaker C (Colloid Test)': { hi: 'बीकर C (कोलॉइड चाचणी)', mr: 'बीकर C (कलिल चाचणी)' },
+  'Beaker A': { hi: 'बीकर A', mr: 'बीकर A' },
+  'Beaker B': { hi: 'बीकर B', mr: 'बीकर B' },
+  'Beaker C': { hi: 'बीकर C', mr: 'बीकर C' },
+  'Place Beaker A on the left position for True Solution.': {
+    hi: 'वास्तविक विलयन के लिए बीकर A को बाईं ओर रखें।',
+    mr: 'खऱ्या द्रावणासाठी बीकर A डाव्या बाजूला ठेवा.',
+  },
+  'Place Beaker B on the center position for Suspension.': {
+    hi: 'निलंबन के लिए बीकर B को बीच में रखें।',
+    mr: 'निलंबनासाठी बीकर B मध्यभागी ठेवा.',
+  },
+  'Place Beaker C on the right position for Colloid.': {
+    hi: 'कोलॉइड के लिए बीकर C को दाईं ओर रखें।',
+    mr: 'कलिलासाठी बीकर C उजव्या बाजूला ठेवा.',
+  },
+  'Drag here': { hi: 'यहाँ खींचें', mr: 'येथे ड्रॅग करा' },
+  'Place here': { hi: 'यहाँ रखें', mr: 'येथे ठेवा' },
+  'Drop to place': { hi: 'रखने के लिए छोड़ें', mr: 'ठेवण्यासाठी सोडा' },
+  'Beaker A: Salt Added (Undissolved)': { hi: 'बीकर A: नमक डाला गया (अघुलित कण)', mr: 'बीकर A: मीठ टाकले (अविरघळलेले कण)' },
+  'Beaker A: True Solution (Clear & Transparent)': { hi: 'बीकर A: वास्तविक विलयन (स्वच्छ एवं पारदर्शी)', mr: 'बीकर A: खरे द्रावण (स्वच्छ व पारदर्शक)' },
+  'Beaker B: Soil Added (Turbid Suspension)': { hi: 'बीकर B: मिट्टी डाली गई (मटमैला निलंबन)', mr: 'बीकर B: माती टाकली (गढूळ निलंबन)' },
+  'Beaker B: Soil Suspension (Cloudy & Opaque)': { hi: 'बीकर B: मिट्टी का निलंबन (धुंधला एवं अपारदर्शी)', mr: 'बीकर B: मातीचे निलंबन (धुरकट व अपारदर्शक)' },
+  'Beaker B: Mud Settled at Bottom (Unstable)': { hi: 'बीकर B: तलहटी में कीचड़/गाद जमी (अस्थिर निलंबन)', mr: 'बीकर B: तळाशी गाळ/माती बसली (अस्थिर निलंबन)' },
+  'Beaker C: Starch Added (Colloidal Sol)': { hi: 'बीकर C: स्टार्च डाला गया (कोलॉइडी सॉल)', mr: 'बीकर C: स्टार्च टाकले (कलिल सॉल)' },
+  'Beaker C: Starch Colloid (Translucent & Milky)': { hi: 'बीकर C: स्टार्च कोलॉइड (पारभासी एवं दूधिया)', mr: 'बीकर C: स्टार्च कलिल (अर्धपारदर्शक व दुधाळ)' },
+  'Beaker A: Uniformly Clear (Stable)': { hi: 'बीकर A: समान रूप से स्वच्छ (स्थिर)', mr: 'बीकर A: एकसमान स्वच्छ (स्थिर)' },
+  'Beaker C: Uniformly Milky (Stable)': { hi: 'बीकर C: समान रूप से दूधिया (स्थिर)', mr: 'बीकर C: एकसमान दुधाळ (स्थिर)' },
+  'Beaker A: No Tyndall Beam (True Solution)': { hi: 'बीकर A: कोई प्रकाश पथ नहीं (वास्तविक विलयन)', mr: 'बीकर A: कोणताही प्रकाश मार्ग नाही (खरे द्रावण)' },
+  'Beaker B: Beam Blocked by Coarse Mud (Suspension)': { hi: 'बीकर B: मोटे कणों/कीचड़ द्वारा प्रकाश अवरुद्ध (निलंबन)', mr: 'बीकर B: जाड कणांनी प्रकाश अडवला (निलंबन)' },
+  'Beaker C: ✨ Brilliant Tyndall Beam Scattered (Colloid)': { hi: 'बीकर C: ✨ स्पष्ट टिंडल प्रभाव का प्रकाश पथ (कोलॉइड)', mr: 'बीकर C: ✨ स्पष्ट टिंडल परिणामाचा प्रकाश मार्ग (कलिल)' },
 };
 
 /**

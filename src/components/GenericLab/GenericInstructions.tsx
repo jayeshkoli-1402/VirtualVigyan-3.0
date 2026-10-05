@@ -11,7 +11,6 @@ import { useLanguage } from '../../i18n/LanguageContext';
 import { EXPERIMENT_TRANSLATIONS } from '../../i18n/experimentTranslations';
 import { getStepWhyExplanation } from '../../data/experimentWhyData';
 import ContextualWhyModal from '../common/ContextualWhyModal';
-import ExperimentSafetyModal from '../common/ExperimentSafetyModal';
 
 type GenericInstructionsProps = {
   config: ExperimentConfig;
@@ -34,7 +33,6 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
 }) => {
   const { t, language, tDynamic } = useLanguage();
   const [whyModalOpen, setWhyModalOpen] = useState<boolean>(false);
-  const [safetyModalOpen, setSafetyModalOpen] = useState<boolean>(false);
   const currentStep = config.steps[state.currentStepIndex];
 
   // Get dynamic instruction text
@@ -87,50 +85,16 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
   return (
     <div style={{ padding: '12px 14px 20px 14px', height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{
-            fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
-            textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0,
-          }}>
-            {t('lab.instructions', 'Instructions')}
-          </h2>
-          <button
-            id="btn-instructions-safety"
-            type="button"
-            onClick={() => setSafetyModalOpen(true)}
-            aria-label={t('safety.buttonAria', 'Open Experiment Safety Center')}
-            title={t('safety.subtitle', 'Essential precautions & laboratory safety guidance')}
-            style={{
-              all: 'unset',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              fontSize: '0.68rem',
-              fontWeight: 700,
-              color: '#d97706',
-              background: 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(245, 158, 11, 0.35)',
-              padding: '2px 7px',
-              borderRadius: 5,
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.22)';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(245, 158, 11, 0.12)';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <span>🛡️</span>
-            <span>{t('safety.buttonLabel', 'Safety')}</span>
-          </button>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{
+          fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)',
+          textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0,
+        }}>
+          {t('lab.instructions', 'Instructions')}
+        </h2>
         <button
           onClick={onToggleCollapse}
+          title={t('lab.collapseInstructions', 'Collapse Instructions')}
           style={{
             all: 'unset', cursor: 'pointer', fontSize: '0.7rem',
             color: 'var(--text-muted)', padding: '2px 4px',
@@ -238,8 +202,33 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
         );
       })()}
 
+      {/* Interactive Settling Action for Mixture Stability step */}
+      {currentStep?.id === 'observe-stability' && !state.flags['stabilityObserved'] && (
+        <button
+          id="btn-instructions-settle"
+          className="btn-primary animate-fade-in"
+          onClick={() => {
+            dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: 'observe-settling' } });
+          }}
+          style={{
+            fontSize: '0.85rem',
+            fontWeight: 700,
+            width: '100%',
+            padding: '10px 16px',
+            background: 'linear-gradient(135deg, #d97706, #b45309)',
+            boxShadow: '0 4px 14px rgba(217, 119, 6, 0.35)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <span>⏳ {tDynamic('Leave Undisturbed (Wait 5 Mins)')}</span>
+        </button>
+      )}
+
       {/* Advance button */}
-      {showAdvanceButton && (
+      {(showAdvanceButton || (currentStep?.id === 'observe-stability' && Boolean(state.flags['stabilityObserved']))) && (
         <button
           id="btn-instructions-advance"
           className="btn-primary animate-fade-in"
@@ -373,14 +362,6 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
           />
         );
       })()}
-
-      {/* Experiment Safety Center Modal */}
-      <ExperimentSafetyModal
-        isOpen={safetyModalOpen}
-        onClose={() => setSafetyModalOpen(false)}
-        experimentId={config.id}
-        experimentTitle={EXPERIMENT_TRANSLATIONS[config.id]?.[language]?.title || config.title}
-      />
     </div>
   );
 };

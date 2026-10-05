@@ -246,7 +246,15 @@ const GenericInstructions: React.FC<GenericInstructionsProps> = ({
             gap: 8,
           }}
         >
-          <span>{t('lab.advanceStep', 'Continue to Next Step →')}</span>
+          <span>
+            {(() => {
+              const nextStep = config.steps[state.currentStepIndex + 1];
+              if (nextStep?.type === 'calculation') {
+                return t('lab.proceedCalculation', 'Proceed to Calculation →');
+              }
+              return t('lab.advanceStep', 'Continue to Next Step →');
+            })()}
+          </span>
         </button>
       )}
 

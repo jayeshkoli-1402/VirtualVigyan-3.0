@@ -564,6 +564,24 @@ export type ScoringEvaluator =
       actualStandard?: number;
     }
   | {
+      type: 'multiCheck';
+      /** Multiple criteria evaluated additively */
+      checks: Array<{
+        label: string;
+        points: number;
+        flag?: string;
+        action?: string;
+        calcFieldId?: string;
+        expectedValue?: number;
+        tolerance?: number;
+      }>;
+    }
+  | {
+      type: 'vivaQuiz';
+      /** Optional points per question override */
+      pointsPerQuestion?: number;
+    }
+  | {
       type: 'custom';
       /** Function name from a custom evaluators registry */
       fn: string;

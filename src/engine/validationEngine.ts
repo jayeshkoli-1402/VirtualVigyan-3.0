@@ -118,6 +118,14 @@ export function validateDrop(
     };
   }
 
+  if (zone.visibleWhen && !evaluateCondition(zone.visibleWhen, state)) {
+    return {
+      ruleId: '_zone_not_visible',
+      allowed: false,
+      message: zone.rejectMessage ?? `Please complete preceding setup steps first.`,
+    };
+  }
+
   // 2. Check validation rules
   const trigger = `drop:${itemId}→${zoneId}`;
   const results = validateTrigger(config, state, trigger);

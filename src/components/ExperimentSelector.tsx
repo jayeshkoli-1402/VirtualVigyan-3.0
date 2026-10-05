@@ -126,7 +126,7 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     title: 'Acid-Base Titration (Volumetric Analysis)',
     description: 'Determine the unknown concentration of HCl using standardized NaOH and phenolphthalein indicator.',
     classLevel: 'Class 11',
-    categoryTag: 'Class 11 • Volumetric Analysis',
+    categoryTag: 'CBSE Class 11 • Volumetric Analysis',
     difficulty: 'Medium',
     thumbnailType: 'water-alkalinity',
     order: 10,
@@ -137,36 +137,33 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     title: 'Zinc-Acid Reaction & Gas Evolution',
     description: 'Observe zinc reacting with dilute acid and test hydrogen gas evolution with pop sound.',
     classLevel: 'Class 10',
-    categoryTag: 'Class 10 • Chemical Reactions',
+    categoryTag: 'CBSE Class 10 • Chemical Reactions and Equations',
     difficulty: 'Easy',
     thumbnailType: 'water-hardness-edta',
     order: 11,
   },
-  // ── CBSE Class 9 Canonical Practical ──
+  // ── CBSE Class 9 Canonical Practicals ──
   {
     id: 'conservation-of-mass',
     type: 'generic',
     title: 'Law of Conservation of Mass',
     description: 'Verify mass invariance (m₁ = m₂) during BaCl₂ + Na₂SO₄ precipitation in a sealed conical flask.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Atoms and Molecules',
+    categoryTag: 'CBSE Class 9 • Atoms and Molecules',
     difficulty: 'Medium',
     thumbnailType: 'water-alkalinity',
     order: 12,
   },
-  // ── CBSE Class 9 Practicals (Admin Preview Only / Under Development) ──
   {
     id: 'true-solution-colloid-suspension',
     type: 'generic',
     title: 'True Solution, Suspension and Colloid',
     description: 'Prepare mixtures of salt, soil, and starch in water. Classify by transparency, stability, filtration, and Tyndall effect.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    categoryTag: 'CBSE Class 9 • Is Matter Around Us Pure?',
     difficulty: 'Easy',
     thumbnailType: 'water-hardness-edta',
     order: 13,
-    underDevelopment: true,
-    adminOnly: true,
   },
   {
     id: 'mixture-compound-iron-sulphur',
@@ -174,7 +171,7 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     title: 'Mixture & Compound (Iron and Sulphur)',
     description: 'Prepare physical mixture and chemical compound (FeS). Test magnetism, CS₂ solubility, and dilute HCl reaction.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    categoryTag: 'CBSE Class 9 • Is Matter Around Us Pure?',
     difficulty: 'Medium',
     thumbnailType: 'acid-value-oil',
     order: 14,
@@ -187,7 +184,7 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     title: 'Physical and Chemical Changes',
     description: 'Perform Fe + CuSO₄, burning Mg ribbon, Zn + H₂SO₄, heating CuSO₄ crystals, and NH₄Cl sublimation.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Matter: Is Matter Around Us Pure?',
+    categoryTag: 'CBSE Class 9 • Is Matter Around Us Pure?',
     difficulty: 'Easy',
     thumbnailType: 'water-acidity',
     order: 15,
@@ -200,7 +197,7 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     title: 'Melting Point of Ice & Boiling Point of Water',
     description: 'Measure ice melting (0 °C / 273 K) and water boiling (100 °C / 373 K). Observe latent heat temperature plateaus.',
     classLevel: 'Class 9',
-    categoryTag: 'Class 9 • Matter in Our Surroundings',
+    categoryTag: 'CBSE Class 9 • Matter in Our Surroundings',
     difficulty: 'Easy',
     thumbnailType: 'viscosity-ostwald',
     order: 17,
@@ -235,6 +232,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
   const getPillLabel = (cls: string): string => {
     if (cls === 'All') return t('landing.showcase.all', 'All');
+    if (cls === 'CBSE') return 'CBSE';
     if (cls === 'F.Y. B.Tech (DBATU)') return t('landing.showcase.dbatu', 'F.Y. B.Tech (DBATU)');
     if (cls === 'Class 12') return t('landing.showcase.class12', 'Class 12');
     if (cls === 'Class 11') return t('landing.showcase.class11', 'Class 11');
@@ -258,7 +256,11 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
 
     // Filter by class pill
     if (selectedClass !== 'All') {
-      list = list.filter((item) => item.classLevel === selectedClass);
+      if (selectedClass === 'CBSE') {
+        list = list.filter((item) => item.categoryTag.includes('CBSE') || item.classLevel.startsWith('Class'));
+      } else {
+        list = list.filter((item) => item.classLevel === selectedClass);
+      }
     }
 
     // Filter by search query (from top header)
@@ -321,7 +323,7 @@ export const ExperimentSelector: React.FC<ExperimentSelectorProps> = ({
     }
   };
 
-  const classPills = ['All', 'F.Y. B.Tech (DBATU)', 'Class 11', 'Class 10', 'Class 9'];
+  const classPills = ['All', 'CBSE', 'Class 9', 'Class 10', 'Class 11', 'F.Y. B.Tech (DBATU)'];
 
   return (
     <div style={{ maxWidth: 1280, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>

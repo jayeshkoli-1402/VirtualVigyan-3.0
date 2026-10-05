@@ -362,7 +362,7 @@ export const conservationOfMass: ExperimentConfig = {
     {
       name: 'Viva Voce Evaluation',
       maxPoints: 15,
-      evaluator: { type: 'booleanCheck', flag: 'reactantsMixed', truePoints: 15 },
+      evaluator: { type: 'vivaQuiz' },
     },
   ],
   validation: [],

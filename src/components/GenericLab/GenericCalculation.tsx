@@ -24,6 +24,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
 }) => {
   const { t, tDynamic } = useLanguage();
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [vivaAnswers, setVivaAnswers] = useState<Record<string, number>>({});
   const [results, setResults] = useState<ReturnType<typeof validateCalculation> | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -34,6 +35,9 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
     const numericAnswers: Record<string, number> = {};
     for (const field of calcConfig.fields) {
       numericAnswers[field.id] = parseFloat(answers[field.id] ?? '0') || 0;
+    }
+    for (const [qId, optIdx] of Object.entries(vivaAnswers)) {
+      numericAnswers[`viva_${qId}`] = optIdx;
     }
 
     const validationResults = validateCalculation(config, state, numericAnswers);
@@ -398,6 +402,167 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           })}
         </div>
       </div>
+
+      {/* ── Viva Voce Conceptual Examination Section ── */}
+      {config.viva?.questions && config.viva.questions.length > 0 && (
+        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h3 style={{
+              fontSize: '0.95rem',
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              margin: 0,
+            }}>
+              <span>🎓</span>
+              <span>Viva Voce Conceptual Examination</span>
+            </h3>
+            <span style={{
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              color: 'var(--accent-blue, #2563eb)',
+              background: 'rgba(37, 99, 235, 0.1)',
+              padding: '3px 8px',
+              borderRadius: 6,
+            }}>
+              {config.viva.questions.length} Questions
+            </span>
+          </div>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+            Select the most accurate scientific answer for each question based on your laboratory observations.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {config.viva.questions.map((q, qIdx) => {
+              const selectedIdx = vivaAnswers[q.id];
+              const isSubmitted = submitted;
+              const isCorrect = isSubmitted && selectedIdx === q.correctIndex;
+              const isWrong = isSubmitted && selectedIdx !== undefined && selectedIdx !== q.correctIndex;
+              const isUnanswered = isSubmitted && selectedIdx === undefined;
+
+              return (
+                <div
+                  key={q.id}
+                  style={{
+                    padding: 14,
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-inset, #f8fafc)',
+                    border: isSubmitted
+                      ? isCorrect
+                        ? '1.5px solid #059669'
+                        : isWrong || isUnanswered
+                        ? '1.5px solid #dc2626'
+                        : '1px solid var(--border)'
+                      : '1px solid var(--border)',
+                  }}
+                >
+                  <div style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    marginBottom: 10,
+                    lineHeight: 1.4,
+                  }}>
+                    <span style={{ color: 'var(--accent-blue, #2563eb)', fontWeight: 700, marginRight: 6 }}>
+                      Q{qIdx + 1}.
+                    </span>
+                    {q.question}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {q.options.map((opt, optIdx) => {
+                      const isChosen = selectedIdx === optIdx;
+                      const isOptionCorrect = isSubmitted && optIdx === q.correctIndex;
+
+                      let optBg = 'var(--bg-card, #ffffff)';
+                      let optBorder = '1px solid var(--border, #cbd5e1)';
+                      let optColor = 'var(--text-primary)';
+
+                      if (!isSubmitted) {
+                        if (isChosen) {
+                          optBg = 'rgba(37, 99, 235, 0.1)';
+                          optBorder = '1.5px solid #2563eb';
+                          optColor = '#1d4ed8';
+                        }
+                      } else {
+                        if (isOptionCorrect) {
+                          optBg = 'rgba(5, 150, 105, 0.12)';
+                          optBorder = '1.5px solid #059669';
+                          optColor = '#065f46';
+                        } else if (isChosen && !isOptionCorrect) {
+                          optBg = 'rgba(239, 68, 68, 0.12)';
+                          optBorder = '1.5px solid #dc2626';
+                          optColor = '#991b1b';
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={optIdx}
+                          type="button"
+                          disabled={submitted}
+                          onClick={() => setVivaAnswers(prev => ({ ...prev, [q.id]: optIdx }))}
+                          style={{
+                            all: 'unset',
+                            cursor: submitted ? 'default' : 'pointer',
+                            padding: '8px 12px',
+                            borderRadius: 6,
+                            background: optBg,
+                            border: optBorder,
+                            color: optColor,
+                            fontSize: '0.78rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            fontSize: '0.68rem',
+                            fontWeight: 700,
+                            background: isChosen ? '#2563eb' : 'var(--bg-inset, #e2e8f0)',
+                            color: isChosen ? '#fff' : 'var(--text-secondary)',
+                            flexShrink: 0,
+                          }}>
+                            {String.fromCharCode(65 + optIdx)}
+                          </span>
+                          <span style={{ flex: 1 }}>{opt}</span>
+                          {isSubmitted && isOptionCorrect && <span style={{ color: '#059669', fontWeight: 700 }}>✓</span>}
+                          {isSubmitted && isChosen && !isOptionCorrect && <span style={{ color: '#dc2626', fontWeight: 700 }}>✗</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {isSubmitted && q.explanation && (
+                    <div style={{
+                      marginTop: 10,
+                      padding: '8px 10px',
+                      borderRadius: 6,
+                      fontSize: '0.74rem',
+                      color: isCorrect ? '#065f46' : '#991b1b',
+                      background: isCorrect ? 'rgba(5, 150, 105, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                      border: `1px solid ${isCorrect ? 'rgba(5, 150, 105, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                      lineHeight: 1.4,
+                    }}>
+                      <strong>{isCorrect ? '✓ Correct! ' : isUnanswered ? '⚠️ Unanswered! ' : '✗ Incorrect. '}</strong>
+                      {q.explanation}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Summary status after submission */}
       {submitted && results && (

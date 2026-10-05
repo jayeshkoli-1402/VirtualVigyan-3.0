@@ -93,7 +93,14 @@ export const physicalChemicalChanges: ExperimentConfig = {
       component: 'BunsenBurner',
       label: 'Bunsen Burner Flame',
       icon: '🔥',
-      initialProps: { width: 85, height: 125, isLit: true },
+      initialProps: { width: 75, height: 125, isLit: true },
+    },
+    {
+      id: 'tripod-stand',
+      component: 'Tripod',
+      label: 'Tripod Stand & Wire Gauze',
+      icon: '📐',
+      initialProps: { width: 110, height: 115, label: 'Tripod & Wire Gauze' },
     },
   ],
 
@@ -101,35 +108,44 @@ export const physicalChemicalChanges: ExperimentConfig = {
   dropZones: [
     {
       id: 'stand-tube-zone',
-      label: 'Place Test Tube on Stand',
+      label: 'Place Test Tube in Stand',
       accepts: ['tube-displacement'],
-      position: { x: 28, y: 62 },
-      size: { width: 18, height: 35 },
-      rejectMessage: 'Place the test tube on the left stand.',
+      position: { x: 28, y: 56 },
+      size: { width: 18, height: 32 },
+      rejectMessage: 'Place the test tube in the stand on the left.',
     },
     {
       id: 'burner-stand-zone',
-      label: 'Place Bunsen Burner on Heating Station',
+      label: 'Place Bunsen Burner on Table',
       accepts: ['bunsen-burner'],
-      position: { x: 72, y: 72 },
-      size: { width: 20, height: 28 },
-      rejectMessage: 'Place the Bunsen burner on the right heating station.',
+      position: { x: 72, y: 63 },
+      size: { width: 20, height: 26 },
+      rejectMessage: 'Place the Bunsen burner on the table at the heating station.',
+    },
+    {
+      id: 'burner-tripod-zone',
+      label: 'Place Tripod Stand over Burner',
+      accepts: ['tripod-stand'],
+      position: { x: 72, y: 56 },
+      size: { width: 22, height: 28 },
+      rejectMessage: 'Place the Bunsen burner on the table first before positioning the tripod stand.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'bunsen-burner' },
     },
     {
       id: 'burner-dish-zone',
-      label: 'Mount China Dish over Burner',
+      label: 'Mount China Dish on Tripod Stand',
       accepts: ['china-dish'],
-      position: { x: 72, y: 44 },
-      size: { width: 22, height: 24 },
-      rejectMessage: 'Place the Bunsen burner on the heating station first before mounting the China dish.',
-      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'bunsen-burner' },
+      position: { x: 72, y: 43 },
+      size: { width: 22, height: 20 },
+      rejectMessage: 'Place the Bunsen burner and Tripod stand on the heating station first before mounting the China dish.',
+      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'tripod-stand' },
     },
     {
       id: 'tube-mouth',
       label: 'Into Test Tube',
       accepts: ['cuso4-bottle', 'iron-nail', 'zinc-granules', 'dil-h2so4-bottle'],
-      position: { x: 28, y: 48 },
-      size: { width: 16, height: 22 },
+      position: { x: 28, y: 44 },
+      size: { width: 16, height: 20 },
       rejectMessage: 'Add reagents into test tube mouth.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'tube-displacement' },
     },
@@ -137,15 +153,21 @@ export const physicalChemicalChanges: ExperimentConfig = {
       id: 'dish-mouth',
       label: 'Into China Dish',
       accepts: ['mg-ribbon', 'nh4cl-bottle'],
-      position: { x: 72, y: 40 },
-      size: { width: 18, height: 20 },
+      position: { x: 72, y: 39 },
+      size: { width: 18, height: 18 },
       rejectMessage: 'Place test substance into China dish.',
       visibleWhen: { type: 'apparatusPlaced', apparatusId: 'china-dish' },
     },
   ],
 
   bench: {
-    backgroundElements: [],
+    backgroundElements: [
+      {
+        component: 'TestTubeStand',
+        position: { x: 28, y: 64 },
+        scale: 1.0,
+      },
+    ],
   },
 
   // ── Steps ──
@@ -153,8 +175,8 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'setup-lab',
       label: 'Setup Apparatus',
-      instruction: 'Place the test tube on the stand, position the Bunsen burner on the heating station, then mount the China dish over the burner.',
-      requiredActions: ['place-tube', 'place-burner', 'place-dish'],
+      instruction: 'Place the test tube in the stand, position the Bunsen burner on the table, place the Tripod stand over the burner, then mount the China dish on the tripod.',
+      requiredActions: ['place-tube', 'place-burner', 'place-tripod', 'place-dish'],
       type: 'lab',
     },
     {
@@ -200,7 +222,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'place-tube-act',
       trigger: { type: 'drop', source: 'tube-displacement', target: 'stand-tube-zone' },
-      effects: [{ type: 'placeApparatus', apparatusId: 'tube-displacement', zoneId: 'stand-tube-zone' }],
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'tube-displacement', zoneId: 'stand-tube-zone' },
+        { type: 'setFlag', key: 'tubePlaced', value: true },
+      ],
       completesAction: 'place-tube',
     },
     {
@@ -213,15 +238,42 @@ export const physicalChemicalChanges: ExperimentConfig = {
       completesAction: 'place-burner',
     },
     {
+      id: 'place-tripod-act',
+      trigger: { type: 'drop', source: 'tripod-stand', target: 'burner-tripod-zone' },
+      conditions: [{ type: 'apparatusPlaced', apparatusId: 'bunsen-burner' }],
+      blockMessage: 'Place the Bunsen burner on the table first before positioning the tripod stand.',
+      effects: [
+        { type: 'placeApparatus', apparatusId: 'tripod-stand', zoneId: 'burner-tripod-zone' },
+        { type: 'setFlag', key: 'tripodPlaced', value: true },
+      ],
+      completesAction: 'place-tripod',
+    },
+    {
       id: 'place-dish-act',
       trigger: { type: 'drop', source: 'china-dish', target: 'burner-dish-zone' },
-      conditions: [{ type: 'apparatusPlaced', apparatusId: 'bunsen-burner' }],
-      blockMessage: 'Place the Bunsen burner on the heating station first before mounting the China dish.',
+      conditions: [{ type: 'apparatusPlaced', apparatusId: 'tripod-stand' }],
+      blockMessage: 'Place the Bunsen burner and Tripod stand on the heating station first before mounting the China dish.',
       effects: [
         { type: 'placeApparatus', apparatusId: 'china-dish', zoneId: 'burner-dish-zone' },
         { type: 'setFlag', key: 'dishPlaced', value: true },
       ],
       completesAction: 'place-dish',
+    },
+    {
+      id: 'ignite-burner-act',
+      trigger: { type: 'click', elementId: 'ignite-burner' },
+      effects: [
+        { type: 'setFlag', key: 'burnerLit', value: true },
+        { type: 'setApparatusProp', apparatusId: 'bunsen-burner', prop: 'isLit', value: true },
+      ],
+    },
+    {
+      id: 'stop-burner-act',
+      trigger: { type: 'click', elementId: 'stop-burner' },
+      effects: [
+        { type: 'setFlag', key: 'burnerLit', value: false },
+        { type: 'setApparatusProp', apparatusId: 'bunsen-burner', prop: 'isLit', value: false },
+      ],
     },
     {
       id: 'add-cuso4-act',
@@ -259,6 +311,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'burn-mg-act',
       trigger: { type: 'drop', source: 'mg-ribbon', target: 'dish-mouth' },
+      guard: {
+        condition: { type: 'flag', key: 'burnerLit', equals: false },
+        message: 'Start the Bunsen burner flame using the START button first.',
+      },
       effects: [
         { type: 'setFlag', key: 'mgBurned', value: true },
         { type: 'setApparatusProp', apparatusId: 'china-dish', prop: 'label', value: '✨ Dazzling White Flame → White MgO Ash' },
@@ -268,6 +324,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
     {
       id: 'sublime-nh4cl-act',
       trigger: { type: 'drop', source: 'nh4cl-bottle', target: 'dish-mouth' },
+      guard: {
+        condition: { type: 'flag', key: 'burnerLit', equals: false },
+        message: 'Start the Bunsen burner flame using the START button first to heat the China dish.',
+      },
       effects: [
         { type: 'setFlag', key: 'nh4clSublimed', value: true },
         { type: 'setApparatusProp', apparatusId: 'china-dish', prop: 'label', value: 'NH₄Cl Sublimed! White crystalline solid deposits (Physical)' },
@@ -376,9 +436,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
       evaluator: {
         type: 'multiCheck',
         checks: [
-          { label: 'Reaction test tube placed on stand', points: 6, action: 'place-tube' },
-          { label: 'Bunsen burner positioned first on heating station', points: 7, flag: 'burnerPlaced' },
-          { label: 'China dish mounted securely over burner', points: 7, flag: 'dishPlaced' },
+          { label: 'Reaction test tube placed in stand', points: 5, action: 'place-tube' },
+          { label: 'Bunsen burner positioned on table', points: 5, flag: 'burnerPlaced' },
+          { label: 'Tripod stand & wire gauze mounted over burner', points: 5, flag: 'tripodPlaced' },
+          { label: 'China dish mounted securely on tripod stand', points: 5, flag: 'dishPlaced' },
         ],
       },
     },
@@ -412,10 +473,17 @@ export const physicalChemicalChanges: ExperimentConfig = {
   ],
   validation: [
     {
-      id: 'dish-before-burner',
-      trigger: 'drop:china-dish→burner-dish-zone',
+      id: 'tripod-before-burner',
+      trigger: 'drop:tripod-stand→burner-tripod-zone',
       condition: { type: 'flag', key: 'burnerPlaced', equals: false },
-      message: 'Safety rule: Place the Bunsen burner on the bench first before mounting the China dish.',
+      message: 'Safety rule: Place the Bunsen burner on the table first before positioning the tripod stand.',
+      blocking: true,
+    },
+    {
+      id: 'dish-before-tripod',
+      trigger: 'drop:china-dish→burner-dish-zone',
+      condition: { type: 'flag', key: 'tripodPlaced', equals: false },
+      message: 'Safety rule: Place the Bunsen burner and Tripod stand on the heating station first before mounting the China dish.',
       blocking: true,
     },
   ],

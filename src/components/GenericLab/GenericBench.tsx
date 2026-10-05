@@ -1188,12 +1188,13 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         };
         const isTargetSwirling = isSwirling && (apparatusConfig.component === 'ConicalFlask' || apparatusConfig.component === 'Beaker' || apparatusConfig.component === 'TestTube');
 
-        // Glassware and reaction vessels (Beakers, Flasks) have priority foreground z-index over the burette stand
+        // Glassware and reaction vessels (Beakers, Flasks, Evaporating Dish) have priority foreground z-index over stands
         const isBurette = apparatusConfig.component === 'Burette' || apparatusConfig.component === 'BuretteStand';
-        const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask'].includes(apparatusConfig.component);
-        const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod'].includes(apparatusConfig.component);
-        const isHardware = ['RetortStand', 'Tripod', 'WireGauze'].includes(apparatusConfig.component);
-        const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : 10;
+        const isVessel = ['ConicalFlask', 'Beaker', 'BODBottle', 'TestTube', 'VolumetricFlask', 'EvaporatingDish'].includes(apparatusConfig.component);
+        const isTool = ['Dropper', 'Pipette', 'Matchstick', 'ReagentBottle', 'GlassRod', 'IronNail'].includes(apparatusConfig.component);
+        const isHardware = ['RetortStand', 'Tripod', 'WireGauze', 'TestTubeStand'].includes(apparatusConfig.component);
+        const isBurner = apparatusConfig.component === 'BunsenBurner';
+        const apparatusZIndex = isTool ? 25 : isBurette ? 20 : isVessel ? 18 : isHardware ? 14 : isBurner ? 12 : 10;
 
         const isAnimationTarget =
           !state.activeAnimation?.targetZoneId ||
@@ -1248,6 +1249,11 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                   onSetStopcock: (val: number) => {
                     setStopcockOpen(val);
                     dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
+                  },
+                  onToggleBurner: () => {
+                    const currentLit = state.flags['burnerLit'] ?? true;
+                    dispatch({ type: 'SET_FLAG', payload: { flag: 'burnerLit', value: !currentLit } });
+                    dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: !currentLit ? 'ignite-burner' : 'stop-burner' } });
                   },
                 }}
                 {...dynamicProps}

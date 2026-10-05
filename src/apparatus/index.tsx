@@ -2126,37 +2126,208 @@ const PipetteSVG: React.FC<ApparatusProps> = ({
 
 const BunsenBurner: React.FC<ApparatusProps> = ({
   highlighted = false,
-  width = 60,
-  height = 100,
-  extraProps,
+  width = 75,
+  height = 125,
+  flags = {},
+  extraProps = {},
+  ...rest
 }) => {
-  const isLit = (extraProps?.['isLit'] as boolean) ?? false;
+  // Determine if burner is lit: checks flags, extraProps, or top-level props (default true)
+  const isLit =
+    flags.burnerLit !== undefined
+      ? flags.burnerLit
+      : (typeof extraProps.burnerLit === 'boolean'
+          ? extraProps.burnerLit
+          : (typeof extraProps.isLit === 'boolean'
+              ? extraProps.isLit
+              : (typeof rest.isLit === 'boolean' ? rest.isLit : true)));
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof extraProps.onToggleBurner === 'function') {
+      (extraProps.onToggleBurner as () => void)();
+    }
+  };
 
   return (
-    <svg width={width} height={height} viewBox="0 0 60 100" fill="none">
-      {/* Base */}
-      <rect x="10" y="85" width="40" height="10" rx="3"
-        fill="#475569" stroke={highlighted ? '#2563eb' : '#334155'} strokeWidth="1.5" />
-      {/* Barrel */}
-      <rect x="24" y="35" width="12" height="50" rx="2"
-        fill="#64748b" stroke="#475569" strokeWidth="1" />
-      {/* Air hole */}
-      <ellipse cx="30" cy="75" rx="4" ry="2" fill="#334155" />
-      {/* Collar */}
-      <rect x="22" y="55" width="16" height="6" rx="1.5" fill="#94a3b8" stroke="#64748b" strokeWidth="0.5" />
-      {/* Gas inlet */}
-      <path d="M 10 80 L 24 80" stroke="#94a3b8" strokeWidth="2" />
-      {/* Flame */}
+    <svg width={width} height={height} viewBox="0 0 75 125" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Stainless steel / chrome barrel gradient */}
+        <linearGradient id="burnerBarrelGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#334155" />
+          <stop offset="25%" stopColor="#94a3b8" />
+          <stop offset="55%" stopColor="#f1f5f9" />
+          <stop offset="85%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+
+        {/* Cast iron heavy base gradient */}
+        <linearGradient id="burnerBaseGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+
+        {/* Brass needle valve & collar gradient */}
+        <linearGradient id="burnerBrassGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#78350f" />
+          <stop offset="35%" stopColor="#f59e0b" />
+          <stop offset="70%" stopColor="#fde047" />
+          <stop offset="100%" stopColor="#92400e" />
+        </linearGradient>
+
+        {/* Outer flame mantle gradient */}
+        <linearGradient id="flameOuterGrad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(37, 99, 235, 0.85)" />
+          <stop offset="40%" stopColor="rgba(56, 189, 248, 0.75)" />
+          <stop offset="80%" stopColor="rgba(96, 165, 250, 0.6)" />
+          <stop offset="100%" stopColor="rgba(251, 146, 60, 0.8)" />
+        </linearGradient>
+
+        {/* Hot inner oxidizing/reducing cone gradient */}
+        <linearGradient id="flameInnerGrad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor="rgba(6, 182, 212, 0.95)" />
+          <stop offset="70%" stopColor="rgba(165, 243, 252, 0.95)" />
+          <stop offset="100%" stopColor="rgba(255, 255, 255, 0.9)" />
+        </linearGradient>
+      </defs>
+
+      {/* Highlight glow */}
+      {highlighted && (
+        <rect x="5" y="38" width="65" height="60" rx="6" stroke="#3b82f6" strokeWidth="3" opacity="0.5" filter="blur(2px)" />
+      )}
+
+      {/* ── Dynamic Bunsen Flame (when lit) ── */}
       {isLit && (
-        <g>
-          <ellipse cx="30" cy="25" rx="6" ry="14"
-            fill="hsla(210, 90%, 60%, 0.6)" />
-          <ellipse cx="30" cy="22" rx="3.5" ry="10"
-            fill="hsla(210, 95%, 70%, 0.8)" />
-          <ellipse cx="30" cy="20" rx="2" ry="6"
-            fill="hsla(40, 95%, 75%, 0.9)" />
+        <g id="bunsen-flame">
+          {/* Heat convection shimmer wave wisps */}
+          <path d="M 34 38 Q 30 20 37 4" stroke="rgba(56, 189, 248, 0.3)" strokeWidth="1.2" strokeDasharray="3,3" fill="none">
+            <animate attributeName="stroke-dashoffset" values="6;0" dur="0.8s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="1.2s" repeatCount="indefinite" />
+          </path>
+          <path d="M 41 38 Q 45 18 39 2" stroke="rgba(56, 189, 248, 0.3)" strokeWidth="1.2" strokeDasharray="3,3" fill="none">
+            <animate attributeName="stroke-dashoffset" values="6;0" dur="0.9s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="1.4s" repeatCount="indefinite" />
+          </path>
+
+          {/* Outer high-temperature blue flame cone */}
+          <path
+            d="M 37.5 4 Q 48 18 45 32 Q 44 42 37.5 42 Q 31 42 30 32 Q 27 18 37.5 4 Z"
+            fill="url(#flameOuterGrad)"
+            filter="drop-shadow(0 0 6px rgba(56, 189, 248, 0.6))"
+          >
+            <animate
+              attributeName="d"
+              values="
+                M 37.5 4 Q 48 18 45 32 Q 44 42 37.5 42 Q 31 42 30 32 Q 27 18 37.5 4 Z;
+                M 37.5 2 Q 46 17 44 32 Q 43 42 37.5 42 Q 32 42 31 32 Q 29 17 37.5 2 Z;
+                M 37.5 5 Q 49 19 46 32 Q 44 42 37.5 42 Q 31 42 29 32 Q 26 19 37.5 5 Z;
+                M 37.5 4 Q 48 18 45 32 Q 44 42 37.5 42 Q 31 42 30 32 Q 27 18 37.5 4 Z
+              "
+              dur="0.45s"
+              repeatCount="indefinite"
+            />
+          </path>
+
+          {/* Inner intense pale cyan reducing cone */}
+          <path
+            d="M 37.5 16 Q 43 25 42 34 Q 41 42 37.5 42 Q 34 42 33 34 Q 32 25 37.5 16 Z"
+            fill="url(#flameInnerGrad)"
+            opacity="0.95"
+          >
+            <animate
+              attributeName="d"
+              values="
+                M 37.5 16 Q 43 25 42 34 Q 41 42 37.5 42 Q 34 42 33 34 Q 32 25 37.5 16 Z;
+                M 37.5 14 Q 42 24 41 34 Q 40 42 37.5 42 Q 35 42 34 34 Q 33 24 37.5 14 Z;
+                M 37.5 16 Q 43 25 42 34 Q 41 42 37.5 42 Q 34 42 33 34 Q 32 25 37.5 16 Z
+              "
+              dur="0.35s"
+              repeatCount="indefinite"
+            />
+          </path>
+
+          {/* Luminous flame tip micro-flicker */}
+          <ellipse cx="37.5" cy="5" rx="1.6" ry="3.5" fill="#fde047" opacity="0.85">
+            <animate attributeName="cy" values="5;3;6;5" dur="0.25s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.85;0.5;0.9;0.85" dur="0.25s" repeatCount="indefinite" />
+          </ellipse>
         </g>
       )}
+
+      {/* ── Burner Metal Structure ── */}
+
+      {/* Gas inlet connector hose on left */}
+      <path d="M 0 88 C 10 88, 14 86, 20 86" stroke="#475569" strokeWidth="4" strokeLinecap="round" fill="none" />
+      <path d="M 0 88 C 10 88, 14 86, 20 86" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="2,2" strokeLinecap="round" fill="none" />
+      <rect x="18" y="83" width="7" height="6" rx="1" fill="url(#burnerBrassGrad)" stroke="#78350f" strokeWidth="0.6" />
+
+      {/* Heavy cast-iron wide base (rests flat on bench) */}
+      <rect x="10" y="85" width="55" height="13" rx="3.5" fill="url(#burnerBaseGrad)" stroke="#1e293b" strokeWidth="1.2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.35))" />
+      <rect x="12" y="86" width="51" height="2" rx="1" fill="rgba(255,255,255,0.2)" />
+      {/* Rubber anti-slip feet pads */}
+      <rect x="14" y="98" width="8" height="2" rx="1" fill="#0f172a" />
+      <rect x="53" y="98" width="8" height="2" rx="1" fill="#0f172a" />
+
+      {/* Vertical Chimney Barrel Tube */}
+      <rect x="32" y="42" width="11" height="44" rx="1" fill="url(#burnerBarrelGrad)" stroke="#334155" strokeWidth="0.8" />
+      {/* Burner nozzle rim at top */}
+      <ellipse cx="37.5" cy="42" rx="6.5" ry="2" fill="#64748b" stroke="#334155" strokeWidth="0.8" />
+      <ellipse cx="37.5" cy="42" rx="4.5" ry="1.2" fill="#0f172a" />
+
+      {/* Rotatable Air Collar with Dual Air Vent Holes */}
+      <rect x="30" y="65" width="15" height="8" rx="1.5" fill="url(#burnerBrassGrad)" stroke="#78350f" strokeWidth="0.6" />
+      <ellipse cx="34" cy="69" rx="1.8" ry="2.2" fill="#0f172a" />
+      <ellipse cx="41" cy="69" rx="1.8" ry="2.2" fill="#0f172a" />
+
+      {/* Brass Needle-Valve Gas Knob (Interactive) */}
+      <g
+        id="burner-valve-knob"
+        style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+        onClick={handleToggle}
+      >
+        <rect x="44" y="82" width="10" height="6" rx="1.5" fill="url(#burnerBrassGrad)" stroke="#78350f" strokeWidth="0.6" />
+        <line x1="47" y1="82" x2="47" y2="88" stroke="#78350f" strokeWidth="0.6" />
+        <line x1="50" y1="82" x2="50" y2="88" stroke="#78350f" strokeWidth="0.6" />
+      </g>
+
+      {/* ── Interactive Start / Stop Flame Button Pill ── */}
+      <g
+        id="burner-start-stop-pill"
+        style={{ cursor: 'pointer', pointerEvents: 'auto' }}
+        onClick={handleToggle}
+      >
+        {/* Button container */}
+        <rect
+          x="11"
+          y="104"
+          width="53"
+          height="18"
+          rx="5"
+          fill={isLit ? '#dc2626' : '#16a34a'}
+          stroke={isLit ? '#991b1b' : '#15803d'}
+          strokeWidth="1"
+          filter="drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+        />
+        {/* Glow indicator bulb */}
+        <circle cx="20" cy="113" r="3.5" fill={isLit ? '#fecaca' : '#bbf7d0'} />
+        <circle cx="20" cy="113" r="1.8" fill="#ffffff">
+          <animate attributeName="opacity" values="0.6;1;0.6" dur="1s" repeatCount="indefinite" />
+        </circle>
+        {/* Label */}
+        <text
+          x="42"
+          y="116.5"
+          textAnchor="middle"
+          fontSize="7.5"
+          fontWeight="700"
+          fill="#ffffff"
+          fontFamily="var(--font-sans)"
+          letterSpacing="0.04em"
+        >
+          {isLit ? 'STOP' : 'START'}
+        </text>
+      </g>
     </svg>
   );
 };
@@ -3159,23 +3330,117 @@ const WireGauze: React.FC<ApparatusProps> = ({
 );
 
 
-// ── Tripod Stand ─────────────────────────────────────────────────
+// ── Tripod Stand & Wire Gauze ─────────────────────────────────────
 
 const Tripod: React.FC<ApparatusProps> = ({
   highlighted = false,
-  width = 80,
-  height = 80,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 80 80" fill="none">
-    {/* Ring */}
-    <ellipse cx="40" cy="15" rx="25" ry="5"
-      stroke={highlighted ? '#2563eb' : '#64748b'} strokeWidth="2" fill="none" />
-    {/* Legs */}
-    <line x1="15" y1="18" x2="5" y2="75" stroke="#64748b" strokeWidth="2.5" />
-    <line x1="40" y1="20" x2="40" y2="75" stroke="#64748b" strokeWidth="2.5" />
-    <line x1="65" y1="18" x2="75" y2="75" stroke="#64748b" strokeWidth="2.5" />
-  </svg>
-);
+  width = 110,
+  height = 115,
+  flags = {},
+  extraProps = {},
+  label,
+}) => {
+  const isHeating = Boolean(flags?.burnerLit ?? flags?.isHeating ?? extraProps?.isHeating);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 110 115" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Cast iron metallic gradient for legs */}
+        <linearGradient id="tripodLegGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#1e293b" />
+          <stop offset="40%" stopColor="#475569" />
+          <stop offset="70%" stopColor="#64748b" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+
+        {/* Heavy top ring cast iron gradient */}
+        <linearGradient id="tripodRingGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+
+        {/* Wire gauze mesh pattern */}
+        <pattern id="wireGauzeMesh" width="4" height="4" patternUnits="userSpaceOnUse">
+          <path d="M 0 2 L 4 2 M 2 0 L 2 4" stroke="#a1a1aa" strokeWidth="0.5" />
+        </pattern>
+      </defs>
+
+      {/* Highlight glow */}
+      {highlighted && (
+        <ellipse cx="55" cy="22" rx="42" ry="12" stroke="#3b82f6" strokeWidth="3" opacity="0.6" filter="blur(2px)" />
+      )}
+
+      {/* ── 3 Cast-Iron Tubular Legs (rest flat on the workbench table at y = 110) ── */}
+
+      {/* Back center leg */}
+      <line x1="55" y1="26" x2="55" y2="110" stroke="#1e293b" strokeWidth="4.5" strokeLinecap="round" />
+      <line x1="55" y1="26" x2="55" y2="110" stroke="#475569" strokeWidth="2.5" strokeLinecap="round" />
+      {/* Back foot */}
+      <ellipse cx="55" cy="110" rx="3.5" ry="1.5" fill="#0f172a" />
+
+      {/* Open central chamber for burner clearance (burner flame rises here) */}
+
+      {/* Left splayed leg */}
+      <line x1="28" y1="24" x2="12" y2="110" stroke="url(#tripodLegGrad)" strokeWidth="4.5" strokeLinecap="round" />
+      <line x1="28.5" y1="24" x2="12.5" y2="109" stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeLinecap="round" />
+      {/* Left rubber anti-slip foot pad */}
+      <rect x="7" y="108" width="10" height="3.5" rx="1.5" fill="#0f172a" stroke="#1e293b" strokeWidth="0.5" />
+
+      {/* Right splayed leg */}
+      <line x1="82" y1="24" x2="98" y2="110" stroke="url(#tripodLegGrad)" strokeWidth="4.5" strokeLinecap="round" />
+      <line x1="81.5" y1="24" x2="97.5" y2="109" stroke="rgba(255,255,255,0.25)" strokeWidth="1" strokeLinecap="round" />
+      {/* Right rubber anti-slip foot pad */}
+      <rect x="93" y="108" width="10" height="3.5" rx="1.5" fill="#0f172a" stroke="#1e293b" strokeWidth="0.5" />
+
+      {/* Leg mounting brackets under top ring */}
+      <polygon points="24,22 32,22 28,30" fill="#334155" />
+      <polygon points="51,25 59,25 55,32" fill="#1e293b" />
+      <polygon points="78,22 86,22 82,30" fill="#334155" />
+
+      {/* ── Heavy Circular Cast-Iron Top Ring (Outer rim) ── */}
+      <ellipse cx="55" cy="22" rx="38" ry="9" fill="url(#tripodRingGrad)" stroke="#1e293b" strokeWidth="1.5" />
+      <ellipse cx="55" cy="22" rx="34" ry="7.5" fill="#0f172a" stroke="#334155" strokeWidth="1" />
+
+      {/* ── Wire Gauze Platform with Ceramic Heat-Diffuser Center ── */}
+      {/* Square Wire Gauze Mesh plate mounted over the ring */}
+      <g transform="translate(18, 14)">
+        <polygon
+          points="20,0 54,0 74,15 0,15"
+          fill="url(#wireGauzeMesh)"
+          stroke="#94a3b8"
+          strokeWidth="0.8"
+        />
+        {/* Ceramic fibrous circular center heat-diffuser patch */}
+        <ellipse
+          cx="37"
+          cy="8"
+          rx="18"
+          ry="5.5"
+          fill={isHeating ? '#fef08a' : '#f8fafc'}
+          stroke={isHeating ? '#f59e0b' : '#cbd5e1'}
+          strokeWidth="0.8"
+          style={{ transition: 'all 0.5s ease' }}
+          filter={isHeating ? 'drop-shadow(0 0 5px rgba(245, 158, 11, 0.7))' : undefined}
+        />
+        {/* Porous ceramic surface speckles */}
+        <circle cx="31" cy="7" r="0.6" fill={isHeating ? '#d97706' : '#94a3b8'} opacity="0.6" />
+        <circle cx="43" cy="8" r="0.8" fill={isHeating ? '#d97706' : '#94a3b8'} opacity="0.6" />
+        <circle cx="37" cy="6" r="0.5" fill={isHeating ? '#d97706' : '#94a3b8'} opacity="0.6" />
+        <circle cx="39" cy="10" r="0.7" fill={isHeating ? '#d97706' : '#94a3b8'} opacity="0.6" />
+      </g>
+
+      {/* Front edge rim highlight */}
+      <path d="M 18 22 Q 55 31 92 22" stroke="rgba(255,255,255,0.3)" strokeWidth="1" fill="none" />
+
+      {label && (
+        <text x="55" y="122" textAnchor="middle" fontSize="6.5" fontWeight="600" fill="#64748b" fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Evaporating Dish ─────────────────────────────────────────────

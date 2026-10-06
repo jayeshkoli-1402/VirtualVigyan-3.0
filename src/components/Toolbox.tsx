@@ -1,8 +1,7 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import type { TitrationState } from '../engine/titrationState';
-import { Step, DRAG_ITEMS } from '../engine/titrationState';
+import { Step, DRAG_ITEMS, isTitrationAnimating } from '../engine/titrationState';
 import { useLanguage } from '../i18n/LanguageContext';
 
 interface ToolboxProps {
@@ -22,47 +21,55 @@ type ToolItem = {
 
 const TOOLS: ToolItem[] = [
   {
-    id: DRAG_ITEMS.BURETTE,
-    labelKey: 'apparatus.burette',
-    defaultLabel: 'Burette',
-    icon: '🧪',
+    id: DRAG_ITEMS.RETORT_STAND,
+    labelKey: 'apparatus.retortStand',
+    defaultLabel: 'Retort Stand',
+    icon: '🏗️',
     activeInSteps: [Step.SETUP_STAND],
-    placedKey: 'buretteMounted',
+    placedKey: 'standPlaced',
   },
   {
     id: DRAG_ITEMS.FLASK,
     labelKey: 'apparatus.flask',
-    defaultLabel: 'Conical Flask',
+    defaultLabel: '250 mL Conical Flask',
     icon: '⚗️',
     activeInSteps: [Step.SETUP_STAND],
     placedKey: 'flaskPlaced',
   },
   {
+    id: DRAG_ITEMS.BURETTE,
+    labelKey: 'apparatus.burette',
+    defaultLabel: '50 mL Burette',
+    icon: '🧪',
+    activeInSteps: [Step.SETUP_STAND],
+    placedKey: 'buretteMounted',
+  },
+  {
     id: DRAG_ITEMS.HCL_BOTTLE,
     labelKey: 'apparatus.hclBottle',
-    defaultLabel: 'HCl Stock',
+    defaultLabel: 'HCl Stock (0.1 M)',
     icon: '🧴',
-    activeInSteps: [Step.MEASURE_ACID],
+    activeInSteps: [Step.SETUP_STAND, Step.MEASURE_ACID],
     placedKey: 'hclPlaced',
   },
   {
     id: DRAG_ITEMS.PIPETTE,
     labelKey: 'apparatus.pipette',
-    defaultLabel: 'Pipette',
+    defaultLabel: '25 mL Volumetric Pipette',
     icon: '💉',
     activeInSteps: [Step.MEASURE_ACID],
   },
   {
     id: DRAG_ITEMS.NAOH_BOTTLE,
     labelKey: 'apparatus.naohBottle',
-    defaultLabel: 'NaOH Reagent',
+    defaultLabel: '0.100 M NaOH Reagent',
     icon: '🫧',
     activeInSteps: [Step.FILL_BURETTE],
   },
   {
     id: DRAG_ITEMS.INDICATOR,
     labelKey: 'apparatus.indicator',
-    defaultLabel: 'Phenolphthalein',
+    defaultLabel: 'Phenolphthalein Indicator',
     icon: '💧',
     activeInSteps: [Step.ADD_INDICATOR],
   },
@@ -134,32 +141,50 @@ const Toolbox: React.FC<ToolboxProps> = ({ state, isCollapsed = false, onToggleC
       </div>
 
       {/* Tool Cards */}
-      {TOOLS.map((tool) => {
-        const isPlaced = tool.placedKey ? (state[tool.placedKey] as boolean) : false;
-        let isActive = tool.activeInSteps.includes(state.step) && !isPlaced;
+      {(() => {
+        const isAnimating = isTitrationAnimating(state);
+        return TOOLS.map((tool) => {
+          const isPlaced = tool.placedKey ? (state[tool.placedKey] as boolean) : false;
+          let isActive = !isAnimating && tool.activeInSteps.includes(state.step) && !isPlaced;
 
-        // Pipette only active once HCl bottle is placed on the bench
-        if (tool.id === DRAG_ITEMS.PIPETTE && state.step === Step.MEASURE_ACID) {
-          isActive = state.hclPlaced && !state.acidMeasured;
-        }
+          // Burette can be mounted once stand is placed
+          if (tool.id === DRAG_ITEMS.BURETTE && state.step === Step.SETUP_STAND) {
+            isActive = !isAnimating && state.standPlaced && !state.buretteMounted;
+          }
 
-        const isPipetteUsed = tool.id === DRAG_ITEMS.PIPETTE && state.acidMeasured;
-        const isHclUsed = tool.id === DRAG_ITEMS.HCL_BOTTLE && state.acidMeasured;
-        const isNaohUsed = tool.id === DRAG_ITEMS.NAOH_BOTTLE && state.buretteFilled;
-        const isIndicatorUsed = tool.id === DRAG_ITEMS.INDICATOR && state.hasIndicator;
-        const isUsed = isPlaced || isPipetteUsed || isHclUsed || isNaohUsed || isIndicatorUsed;
+          // Pipette only active once HCl bottle is placed on the bench
+          if (tool.id === DRAG_ITEMS.PIPETTE && state.step === Step.MEASURE_ACID) {
+            isActive = !isAnimating && state.hclPlaced && !state.acidMeasured;
+          }
 
-        return (
-          <DraggableToolCard
-            key={tool.id}
-            tool={tool}
-            isActive={isActive}
-            isUsed={isUsed}
-            disabled={!isActive}
-            isCollapsed={isCollapsed}
-          />
-        );
-      })}
+          // NaOH bottle active in FILL_BURETTE until burette is filled
+          if (tool.id === DRAG_ITEMS.NAOH_BOTTLE && state.step === Step.FILL_BURETTE) {
+            isActive = !isAnimating && !state.buretteFilled;
+          }
+
+          // Indicator bottle active in ADD_INDICATOR until added
+          if (tool.id === DRAG_ITEMS.INDICATOR && state.step === Step.ADD_INDICATOR) {
+            isActive = !isAnimating && !state.hasIndicator;
+          }
+
+          const isPipetteUsed = tool.id === DRAG_ITEMS.PIPETTE && state.acidMeasured;
+          const isHclUsed = tool.id === DRAG_ITEMS.HCL_BOTTLE && state.acidMeasured;
+          const isNaohUsed = tool.id === DRAG_ITEMS.NAOH_BOTTLE && state.buretteFilled;
+          const isIndicatorUsed = tool.id === DRAG_ITEMS.INDICATOR && state.hasIndicator;
+          const isUsed = isPlaced || isPipetteUsed || isHclUsed || isNaohUsed || isIndicatorUsed;
+
+          return (
+            <DraggableToolCard
+              key={tool.id}
+              tool={tool}
+              isActive={isActive}
+              isUsed={isUsed}
+              disabled={!isActive}
+              isCollapsed={isCollapsed}
+            />
+          );
+        });
+      })()}
     </div>
   );
 };
@@ -172,7 +197,7 @@ const DraggableToolCard: React.FC<{
   disabled: boolean;
   isCollapsed: boolean;
 }> = ({ tool, isActive, isUsed, disabled, isCollapsed }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: tool.id,
     disabled,
   });
@@ -186,19 +211,22 @@ const DraggableToolCard: React.FC<{
     borderRadius: 'var(--radius-md)',
     cursor: disabled ? 'default' : 'grab',
     transition: 'all 0.15s ease',
-    border: isActive
+    border: isDragging
+      ? '1.5px dashed var(--accent)'
+      : isActive
       ? '1px solid var(--accent)'
       : isUsed
         ? '1px solid var(--accent-green)'
         : '1px solid var(--border)',
-    background: isActive
+    background: isDragging
+      ? 'var(--accent-subtle)'
+      : isActive
       ? 'var(--accent-subtle)'
       : isUsed
         ? 'rgba(5, 150, 105, 0.06)'
         : 'var(--bg-card)',
-    boxShadow: isActive ? 'var(--shadow-xs)' : 'none',
-    opacity: isDragging ? 0.3 : isUsed ? 0.55 : disabled ? 0.4 : 1,
-    transform: CSS.Translate.toString(transform),
+    boxShadow: isDragging ? 'var(--shadow-sm)' : isActive ? 'var(--shadow-xs)' : 'none',
+    opacity: isDragging ? 0.6 : isUsed ? 0.55 : disabled ? 0.4 : 1,
     touchAction: 'none',
     userSelect: 'none',
     width: isCollapsed ? '38px' : '100%',

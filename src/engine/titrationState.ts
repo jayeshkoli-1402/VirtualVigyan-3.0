@@ -26,31 +26,60 @@ export const STEP_LABELS: Record<Step, string> = {
 };
 
 export const STEP_INSTRUCTIONS: Record<Step, string> = {
-  [Step.SELECT]: 'Select the Acid-Base Titration experiment to begin.',
-  [Step.SETUP_STAND]: 'Drag the burette onto the clamp and the conical flask onto the base of the retort stand.',
-  [Step.MEASURE_ACID]: 'Drag the HCl Stock bottle onto the lab bench first. Then drag the pipette onto the HCl bottle to draw acid.',
-  [Step.FILL_BURETTE]: 'Drag the NaOH reagent bottle onto the top of the mounted burette to fill it.',
-  [Step.ADD_INDICATOR]: 'Drag the indicator dropper bottle onto the flask to add phenolphthalein.',
-  [Step.TITRATING]: 'Rotate the tap valve handle (click or drag) to open the burette tap and adjust titration flow.',
-  [Step.ENDPOINT_MARKED]: 'You have marked the endpoint. Click "Proceed to Calculation" to complete your calculation.',
-  [Step.CALCULATION]: 'Use your recorded endpoint volume to calculate the unknown HCl concentration.',
-  [Step.RESULTS]: 'Review your score and feedback.',
+  [Step.SELECT]: 'This experiment determines the concentration of HCl by titrating it against standard NaOH solution.',
+  [Step.SETUP_STAND]: 'Place the retort stand, place the conical flask, mount the 50 mL burette vertically above the flask, and place the required reagent bottles safely on the bench before using them.',
+  [Step.MEASURE_ACID]: 'Use the 25 mL volumetric pipette to accurately measure 25.0 mL of HCl stock solution and transfer it into the conical flask.',
+  [Step.FILL_BURETTE]: 'Fill the burette with the standard 0.100 M NaOH solution to the 0.00 mL mark. NaOH is the titrant being delivered from the burette.',
+  [Step.ADD_INDICATOR]: 'Drag the phenolphthalein indicator bottle from the toolbox onto the conical flask to add 2 drops. The acidic solution remains colourless.',
+  [Step.TITRATING]: 'Open the burette stopcock slowly and add NaOH to the HCl solution while swirling the flask continuously. Observe the solution carefully as you approach the endpoint.',
+  [Step.ENDPOINT_MARKED]: 'Endpoint recorded! You observed the persistent pale-pink colour. Click "Proceed to Calculation" to calculate the unknown HCl concentration.',
+  [Step.CALCULATION]: 'Apply the neutralization formula (M₁V₁ = M₂V₂) using your recorded NaOH volume to calculate the HCl concentration.',
+  [Step.RESULTS]: 'Review your score, stoichiometry accuracy, and the complete chemistry findings summary.',
 };
 
 /**
- * Returns dynamic instruction text depending on sub-steps (e.g. placing HCl first).
+ * Returns dynamic instruction text depending on sub-steps.
  */
 export function getStepInstruction(state: TitrationState): string {
+  if (state.step === Step.SETUP_STAND) {
+    if (!state.standPlaced) {
+      return 'Place the retort stand on the laboratory bench.';
+    }
+    if (!state.flaskPlaced) {
+      return 'Place the conical flask on the retort stand base beneath the burette position.';
+    }
+    if (!state.buretteMounted) {
+      return 'Mount the 50 mL burette vertically onto the retort stand clamp.';
+    }
+  }
   if (state.step === Step.MEASURE_ACID) {
     if (!state.hclPlaced) {
       return 'Drag the HCl Stock bottle from the toolbox onto the lab bench first.';
     }
     if (!state.pipetteFilled) {
-      return 'Drag the Pipette onto the placed HCl Stock bottle to draw 25 mL acid.';
+      return 'Use the 25 mL pipette to measure 25.0 mL of HCl accurately from the stock bottle.';
     }
     if (!state.acidMeasured) {
-      return 'Drag the filled Pipette onto the Conical Flask to dispense 25 mL HCl.';
+      return 'Transfer the measured 25.0 mL HCl aliquot from the pipette into the conical flask.';
     }
+  }
+  if (state.step === Step.FILL_BURETTE) {
+    return 'Drag the 0.100 M NaOH bottle to the top of the burette to fill it up to the 0.00 mL mark (NaOH is the titrant).';
+  }
+  if (state.step === Step.ADD_INDICATOR) {
+    return 'Drag the phenolphthalein indicator bottle from the toolbox onto the conical flask to add 2 drops. The acidic solution remains colourless.';
+  }
+  if (state.step === Step.TITRATING) {
+    if (state.volumeAdded < 22.0) {
+      return 'Add NaOH steadily while swirling the flask continuously. The solution remains colourless while acid is in excess.';
+    }
+    if (state.volumeAdded < 24.8) {
+      return 'Slow the addition and add NaOH dropwise as you approach the endpoint. Swirl after each drop!';
+    }
+    if (state.volumeAdded <= 25.4) {
+      return 'Endpoint reached! Stop immediately when a persistent pale-pink colour remains after swirling. Click "Mark Endpoint".';
+    }
+    return 'Warning: Solution is deep pink (overshot endpoint). Close the stopcock valve and mark the endpoint to record your volume.';
   }
   return STEP_INSTRUCTIONS[state.step];
 }
@@ -71,9 +100,12 @@ export const STEP_ORDER: Step[] = [
 export type TitrationState = {
   step: Step;
   // Apparatus placement
+  standPlaced: boolean;
   buretteMounted: boolean;
   flaskPlaced: boolean;
   hclPlaced: boolean;
+  naohPlaced: boolean;
+  indicatorPlaced: boolean;
   // Pipette
   pipetteFilled: boolean;
   acidMeasured: boolean;
@@ -100,9 +132,12 @@ export type TitrationState = {
 
 export const initialState: TitrationState = {
   step: Step.SELECT,
+  standPlaced: false,
   buretteMounted: false,
   flaskPlaced: false,
   hclPlaced: false,
+  naohPlaced: false,
+  indicatorPlaced: false,
   pipetteFilled: false,
   acidMeasured: false,
   buretteFilled: false,
@@ -123,6 +158,7 @@ export const initialState: TitrationState = {
 
 // ── Draggable item IDs ──
 export const DRAG_ITEMS = {
+  RETORT_STAND: 'retort-stand',
   BURETTE: 'burette',
   FLASK: 'flask',
   PIPETTE: 'pipette',
@@ -133,6 +169,7 @@ export const DRAG_ITEMS = {
 
 // ── Drop zone IDs ──
 export const DROP_ZONES = {
+  STAND: 'stand-zone',
   CLAMP: 'stand-clamp-zone',
   BASE: 'stand-base-zone',
   HCL_BENCH_ZONE: 'hcl-bench-zone',
@@ -143,6 +180,7 @@ export const DROP_ZONES = {
 
 // ── Valid drop mappings ──
 export const VALID_DROPS: Record<string, string[]> = {
+  [DROP_ZONES.STAND]: [DRAG_ITEMS.RETORT_STAND],
   [DROP_ZONES.CLAMP]: [DRAG_ITEMS.BURETTE],
   [DROP_ZONES.BASE]: [DRAG_ITEMS.FLASK],
   [DROP_ZONES.HCL_BENCH_ZONE]: [DRAG_ITEMS.HCL_BOTTLE],
@@ -154,9 +192,12 @@ export const VALID_DROPS: Record<string, string[]> = {
 // ── Actions ──
 export type TitrationAction =
   | { type: 'START_EXPERIMENT' }
+  | { type: 'PLACE_STAND' }
   | { type: 'MOUNT_BURETTE' }
   | { type: 'PLACE_FLASK' }
   | { type: 'PLACE_HCL' }
+  | { type: 'PLACE_NAOH' }
+  | { type: 'PLACE_INDICATOR' }
   | { type: 'FILL_PIPETTE_START' }
   | { type: 'FILL_PIPETTE_END' }
   | { type: 'DISPENSE_PIPETTE_START' }
@@ -175,6 +216,15 @@ export type TitrationAction =
   | { type: 'ADD_MISTAKE'; payload: { message: string } }
   | { type: 'RESET' };
 
+export function isTitrationAnimating(state: TitrationState): boolean {
+  return (
+    state.isPipetteFilling ||
+    state.isPipetteDispensing ||
+    state.isPouring ||
+    state.isAddingIndicator
+  );
+}
+
 // Flow rate: mL per second at 100% open
 const MAX_FLOW_RATE = 0.5;
 
@@ -187,9 +237,17 @@ export function titrationReducer(
     case 'START_EXPERIMENT':
       return { ...state, step: Step.SETUP_STAND };
 
+    case 'PLACE_STAND': {
+      const newState = { ...state, standPlaced: true };
+      if (newState.standPlaced && newState.buretteMounted && newState.flaskPlaced) {
+        return { ...newState, step: Step.MEASURE_ACID };
+      }
+      return newState;
+    }
+
     case 'MOUNT_BURETTE': {
-      const newState = { ...state, buretteMounted: true };
-      if (newState.buretteMounted && newState.flaskPlaced) {
+      const newState = { ...state, buretteMounted: true, standPlaced: true };
+      if (newState.standPlaced && newState.buretteMounted && newState.flaskPlaced) {
         return { ...newState, step: Step.MEASURE_ACID };
       }
       return newState;
@@ -197,7 +255,7 @@ export function titrationReducer(
 
     case 'PLACE_FLASK': {
       const newState = { ...state, flaskPlaced: true };
-      if (newState.buretteMounted && newState.flaskPlaced) {
+      if (newState.standPlaced && newState.buretteMounted && newState.flaskPlaced) {
         return { ...newState, step: Step.MEASURE_ACID };
       }
       return newState;
@@ -205,6 +263,9 @@ export function titrationReducer(
 
     case 'PLACE_HCL':
       return { ...state, hclPlaced: true };
+
+    case 'PLACE_INDICATOR':
+      return { ...state, indicatorPlaced: true };
 
     case 'FILL_PIPETTE_START':
       return { ...state, isPipetteFilling: true };
@@ -260,11 +321,14 @@ export function titrationReducer(
       if (state.stopcockOpen <= 0) return state;
       const deltaSeconds = action.payload.deltaMs / 1000;
       const flowAmount = state.stopcockOpen * MAX_FLOW_RATE * deltaSeconds;
-      const newVolume = Math.round((state.volumeAdded + flowAmount) * 1000) / 1000;
+      const calculatedVolume = Math.round((state.volumeAdded + flowAmount) * 1000) / 1000;
+      const newVolume = Math.min(50, calculatedVolume);
+      const isFull = newVolume >= 50;
       return {
         ...state,
         volumeAdded: newVolume,
-        isDropAnimating: state.stopcockOpen > 0,
+        stopcockOpen: isFull ? 0 : state.stopcockOpen,
+        isDropAnimating: isFull ? false : state.stopcockOpen > 0,
       };
     }
 

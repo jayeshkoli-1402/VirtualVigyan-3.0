@@ -251,6 +251,50 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ state, dispatch, privateL
         </div>
       </div>
 
+      {/* ── Educational Summary: "What Did We Find?" ── */}
+      <div className="glass-card" style={{ padding: '20px', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <span style={{ fontSize: '1rem' }}>🎓</span>
+          <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>
+            What Did We Find? • Scientific Conclusion
+          </h3>
+        </div>
+
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 14 }}>
+          The unknown hydrochloric acid solution (<strong>25.0 mL aliquot</strong>) was titrated against standardized <strong>0.100 M NaOH</strong> titrant. Phenolphthalein indicated the endpoint by changing from colourless in acidic medium to a <strong>persistent pale-pink colour</strong> at the equivalence point. Using your measured endpoint volume of <strong>{state.endpointMarkedAt?.toFixed(1)} mL NaOH</strong>, the calculated concentration of the HCl solution is <strong>{state.studentConcentration?.toFixed(4)} M</strong>.
+        </p>
+
+        <div
+          style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            padding: 12,
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 8,
+            fontSize: '0.73rem',
+          }}
+        >
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Titrated Solution (Analyte):</span>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>25.0 mL HCl</div>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Titrant Delivered:</span>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>0.100 M NaOH</div>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Endpoint Indicator:</span>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Phenolphthalein (Pale Pink)</div>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-muted)' }}>Stoichiometric Reaction:</span>
+            <div style={{ fontWeight: 600, color: '#2563eb', fontFamily: 'var(--font-mono)' }}>HCl + NaOH → NaCl + H₂O</div>
+          </div>
+        </div>
+      </div>
+
       {/* Lab Leaderboard & Class Standing Card */}
       {privateLabContext && (
         <div style={{ marginBottom: 16 }}>

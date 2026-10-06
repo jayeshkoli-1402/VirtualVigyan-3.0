@@ -241,6 +241,8 @@ export const hi: TranslationDictionary = {
   'bench.showTable': 'टेबल दिखाएं',
 
   // Apparatus Names
+  'apparatus.retortStand': 'रिटॉर्ट स्टैंड',
+  'apparatus.reagentsTray': 'अभिकर्मक एवं विलयन ट्रे',
   'apparatus.burette': 'ब्यूरेट (50 mL)',
   'apparatus.flask': 'शंक्वाकार फ्लास्क (250 mL)',
   'apparatus.pipette': 'पिपेट (25 mL)',

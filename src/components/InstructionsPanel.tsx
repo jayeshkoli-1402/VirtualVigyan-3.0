@@ -29,6 +29,17 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
     const expTrans = EXPERIMENT_TRANSLATIONS['titration']?.[language];
     if (expTrans?.steps[state.step]) {
       const stepTrans = expTrans.steps[state.step];
+      if (state.step === Step.SETUP_STAND && stepTrans.dynamicInstructions) {
+        if (!state.standPlaced) {
+          return stepTrans.dynamicInstructions['place_stand'];
+        }
+        if (!state.flaskPlaced) {
+          return stepTrans.dynamicInstructions['place_flask'];
+        }
+        if (!state.buretteMounted) {
+          return stepTrans.dynamicInstructions['mount_burette'];
+        }
+      }
       if (state.step === Step.MEASURE_ACID && stepTrans.dynamicInstructions) {
         if (!state.hclPlaced) {
           return stepTrans.dynamicInstructions['place_hcl'];
@@ -219,6 +230,87 @@ const InstructionsPanel: React.FC<InstructionsPanelProps> = ({
             </div>
           );
         })()}
+
+          {/* ── Educational Neutralization Reaction Card ── */}
+          <div
+            style={{
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 12px',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.62rem',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                fontWeight: 700,
+                marginBottom: 4,
+              }}
+            >
+              ⚗️ {t('lab.neutralizationReaction', 'Neutralization Reaction')}
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                color: 'var(--primary)',
+                textAlign: 'center',
+                padding: '4px 0',
+              }}
+            >
+              HCl (aq) + NaOH (aq) → NaCl (aq) + H₂O (l)
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textAlign: 'center', marginTop: 2 }}>
+              1 mol HCl reacts with 1 mol NaOH (1:1 stoichiometry)
+            </div>
+          </div>
+
+          {/* ── Indicator & Endpoint Color Reference Card ── */}
+          {(state.step === Step.ADD_INDICATOR || state.step === Step.TITRATING || state.step === Step.ENDPOINT_MARKED) && (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(253, 242, 248, 0.9), rgba(255, 255, 255, 0.95))',
+                border: '1px solid #fbcfe8',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 12px',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '0.62rem',
+                  color: '#be185d',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                  fontWeight: 700,
+                  marginBottom: 6,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <span>💧</span>
+                <span>{t('lab.endpointGuide', 'Phenolphthalein Endpoint Guide')}</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.72rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid #94a3b8', background: 'rgba(255,255,255,0.9)' }} />
+                  <span style={{ color: 'var(--text-secondary)' }}><strong>Acidic / Initial:</strong> Colourless (pH &lt; 8.2)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid #ec4899', background: 'rgba(244, 114, 182, 0.65)' }} />
+                  <span style={{ color: '#9d174d' }}><strong>Endpoint:</strong> Persistent Pale Pink (Stop here!)</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid #be185d', background: 'rgba(219, 39, 119, 0.9)' }} />
+                  <span style={{ color: '#831843' }}><strong>Overshot:</strong> Deep Magenta / Dark Pink (Excess Base)</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action button for ENDPOINT_MARKED */}
           {state.step === Step.ENDPOINT_MARKED && dispatch && (

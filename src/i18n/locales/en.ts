@@ -262,6 +262,8 @@ export const en: TranslationDictionary = {
   'bench.showTable': 'Show Table',
 
   // Apparatus Names
+  'apparatus.retortStand': 'Retort Stand',
+  'apparatus.reagentsTray': 'Reagents & Solutions',
   'apparatus.burette': 'Burette (50 mL)',
   'apparatus.flask': 'Conical Flask (250 mL)',
   'apparatus.pipette': 'Pipette (25 mL)',

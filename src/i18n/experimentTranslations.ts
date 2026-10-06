@@ -27,9 +27,14 @@ export const EXPERIMENT_TRANSLATIONS: Record<string, Record<Language, Experiment
         },
         'SETUP_STAND': {
           title: 'Mount Apparatus',
-          instruction: 'Drag the burette onto the clamp and the conical flask onto the base of the retort stand.',
+          instruction: 'Place the retort stand on the bench, place the conical flask on the base plate, and mount the burette to the clamp.',
           doGuidance: 'Align the burette vertically and center the flask directly below the tip.',
           dontGuidance: 'Do not drop the flask without securing the burette clamp first.',
+          dynamicInstructions: {
+            'place_stand': 'Drag the Retort Stand from the toolbox onto the laboratory bench.',
+            'place_flask': 'Drag the Conical Flask from the toolbox onto the stand base plate.',
+            'mount_burette': 'Drag the 50 mL Burette onto the retort stand clamp to mount it.',
+          },
         },
         'MEASURE_ACID': {
           title: 'Measure HCl Acid',
@@ -84,9 +89,14 @@ export const EXPERIMENT_TRANSLATIONS: Record<string, Record<Language, Experiment
         },
         'SETUP_STAND': {
           title: 'उपकरण स्थापित करें',
-          instruction: 'ब्यूरेट को क्लैंप पर और शंक्वाकार फ्लास्क को स्टैंड के आधार पर खींचें।',
+          instruction: 'रिटॉर्ट स्टैंड को बेंच पर रखें, शंक्वाकार फ्लास्क को आधार पर रखें और ब्यूरेट को क्लैंप पर लगाएं।',
           doGuidance: 'ब्यूरेट को लंबवत रूप से संरेखित करें और फ्लास्क को नोजल के ठीक नीचे रखें।',
           dontGuidance: 'क्लैंप सुरक्षित किए बिना उपकरण न छोड़ें।',
+          dynamicInstructions: {
+            'place_stand': 'टूलबॉक्स से रिटॉर्ट स्टैंड को प्रयोगशाला बेंच पर खींचें।',
+            'place_flask': 'शंक्वाकार फ्लास्क को स्टैंड के आधार पर रखें।',
+            'mount_burette': '50 mL ब्यूरेट को रिटॉर्ट स्टैंड के क्लैंप पर लगाएं।',
+          },
         },
         'MEASURE_ACID': {
           title: 'HCl अम्ल मापें',
@@ -141,9 +151,14 @@ export const EXPERIMENT_TRANSLATIONS: Record<string, Record<Language, Experiment
         },
         'SETUP_STAND': {
           title: 'उपकरणे जोडा',
-          instruction: 'ब्युरेट क्लॅम्पवर आणि शंकूपात्र स्टँडच्या तळावर ओढा.',
+          instruction: 'रिटॉर्ट स्टँड बेंचवर ठेवा, शंकूपात्र स्टँडच्या तळावर ठेवा आणि ब्युरेट क्लॅम्पवर जोडा.',
           doGuidance: 'ब्युरेट सरळ रेषेत ठेवा आणि शंकूपात्र ब्युरेटच्या तोंडाखाली मध्यभागी ठेवा.',
           dontGuidance: 'क्लॅम्प घट्ट केल्याशिवाय उपकरणे सैल सोडू नका.',
+          dynamicInstructions: {
+            'place_stand': 'टूलबॉक्समधून रिटॉर्ट स्टँड लॅब बेंचवर ओढा.',
+            'place_flask': 'शंकूपात्र स्टँडच्या तळावर ठेवा.',
+            'mount_burette': '50 mL ब्युरेट रिटॉर्ट स्टँडच्या क्लॅम्पवर जोडा.',
+          },
         },
         'MEASURE_ACID': {
           title: 'HCl आम्ल मोजा',

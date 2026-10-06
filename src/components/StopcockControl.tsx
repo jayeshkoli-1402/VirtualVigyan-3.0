@@ -6,15 +6,23 @@ interface StopcockControlProps {
   enabled: boolean;
   stopcockOpen: number;
   dispatch: React.Dispatch<TitrationAction>;
+  buretteX?: number;
+  corkY?: number;
 }
 
 /**
  * Rotatable Directional Tap Valve System for Burette (Class 11 Titration).
- * - Click Right Wing / Side: Rotates clockwise -> steps up flow: 0% -> 20% (Slow Drop) -> 50% (Fast Drop) -> 80% (Rapid Stream) -> 100% (Full Stream).
- * - Click Left Wing / Side: Rotates counter-clockwise -> steps down flow: 100% -> 50% -> 20% -> 0% (Closed).
+ * - Click Right Wing / Side: Rotates clockwise -> steps up flow: 0% -> 25% (Slow Drop) -> 50% (Fast Drop) -> 75% (Rapid Flow) -> 100% (Full Stream).
+ * - Click Left Wing / Side: Rotates counter-clockwise -> steps down flow: 100% -> 75% -> 50% -> 25% -> 0% (Closed).
  * - Drag Cork: Smooth pointer dragging rotates tap dynamically.
  */
-const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen, dispatch }) => {
+const StopcockControl: React.FC<StopcockControlProps> = ({
+  enabled,
+  stopcockOpen,
+  dispatch,
+  buretteX = 360,
+  corkY = 224,
+}) => {
   const { t } = useLanguage();
   const isPointerDownRef = useRef(false);
   const dragStartPosRef = useRef({ x: 0, y: 0 });
@@ -153,9 +161,6 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
     return `${t('lab.fullStream', '🌊 Full Stream')} (${Math.round(stopcockOpen * 100)}%)`;
   };
 
-  const buretteX = 140;
-  const corkY = 285;
-
   return (
     <g
       id="stopcock-control"
@@ -166,8 +171,8 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
     >
       {/* Tap Valve Housing Barrel */}
       <rect
-        x={133}
-        y={280}
+        x={buretteX - 7}
+        y={corkY - 5}
         width={14}
         height={10}
         rx={2}
@@ -176,8 +181,8 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
         strokeWidth={0.8}
       />
       <rect
-        x={135}
-        y={282}
+        x={buretteX - 5}
+        y={corkY - 3}
         width={10}
         height={6}
         fill="#94a3b8"
@@ -197,7 +202,7 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
         <circle
           cx={buretteX}
           cy={corkY}
-          r={24}
+          r={22}
           fill="rgba(0, 0, 0, 0.001)"
           style={{ pointerEvents: 'all' }}
         />
@@ -277,24 +282,27 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
             stepUpFlow();
           }}
         >
+          <rect
+            x={buretteX + 22}
+            y={corkY - 10}
+            width={72}
+            height={18}
+            rx={4}
+            fill="#ffffff"
+            stroke="#93c5fd"
+            strokeWidth={0.8}
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.08))"
+          />
           <text
-            x={172}
-            y={284}
+            x={buretteX + 58}
+            y={corkY + 2}
+            textAnchor="middle"
             fill="#2563eb"
             fontSize="6"
             fontFamily="var(--font-sans)"
             fontWeight={700}
           >
-            {t('lab.clickRightToOpen', '↻ Click Right to Open')}
-          </text>
-          <text
-            x={172}
-            y={292}
-            fill="var(--text-muted, #64748b)"
-            fontSize="5"
-            fontFamily="var(--font-sans)"
-          >
-            {t('lab.slowDrop', 'Slow Drop')} (20%)
+            {t('lab.clickRightToOpen', '↻ Open Stopcock')}
           </text>
         </g>
       )}
@@ -310,9 +318,9 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
           }}
         >
           <rect
-            x={168}
-            y={255}
-            width={88}
+            x={buretteX + 22}
+            y={corkY - 10}
+            width={86}
             height={18}
             rx={4}
             fill="#ffffff"
@@ -321,8 +329,8 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
             filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
           />
           <text
-            x={212}
-            y={267}
+            x={buretteX + 65}
+            y={corkY + 2}
             textAnchor="middle"
             fill="#1d4ed8"
             fontSize="6.2"
@@ -336,9 +344,9 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
 
       {!enabled && (
         <text
-          x={172}
-          y={288}
-          fill="#dc2626"
+          x={buretteX + 22}
+          y={corkY + 3}
+          fill="#94a3b8"
           fontSize="5.5"
           fontFamily="var(--font-sans)"
           fontWeight={600}

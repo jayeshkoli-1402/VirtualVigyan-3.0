@@ -23,8 +23,9 @@ export function canDropOnZone(itemId: string, zoneId: string): ValidationResult 
   if (!validItems || !validItems.includes(itemId)) {
     // Generate a helpful rejection message based on the zone
     const zoneMessages: Record<string, string> = {
-      'stand-clamp-zone': "That doesn't go there — try the burette here.",
-      'stand-base-zone': "That doesn't go there — the conical flask goes on the base.",
+      'stand-zone': "Place the retort stand here on the lab bench.",
+      'stand-clamp-zone': "Mount the burette onto the retort stand clamp.",
+      'stand-base-zone': "Place the conical flask on the retort stand base.",
       'hcl-bench-zone': "Place the HCl Stock bottle here on the bench first.",
       'flask-zone': "Only the pipette or indicator bottle can be used on the flask.",
       'burette-top-zone': "Only the NaOH bottle can be used to fill the burette.",

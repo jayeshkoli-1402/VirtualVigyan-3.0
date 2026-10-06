@@ -16,6 +16,7 @@ import {
   STEP_LABELS,
   DRAG_ITEMS,
   DROP_ZONES,
+  isTitrationAnimating,
 } from './engine/titrationState';
 import { canMarkEndpoint, canDropOnZone, canDispensePipette } from './engine/validation';
 import Toolbox from './components/Toolbox';
@@ -248,9 +249,10 @@ const AppContent: React.FC = () => {
 
   // ── Drag handlers ──
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    if (isTitrationAnimating(state)) return;
     setActiveDragId(event.active.id as string);
     setMistakeMessage(null);
-  }, []);
+  }, [state]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     setActiveDropZone(event.over ? (event.over.id as string) : null);
@@ -263,6 +265,7 @@ const AppContent: React.FC = () => {
       setActiveDropZone(null);
 
       if (!over) return;
+      if (isTitrationAnimating(state)) return;
 
       const itemId = active.id as string;
       const zoneId = over.id as string;
@@ -278,6 +281,12 @@ const AppContent: React.FC = () => {
       }
 
       // ── Handle valid drops by zone ──
+
+      // Retort Stand → bench
+      if (zoneId === DROP_ZONES.STAND && itemId === DRAG_ITEMS.RETORT_STAND) {
+        dispatch({ type: 'PLACE_STAND' });
+        return;
+      }
 
       // Burette → clamp
       if (zoneId === DROP_ZONES.CLAMP && itemId === DRAG_ITEMS.BURETTE) {
@@ -336,7 +345,7 @@ const AppContent: React.FC = () => {
         return;
       }
     },
-    [state.pipetteFilled, dispatch]
+    [state, dispatch]
   );
 
   // ── Mark Endpoint validation ──
@@ -422,6 +431,7 @@ const AppContent: React.FC = () => {
   // Drag overlay label
   const getDragLabel = (id: string) => {
     const labels: Record<string, { icon: string; label: string }> = {
+      [DRAG_ITEMS.RETORT_STAND]: { icon: '🏗️', label: t('apparatus.retortStand', 'Retort Stand') },
       [DRAG_ITEMS.BURETTE]: { icon: '🧪', label: t('apparatus.burette', 'Burette') },
       [DRAG_ITEMS.FLASK]: { icon: '⚗️', label: t('apparatus.flask', 'Conical Flask') },
       [DRAG_ITEMS.PIPETTE]: { icon: '💉', label: t('apparatus.pipette', 'Pipette') },
@@ -730,7 +740,7 @@ const AppContent: React.FC = () => {
 
   // ── When in active experiment mode (simulation, teacher, or admin) ──
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+    <div style={{ height: '100vh', maxHeight: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
       {/* ── Laboratory Top Header ── */}
       <header
         style={{
@@ -936,7 +946,7 @@ const AppContent: React.FC = () => {
       </header>
 
       {/* Main Experiment Content */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, height: 'calc(100vh - 54px)', overflow: 'hidden' }}>
         {/* Admin Command Center (SECURITY: Guarded by user.role === 'admin') */}
         {activeExperiment === 'admin' && user?.role === 'admin' && (
           <AdminPanel
@@ -1004,7 +1014,7 @@ const AppContent: React.FC = () => {
           >
             {/* CALCULATION screen */}
             {state.step === Step.CALCULATION && (
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+              <div style={{ flex: 1, height: '100%', minHeight: 0, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
                 <div style={{ maxWidth: 500, width: '100%' }}>
                   <CalculationForm markedVolume={state.endpointMarkedAt ?? 0} dispatch={dispatch} />
                 </div>
@@ -1013,7 +1023,7 @@ const AppContent: React.FC = () => {
 
             {/* RESULTS screen */}
             {state.step === Step.RESULTS && (
-              <div style={{ flex: 1, padding: 20 }}>
+              <div style={{ flex: 1, height: '100%', minHeight: 0, overflowY: 'auto', padding: 20 }}>
                 <ResultsScreen
                   state={state}
                   dispatch={dispatch}
@@ -1030,9 +1040,11 @@ const AppContent: React.FC = () => {
                   display: 'grid',
                   gridTemplateColumns: isMobile
                     ? '1fr'
-                    : `${leftCollapsed ? '48px' : '210px'} 1fr ${rightCollapsed ? '48px' : '260px'}`,
+                    : `${leftCollapsed ? '48px' : '210px'} 1fr ${rightCollapsed ? '48px' : '280px'}`,
                   gap: 0,
                   minHeight: 0,
+                  height: '100%',
+                  overflow: 'hidden',
                   transition: 'grid-template-columns 0.2s ease',
                 }}
               >
@@ -1043,6 +1055,9 @@ const AppContent: React.FC = () => {
                     borderBottom: isMobile ? '1px solid var(--border)' : 'none',
                     background: 'var(--bg-card)',
                     order: isMobile ? 1 : 0,
+                    height: '100%',
+                    minHeight: 0,
+                    overflowY: 'auto',
                   }}
                 >
                   <Toolbox
@@ -1059,6 +1074,9 @@ const AppContent: React.FC = () => {
                     padding: 8,
                     order: isMobile ? 0 : 1,
                     background: 'var(--bg-secondary)',
+                    height: '100%',
+                    minHeight: 0,
+                    overflow: 'hidden',
                   }}
                 >
                   <LabBench
@@ -1076,6 +1094,9 @@ const AppContent: React.FC = () => {
                     borderTop: isMobile ? '1px solid var(--border)' : 'none',
                     background: 'var(--bg-card)',
                     order: 2,
+                    height: '100%',
+                    minHeight: 0,
+                    overflowY: 'auto',
                   }}
                 >
                   <InstructionsPanel

@@ -20,31 +20,44 @@ export const OVERSHOOT_ML = 26;               // deep magenta beyond this
  * - Endpoint (pH ~8.2-9): First persistent pale pink
  * - Excess base (pH > 10): Deep fuchsia/magenta
  */
-export function getFlaskColor(volumeAdded: number, hasIndicator: boolean): string {
+export function getFlaskColor(
+  volumeAdded: number,
+  hasIndicator: boolean,
+  isSwirling?: boolean
+): string {
   // No indicator or in acidic solution → crystal clear aqueous solution
   if (!hasIndicator || volumeAdded < COLOR_CHANGE_START_ML) {
+    return 'rgba(224, 242, 254, 0.35)';
+  }
+
+  // Near endpoint (22.5 - 24.8 mL): Transient local pink dissolves/mixes away when flask is swirled
+  if (volumeAdded < 24.8 && isSwirling) {
     return 'rgba(224, 242, 254, 0.35)';
   }
 
   // 22.5 – 25.0 mL: faint pink appearing near equivalence point
   if (volumeAdded <= ENDPOINT_ML) {
     const t = (volumeAdded - COLOR_CHANGE_START_ML) / (ENDPOINT_ML - COLOR_CHANGE_START_ML);
-    // Interpolate to pale persistent pink (hsla 335deg, 85% sat, 82% lightness)
-    const lightness = 95 - t * 13;
-    const opacity = 0.35 + t * 0.4;
-    return `hsla(335, 85%, ${lightness}%, ${opacity})`;
+    // Interpolate from very pale translucent pink to persistent pale pink (rgba 244, 114, 182, 0.75)
+    const r = Math.round(253 - t * 9);
+    const g = Math.round(232 - t * 118);
+    const b = Math.round(241 - t * 59);
+    const opacity = 0.40 + t * 0.35;
+    return `rgba(${r}, ${g}, ${b}, ${opacity.toFixed(2)})`;
   }
 
   // 25.0 – 26.0 mL: persistent pink deepening to magenta
   if (volumeAdded <= OVERSHOOT_ML) {
     const t = (volumeAdded - ENDPOINT_ML) / (OVERSHOOT_ML - ENDPOINT_ML);
-    const lightness = 82 - t * 35;
-    const opacity = 0.75 + t * 0.25;
-    return `hsla(330, 95%, ${lightness}%, ${opacity})`;
+    const r = Math.round(244 - t * 25);
+    const g = Math.round(114 - t * 75);
+    const b = Math.round(182 - t * 63);
+    const opacity = 0.75 + t * 0.20;
+    return `rgba(${r}, ${g}, ${b}, ${opacity.toFixed(2)})`;
   }
 
   // > 26 mL: deep intense over-titrated magenta
-  return 'hsla(330, 95%, 45%, 0.95)';
+  return 'rgba(219, 39, 119, 0.95)';
 }
 
 /**

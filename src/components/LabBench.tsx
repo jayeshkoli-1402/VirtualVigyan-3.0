@@ -25,7 +25,7 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone, on
   const { t } = useLanguage();
   const [isSwirling, setIsSwirling] = React.useState(false);
   const [isStirring, setIsStirring] = React.useState(false);
-  const flaskColor = getFlaskColor(state.volumeAdded, state.hasIndicator);
+  const flaskColor = getFlaskColor(state.volumeAdded, state.hasIndicator, isSwirling || isStirring);
   const stopcockEnabled = canOperateStopcock(state).allowed && state.step === Step.TITRATING;
 
   // Continuous flow animation loop when stopcock is open (> 0)
@@ -284,21 +284,30 @@ const LabBench: React.FC<LabBenchProps> = ({ state, dispatch, activeDropZone, on
             transform: 'translate(-50%, 18px)',
             zIndex: 12,
             filter: 'drop-shadow(0 16px 22px rgba(0,0,0,0.38)) drop-shadow(0 2px 10px rgba(59,130,246,0.22))',
-            animation: isSwirling ? 'innerApparatusSwirl 0.8s ease-in-out infinite' : undefined,
-            transformOrigin: '50% 88%',
           }}
         >
-          <ConicalFlask
-            id="conical-flask"
-            liquidLevel={state.acidMeasured ? (25 + state.volumeAdded) / 100 : 0}
-            liquidColor={flaskColor}
-            flags={{
-              swirling: isSwirling || isStirring,
-              shaking: isSwirling,
+          <div
+            id="flask-swirl-wrapper"
+            style={{
+              width: '100%',
+              height: '100%',
+              transformOrigin: '50% 88%',
+              animation: isSwirling ? 'innerApparatusSwirl 0.8s ease-in-out infinite' : undefined,
+              display: 'inline-block',
             }}
-            width={150}
-            height={175}
-          />
+          >
+            <ConicalFlask
+              id="conical-flask"
+              liquidLevel={state.acidMeasured ? (25 + state.volumeAdded) / 100 : 0}
+              liquidColor={flaskColor}
+              flags={{
+                swirling: isSwirling || isStirring,
+                shaking: isSwirling,
+              }}
+              width={150}
+              height={175}
+            />
+          </div>
 
           {/* Flask Drop Zone (for Pipette / Indicator) */}
           {(!state.acidMeasured || !state.hasIndicator) && (

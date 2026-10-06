@@ -98,9 +98,9 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
         </clipPath>
 
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.75" />
-          <stop offset="40%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
-          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.98" />
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 0.25s ease' }} stopOpacity="0.75" />
+          <stop offset="40%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 0.25s ease' }} stopOpacity="0.88" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 0.25s ease' }} stopOpacity="0.98" />
         </linearGradient>
 
         <linearGradient id={`glassGleam-${id || 'def'}`} x1="0" y1="0" x2="1" y2="0">
@@ -140,7 +140,7 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
           fill={`url(#${gradId})`}
           clipPath={`url(#flaskInnerClip-${id || 'def'})`}
           style={{
-            transition: 'y 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            transition: 'y 0.2s linear, opacity 0.3s ease',
             opacity: effectiveLevel > 0 ? 1 : 0,
           }}
         />
@@ -156,7 +156,7 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
           strokeWidth="0.8"
           clipPath={`url(#flaskInnerClip-${id || 'def'})`}
           style={{
-            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), rx 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease, stroke 2.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'cy 0.2s linear, rx 0.2s linear, opacity 0.3s ease, stroke 0.25s ease',
             opacity: effectiveLevel > 0 ? 0.9 : 0,
           }}
         />
@@ -170,7 +170,7 @@ const ConicalFlask: React.FC<ApparatusProps> = ({
           fill="rgba(255, 255, 255, 0.5)"
           clipPath={`url(#flaskInnerClip-${id || 'def'})`}
           style={{
-            transition: 'cy 2.2s cubic-bezier(0.25, 1, 0.5, 1), rx 2.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease',
+            transition: 'cy 0.2s linear, rx 0.2s linear, opacity 0.3s ease',
             opacity: effectiveLevel > 0 ? 0.7 : 0,
           }}
         />

@@ -6305,6 +6305,9 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
 }) => {
   const p = props as Record<string, unknown>;
   const slotCount = p.slots === 4 ? 4 : 6;
+  const isWide = width >= 270 || slotCount === 6;
+  const vbWidth = isWide ? 300 : 240;
+
   const positions =
     slotCount === 4
       ? [
@@ -6314,16 +6317,21 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
           { x: 180, label: '4' },
         ]
       : [
-          { x: 48, label: 'A' },
-          { x: 76, label: 'B' },
-          { x: 104, label: 'C' },
-          { x: 132, label: 'D' },
-          { x: 160, label: 'E' },
-          { x: 188, label: 'F' },
+          { x: 42, label: 'A' },
+          { x: 85, label: 'B' },
+          { x: 128, label: 'C' },
+          { x: 172, label: 'D' },
+          { x: 215, label: 'E' },
+          { x: 258, label: 'F' },
         ];
 
+  const rightPostX = isWide ? 264 : 204;
+  const baseWidth = isWide ? 264 : 204;
+  const shelfWidth = isWide ? 260 : 200;
+  const rightFootX = isWide ? 256 : 196;
+
   return (
-    <svg width={width} height={height} viewBox="0 0 240 150" fill="none" style={{ overflow: 'visible' }}>
+    <svg width={width} height={height} viewBox={`0 0 ${vbWidth} 150`} fill="none" style={{ overflow: 'visible' }}>
       <defs>
         {/* Wood dark gradient */}
         <linearGradient id="woodDark" x1="0" y1="0" x2="0" y2="1">
@@ -6356,7 +6364,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
       </defs>
 
       {/* Drop shadow on table */}
-      <ellipse cx="120" cy="142" rx="105" ry="8" fill="rgba(0,0,0,0.2)" filter="blur(3px)" />
+      <ellipse cx={vbWidth / 2} cy="142" rx={isWide ? 135 : 105} ry="8" fill="rgba(0,0,0,0.2)" filter="blur(3px)" />
 
       {/* Rear drying pegs (NCERT wooden rack feature) */}
       {positions.map((pos) => (
@@ -6371,7 +6379,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
       <rect
         x="18"
         y="125"
-        width="204"
+        width={baseWidth}
         height="18"
         rx="4"
         fill="url(#woodDark)"
@@ -6379,10 +6387,10 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
         strokeWidth={highlighted ? 2 : 1}
       />
       {/* Base top highlight bevel */}
-      <rect x="18" y="125" width="204" height="3" rx="1" fill="rgba(255,255,255,0.2)" />
+      <rect x="18" y="125" width={baseWidth} height="3" rx="1" fill="rgba(255,255,255,0.2)" />
       {/* Rubber feet */}
       <rect x="28" y="143" width="16" height="4" rx="1" fill="#1e293b" />
-      <rect x="196" y="143" width="16" height="4" rx="1" fill="#1e293b" />
+      <rect x={rightFootX} y="143" width="16" height="4" rx="1" fill="#1e293b" />
 
       {/* Recessed bottom cups for test tube rounded ends */}
       {positions.map((pos) => (
@@ -6390,7 +6398,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
           key={`cup-${pos.x}`}
           cx={pos.x}
           cy="128"
-          rx={slotCount === 4 ? 15 : 12.5}
+          rx={slotCount === 4 ? 15 : 13}
           ry="3.5"
           fill="url(#holeDepth)"
           stroke="#451a03"
@@ -6406,18 +6414,18 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
       <circle cx="30" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
 
       {/* Right Upright Support Post */}
-      <rect x="204" y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
-      <line x1="206" y1="46" x2="206" y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      <rect x={rightPostX} y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
+      <line x1={rightPostX + 2} y1="46" x2={rightPostX + 2} y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
       {/* Brass screws */}
-      <circle cx="210" cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
-      <circle cx="210" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+      <circle cx={rightPostX + 6} cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+      <circle cx={rightPostX + 6} cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
 
       {/* Middle Upper Shelf with Test Tube Holes */}
       {/* Shelf body */}
       <rect
         x="20"
         y="50"
-        width="200"
+        width={shelfWidth}
         height="14"
         rx="3"
         fill="url(#woodTop)"
@@ -6425,7 +6433,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
         strokeWidth={highlighted ? 2 : 1}
       />
       {/* Shelf top highlight */}
-      <rect x="20" y="50" width="200" height="2.5" rx="1" fill="rgba(255,255,255,0.25)" />
+      <rect x="20" y="50" width={shelfWidth} height="2.5" rx="1" fill="rgba(255,255,255,0.25)" />
 
       {/* Test Tube Holes & Slot Engravings on Upper Shelf */}
       {positions.map((pos) => (
@@ -6434,7 +6442,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
           <ellipse
             cx={pos.x}
             cy="57"
-            rx={slotCount === 4 ? 16 : 12.5}
+            rx={slotCount === 4 ? 16 : 13}
             ry="4.5"
             fill="url(#holeDepth)"
             stroke="#451a03"
@@ -6442,7 +6450,7 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
           />
           {/* Inner rim highlight */}
           <path
-            d={`M ${pos.x - (slotCount === 4 ? 14 : 11)} 58 A ${slotCount === 4 ? 14 : 11} 3.8 0 0 0 ${pos.x + (slotCount === 4 ? 14 : 11)} 58`}
+            d={`M ${pos.x - (slotCount === 4 ? 14 : 11.5)} 58 A ${slotCount === 4 ? 14 : 11.5} 3.8 0 0 0 ${pos.x + (slotCount === 4 ? 14 : 11.5)} 58`}
             stroke="rgba(255,255,255,0.2)"
             strokeWidth="0.8"
             fill="none"

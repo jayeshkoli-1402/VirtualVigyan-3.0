@@ -8743,6 +8743,383 @@ const FilterPaper: React.FC<ApparatusProps> = ({
 
 
 
+// ── White Glazed Tile with pH Paper Strips ───────────────────────
+
+const WhiteTile: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 300,
+  height = 140,
+  flags = {},
+  label,
+}) => {
+  const testedA = Boolean(flags?.testedHCl || flags?.testedA);
+  const testedB = Boolean(flags?.testedLemon || flags?.testedB);
+  const testedC = Boolean(flags?.testedCH3COOH || flags?.testedC);
+  const testedD = Boolean(flags?.testedWater || flags?.testedD);
+  const testedE = Boolean(flags?.testedNaHCO3 || flags?.testedE);
+  const testedF = Boolean(flags?.testedNaOH || flags?.testedF);
+
+  const strips = [
+    {
+      id: 'A',
+      name: 'dil. HCl',
+      tested: testedA,
+      color: '#dc2626',
+      ph: 'pH ≈ 1',
+      desc: 'Acidic (Red)',
+    },
+    {
+      id: 'B',
+      name: 'Lemon Juice',
+      tested: testedB,
+      color: '#ea580c',
+      ph: 'pH ≈ 2.5',
+      desc: 'Acidic (Orange-Red)',
+    },
+    {
+      id: 'C',
+      name: 'CH₃COOH',
+      tested: testedC,
+      color: '#f59e0b',
+      ph: 'pH ≈ 3.5',
+      desc: 'Acidic (Orange)',
+    },
+    {
+      id: 'D',
+      name: 'Dist. Water',
+      tested: testedD,
+      color: '#22c55e',
+      ph: 'pH ≈ 7',
+      desc: 'Neutral (Green)',
+    },
+    {
+      id: 'E',
+      name: 'dil. NaHCO₃',
+      tested: testedE,
+      color: '#06b6d4',
+      ph: 'pH ≈ 8.5',
+      desc: 'Basic (Blue-Green)',
+    },
+    {
+      id: 'F',
+      name: 'dil. NaOH',
+      tested: testedF,
+      color: '#7c3aed',
+      ph: 'pH ≈ 13',
+      desc: 'Basic (Dark Violet)',
+    },
+  ];
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 300 140" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Porcelain Ceramic Gradient */}
+        <linearGradient id="porcelainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="60%" stopColor="#f8fafc" />
+          <stop offset="100%" stopColor="#e2e8f0" />
+        </linearGradient>
+
+        {/* Clean pH Paper Gradient */}
+        <linearGradient id="cleanPHPaperGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fef08a" />
+          <stop offset="50%" stopColor="#fde047" />
+          <stop offset="100%" stopColor="#eab308" />
+        </linearGradient>
+
+        {/* Tile Shadow */}
+        <filter id="tileShadow" x="-10%" y="-10%" width="120%" height="125%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" floodOpacity="0.22" />
+        </filter>
+      </defs>
+
+      {/* Porcelain Glazed Tile Base */}
+      <rect
+        x="10"
+        y="12"
+        width="280"
+        height="116"
+        rx="10"
+        fill="url(#porcelainGrad)"
+        stroke={highlighted ? '#2563eb' : '#cbd5e1'}
+        strokeWidth={highlighted ? 3 : 1.5}
+        filter="url(#tileShadow)"
+      />
+
+      {/* Glaze Bevel Inner Highlight */}
+      <rect
+        x="14"
+        y="16"
+        width="272"
+        height="108"
+        rx="7"
+        fill="none"
+        stroke="rgba(255,255,255,0.85)"
+        strokeWidth="1.5"
+      />
+
+      {/* Title / Tile Badge */}
+      <rect x="80" y="18" width="140" height="13" rx="3" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="0.8" />
+      <text
+        x="150"
+        y="27"
+        textAnchor="middle"
+        fontSize="7"
+        fontWeight="700"
+        fill="#475569"
+        letterSpacing="0.4"
+      >
+        WHITE GLAZED PORCELAIN TILE
+      </text>
+
+      {/* 6 pH Paper Strips */}
+      {strips.map((s, index) => {
+        const stripX = 22 + index * 44;
+        const stripY = 36;
+        const stripW = 34;
+        const stripH = 68;
+
+        return (
+          <g key={s.id}>
+            {/* Position Label Tag above strip */}
+            <rect
+              x={stripX + 2}
+              y={stripY - 1}
+              width={stripW - 4}
+              height="10"
+              rx="2"
+              fill={s.tested ? s.color : '#f1f5f9'}
+              opacity={s.tested ? 0.2 : 0.9}
+            />
+            <text
+              x={stripX + stripW / 2}
+              y={stripY + 6.5}
+              textAnchor="middle"
+              fontSize="6.5"
+              fontWeight="800"
+              fill={s.tested ? s.color : '#334155'}
+            >
+              Strip {s.id}
+            </text>
+
+            {/* pH Paper Strip Body */}
+            <rect
+              x={stripX + 5}
+              y={stripY + 11}
+              width={stripW - 10}
+              height={stripH - 24}
+              rx="2"
+              fill={s.tested ? s.color : 'url(#cleanPHPaperGrad)'}
+              stroke={s.tested ? '#00000033' : '#ca8a04'}
+              strokeWidth="0.8"
+              style={{ transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            />
+
+            {/* Reaction Spot / Wet Droplet when tested */}
+            {s.tested ? (
+              <g>
+                {/* Wet liquid diffusion spot */}
+                <circle
+                  cx={stripX + stripW / 2}
+                  cy={stripY + 28}
+                  r="6.5"
+                  fill="rgba(255,255,255,0.25)"
+                />
+                <circle
+                  cx={stripX + stripW / 2}
+                  cy={stripY + 28}
+                  r="3.5"
+                  fill="rgba(255,255,255,0.45)"
+                />
+                {/* Result Tag */}
+                <text
+                  x={stripX + stripW / 2}
+                  y={stripY + stripH - 3}
+                  textAnchor="middle"
+                  fontSize="5.5"
+                  fontWeight="700"
+                  fill={s.color}
+                >
+                  {s.ph}
+                </text>
+              </g>
+            ) : (
+              <g>
+                {/* Clean strip subtle texture line */}
+                <line
+                  x1={stripX + 8}
+                  y1={stripY + 28}
+                  x2={stripX + stripW - 8}
+                  y2={stripY + 28}
+                  stroke="#eab308"
+                  strokeWidth="0.5"
+                  strokeDasharray="1,1"
+                />
+                {/* Waiting indicator */}
+                <text
+                  x={stripX + stripW / 2}
+                  y={stripY + stripH - 3}
+                  textAnchor="middle"
+                  fontSize="5.2"
+                  fontWeight="600"
+                  fill="#94a3b8"
+                >
+                  Dry Paper
+                </text>
+              </g>
+            )}
+
+            {/* Sample Name Subtitle */}
+            <text
+              x={stripX + stripW / 2}
+              y={stripY + stripH + 8}
+              textAnchor="middle"
+              fontSize="5.5"
+              fontWeight="600"
+              fill="#64748b"
+            >
+              {s.name}
+            </text>
+          </g>
+        );
+      })}
+
+      {label && (
+        <text
+          x="150"
+          y="134"
+          textAnchor="middle"
+          fontSize="6.5"
+          fontWeight="600"
+          fill="#64748b"
+        >
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
+// ── Universal Indicator pH Color Chart ───────────────────────────
+
+const PHColorChart: React.FC<ApparatusProps> = ({
+  width = 320,
+  height = 90,
+  label,
+}) => {
+  const chartValues = [
+    { ph: 1, color: '#dc2626', name: '1' },
+    { ph: 2, color: '#ea580c', name: '2' },
+    { ph: 3, color: '#f97316', name: '3' },
+    { ph: 4, color: '#fb923c', name: '4' },
+    { ph: 5, color: '#facc15', name: '5' },
+    { ph: 6, color: '#a3e635', name: '6' },
+    { ph: 7, color: '#22c55e', name: '7' },
+    { ph: 8, color: '#14b8a6', name: '8' },
+    { ph: 9, color: '#06b6d4', name: '9' },
+    { ph: 10, color: '#3b82f6', name: '10' },
+    { ph: 11, color: '#2563eb', name: '11' },
+    { ph: 12, color: '#8b5cf6', name: '12' },
+    { ph: 13, color: '#7c3aed', name: '13' },
+    { ph: 14, color: '#4c1d95', name: '14' },
+  ];
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 320 90" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <filter id="chartShadow" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="0" dy="4" stdDeviation="5" floodOpacity="0.2" />
+        </filter>
+      </defs>
+
+      {/* Chart Backplate Card */}
+      <rect
+        x="6"
+        y="6"
+        width="308"
+        height="78"
+        rx="8"
+        fill="#ffffff"
+        stroke="#cbd5e1"
+        strokeWidth="1.2"
+        filter="url(#chartShadow)"
+      />
+
+      {/* Header Bar */}
+      <rect x="6" y="6" width="308" height="18" rx="8" fill="#1e293b" />
+      <text
+        x="160"
+        y="18"
+        textAnchor="middle"
+        fontSize="7.5"
+        fontWeight="800"
+        fill="#f8fafc"
+        letterSpacing="0.6"
+      >
+        STANDARD pH COLOR REFERENCE CHART
+      </text>
+
+      {/* 14 pH Color Blocks */}
+      {chartValues.map((item, i) => {
+        const xPos = 14 + i * 21;
+        return (
+          <g key={item.ph}>
+            {/* Swatch rectangle */}
+            <rect
+              x={xPos}
+              y="28"
+              width="19"
+              height="28"
+              rx="2.5"
+              fill={item.color}
+              stroke="#00000022"
+              strokeWidth="0.8"
+            />
+            {/* Number on Swatch */}
+            <text
+              x={xPos + 9.5}
+              y="44"
+              textAnchor="middle"
+              fontSize="7.5"
+              fontWeight="800"
+              fill={item.ph >= 5 && item.ph <= 7 ? '#1e293b' : '#ffffff'}
+            >
+              {item.name}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Acidic / Neutral / Basic Region Guides */}
+      {/* Acidic Region */}
+      <path d="M 14 60 L 138 60" stroke="#dc2626" strokeWidth="1.5" />
+      <text x="76" y="70" textAnchor="middle" fontSize="6" fontWeight="700" fill="#dc2626">
+        ◄ ACIDIC (pH 1–6)
+      </text>
+
+      {/* Neutral Region */}
+      <circle cx="149.5" cy="60" r="2" fill="#22c55e" />
+      <text x="149.5" y="70" textAnchor="middle" fontSize="6" fontWeight="800" fill="#16a34a">
+        NEUTRAL (7)
+      </text>
+
+      {/* Basic Region */}
+      <path d="M 161 60 L 306 60" stroke="#7c3aed" strokeWidth="1.5" />
+      <text x="233" y="70" textAnchor="middle" fontSize="6" fontWeight="700" fill="#7c3aed">
+        BASIC (pH 8–14) ►
+      </text>
+
+      {label && (
+        <text x="160" y="80" textAnchor="middle" fontSize="6" fontWeight="600" fill="#64748b">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
+
+
 // ══════════════════════════════════════════════════════════════════
 //  APPARATUS REGISTRY
 // ══════════════════════════════════════════════════════════════════
@@ -8770,6 +9147,10 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   BODBottle,
   SpecificGravityBottle,
   MeasuringCylinder,
+  WhiteTile,
+  WhiteGlazedTile: WhiteTile,
+  PHPaperTile: WhiteTile,
+  PHColorChart,
 
   // Transfer, Separation & Fluid Dynamics
   Burette: BuretteSVG,

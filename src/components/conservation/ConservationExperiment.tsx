@@ -252,8 +252,8 @@ const ConservationExperiment: React.FC<ConservationExperimentProps> = ({
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* CALCULATION screen */}
         {state.step === ConservationStep.CALCULATION && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-            <div style={{ maxWidth: 520, width: '100%' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' }}>
+            <div style={{ maxWidth: 580, width: '100%', margin: 'auto' }}>
               <ConservationCalculation
                 m1={state.initialMass ?? 0}
                 m2={state.finalMass ?? 0}

@@ -578,6 +578,18 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
               <stop offset="80%" stopColor="#92400e" />
               <stop offset="100%" stopColor="#451a03" />
             </linearGradient>
+
+            {/* Clear Aqueous Na2SO4 Stream Gradients */}
+            <linearGradient id="na2so4StreamGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(186, 230, 253, 0.95)" />
+              <stop offset="50%" stopColor="rgba(56, 189, 248, 0.9)" />
+              <stop offset="100%" stopColor="rgba(14, 165, 233, 0.95)" />
+            </linearGradient>
+            <linearGradient id="streamShimmerGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="rgba(255, 255, 255, 0.9)" />
+              <stop offset="50%" stopColor="rgba(255, 255, 255, 0.35)" />
+              <stop offset="100%" stopColor="transparent" />
+            </linearGradient>
           </defs>
 
           {/* ── Scalable / Pannable Lab Workspace Group (Bench + Apparatuses Move Together) ── */}
@@ -849,41 +861,185 @@ const ConservationLabBench: React.FC<ConservationLabBenchProps> = ({
 
             {/* ── Animated Na2SO4 Reagent Bottle Pouring into Flask ── */}
             {state.isPouringNa2SO4 && (
-              <g transform={`translate(${flaskPosX + 20}, 240)`}>
-                <g transform="rotate(-40, 20, 15)">
-                  <rect x={0} y={0} width={26} height={38} rx={4} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={1} />
-                  <rect x={6} y={-8} width={14} height={8} rx={2} fill="#1e293b" />
-                  <rect x={2} y={10} width={22} height={20} rx={2} fill="#ffffff" stroke="#e2e8f0" strokeWidth={0.6} />
-                  <text x={13} y={20} textAnchor="middle" fill="#059669" fontSize="4.5" fontFamily="var(--font-mono)" fontWeight={700}>Na₂SO₄</text>
-                  <text x={13} y={27} textAnchor="middle" fill="#334155" fontSize="3.5" fontFamily="var(--font-sans)">5% w/v</text>
+              <g id="na2so4-pouring-animation-group" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                {/* Pouring Reagent Bottle positioned precisely near flask neck opening */}
+                <g transform={`translate(${flaskPosX + 12}, 286)`}>
+                  <g transform="rotate(-52, 0, 0)">
+                    {/* Bottle Body */}
+                    <rect x={-12} y={16} width={24} height={34} rx={3} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={1} />
+                    {/* Bottle Shoulder */}
+                    <path d="M -4 8 L -12 16 L 12 16 L 4 8 Z" fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={0.8} />
+                    {/* Bottle Neck */}
+                    <rect x={-4} y={0} width={8} height={8} rx={1} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={0.8} />
+                    {/* Bottle Lip */}
+                    <ellipse cx={0} cy={0} rx={4.8} ry={1.6} fill="#78350f" stroke="#451a03" strokeWidth={0.8} />
+                    {/* Glass Sheen */}
+                    <line x1={-9} y1={18} x2={-9} y2={45} stroke="rgba(255, 255, 255, 0.45)" strokeWidth={1.5} strokeLinecap="round" />
+                    {/* White Reagent Label */}
+                    <rect x={-10} y={22} width={20} height={18} rx={2} fill="#ffffff" stroke="#cbd5e1" strokeWidth={0.6} />
+                    <text x={0} y={30} textAnchor="middle" fill="#047857" fontSize="4.2" fontFamily="var(--font-mono)" fontWeight={800}>Na₂SO₄</text>
+                    <text x={0} y={36} textAnchor="middle" fill="#334155" fontSize="3.2" fontFamily="var(--font-sans)" fontWeight={600}>5% (aq)</text>
+                    {/* Tilted Liquid Level inside Bottle */}
+                    <path d="M -11 26 L 11 26 L 11 48 L -11 48 Z" fill="rgba(186, 230, 253, 0.55)" />
+                  </g>
                 </g>
-                <line x1={-10} y1={25} x2={-20} y2={65} stroke="#059669" strokeWidth={2.2} strokeLinecap="round">
-                  <animate attributeName="strokeDasharray" values="1,4;5,2;2,3" dur="0.2s" repeatCount="indefinite" />
-                </line>
-                <rect x={-8} y={-14} width={90} height={18} rx={4} fill="#ffffff" stroke="#059669" strokeWidth={0.8} />
-                <text x={37} y={-2} textAnchor="middle" fill="#059669" fontSize="6" fontFamily="var(--font-mono)" fontWeight={700}>
-                  {language === 'hi' ? '5 mL Na₂SO₄ डाला जा रहा है...' : language === 'mr' ? '5 mL Na₂SO₄ ओतले जात आहे...' : 'Pouring 5 mL Na₂SO₄...'}
-                </text>
+
+                {/* ── Continuous Laminar Liquid Stream from Bottle Mouth directly into Conical Flask ── */}
+                <g>
+                  {/* Outer fluid stream */}
+                  <path
+                    d={`M ${flaskPosX + 12} 286 Q ${flaskPosX + 2} 294 ${flaskPosX} 304 L ${flaskPosX} 364`}
+                    stroke="url(#na2so4StreamGrad)"
+                    strokeWidth={3.2}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  {/* Specular internal highlight streak */}
+                  <path
+                    d={`M ${flaskPosX + 11.5} 287 Q ${flaskPosX + 1.5} 294 ${flaskPosX - 0.5} 304 L ${flaskPosX - 0.5} 364`}
+                    stroke="url(#streamShimmerGrad)"
+                    strokeWidth={1.2}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+
+                  {/* Fluid droplet bead at bottle spout */}
+                  <circle cx={flaskPosX + 12} cy={286} r={2.2} fill="#38bdf8" opacity={0.95} />
+
+                  {/* Dynamic accelerated fluid droplets cascading down inside flask */}
+                  <circle cx={flaskPosX} cy={305} r={1.6} fill="#38bdf8">
+                    <animate attributeName="cy" values="290;364" dur="0.35s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;1;0.9" dur="0.35s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={flaskPosX + 0.5} cy={325} r={1.3} fill="#e0f2fe">
+                    <animate attributeName="cy" values="290;364" dur="0.30s" begin="0.12s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.7;1;0.9" dur="0.30s" begin="0.12s" repeatCount="indefinite" />
+                  </circle>
+
+                  {/* Surface impact ripples at flask bottom */}
+                  <ellipse cx={flaskPosX} cy={364} rx={3} ry={1} fill="none" stroke="rgba(56, 189, 248, 0.85)" strokeWidth={1.2}>
+                    <animate attributeName="rx" values="2;16" dur="0.65s" repeatCount="indefinite" />
+                    <animate attributeName="ry" values="0.8;4" dur="0.65s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.9;0" dur="0.65s" repeatCount="indefinite" />
+                  </ellipse>
+                  <ellipse cx={flaskPosX} cy={364} rx={1.5} ry={0.6} fill="none" stroke="#ffffff" strokeWidth={1}>
+                    <animate attributeName="rx" values="1;10" dur="0.65s" begin="0.25s" repeatCount="indefinite" />
+                    <animate attributeName="ry" values="0.5;2.5" dur="0.65s" begin="0.25s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0" dur="0.65s" begin="0.25s" repeatCount="indefinite" />
+                  </ellipse>
+
+                  {/* Micro splash particles */}
+                  <circle cx={flaskPosX - 3} cy={363} r={1.1} fill="#38bdf8">
+                    <animate attributeName="cy" values="363;356;363" dur="0.45s" repeatCount="indefinite" />
+                    <animate attributeName="cx" values={`${flaskPosX};${flaskPosX - 6};${flaskPosX - 8}`} dur="0.45s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;0.7;0" dur="0.45s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx={flaskPosX + 3} cy={363} r={1.1} fill="#38bdf8">
+                    <animate attributeName="cy" values="363;355;363" dur="0.48s" begin="0.12s" repeatCount="indefinite" />
+                    <animate attributeName="cx" values={`${flaskPosX};${flaskPosX + 6};${flaskPosX + 8}`} dur="0.48s" begin="0.12s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="1;0.7;0" dur="0.48s" begin="0.12s" repeatCount="indefinite" />
+                  </circle>
+                </g>
+
+                {/* Pouring Status Badge */}
+                <foreignObject x={flaskPosX - 65} y={232} width={160} height={34} style={{ pointerEvents: 'none' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '5px 12px',
+                      background: 'rgba(255, 255, 255, 0.96)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1.2px solid rgba(5, 150, 105, 0.45)',
+                      borderRadius: 20,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#047857',
+                    }}
+                  >
+                    <span style={{ fontSize: '0.85rem' }}>🧴</span>
+                    <span>
+                      {language === 'hi'
+                        ? '5 mL Na₂SO₄ डाला जा रहा है...'
+                        : language === 'mr'
+                          ? '5 mL Na₂SO₄ ओतले जात आहे...'
+                          : 'Pouring 5 mL Na₂SO₄...'}
+                    </span>
+                  </div>
+                </foreignObject>
               </g>
             )}
 
             {/* ── Animated BaCl2 Bottle Filling Ignition Tube ── */}
             {state.isFillingTube && (
-              <g transform="translate(45, 270)">
-                <g transform="rotate(-35, 15, 15)">
-                  <rect x={0} y={0} width={24} height={35} rx={4} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={1} />
-                  <rect x={5} y={-7} width={14} height={7} rx={2} fill="#1e293b" />
-                  <rect x={2} y={8} width={20} height={20} rx={2} fill="#ffffff" stroke="#dc2626" strokeWidth={0.6} />
-                  <text x={12} y={18} textAnchor="middle" fill="#dc2626" fontSize="4.5" fontFamily="var(--font-mono)" fontWeight={700}>BaCl₂</text>
-                  <text x={12} y={25} textAnchor="middle" fill="#991b1b" fontSize="3.5" fontFamily="var(--font-sans)">{language === 'hi' ? '⚠️ विषैला' : language === 'mr' ? '⚠️ विषारी' : '⚠️ Toxic'}</text>
+              <g id="bacl2-filling-animation-group" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+                <g transform="translate(39, 308)">
+                  <g transform="rotate(-48, 0, 0)">
+                    <rect x={-11} y={15} width={22} height={32} rx={3} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={1} />
+                    <path d="M -4 8 L -11 15 L 11 15 L 4 8 Z" fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={0.8} />
+                    <rect x={-4} y={0} width={8} height={8} rx={1} fill="url(#amberBottleGrad)" stroke="#451a03" strokeWidth={0.8} />
+                    <ellipse cx={0} cy={0} rx={4.5} ry={1.5} fill="#78350f" stroke="#451a03" strokeWidth={0.8} />
+                    <line x1={-8} y1={17} x2={-8} y2={42} stroke="rgba(255, 255, 255, 0.4)" strokeWidth={1.4} strokeLinecap="round" />
+                    <rect x={-9} y={20} width={18} height={18} rx={2} fill="#ffffff" stroke="#ef4444" strokeWidth={0.6} />
+                    <text x={0} y={28} textAnchor="middle" fill="#dc2626" fontSize="4.2" fontFamily="var(--font-mono)" fontWeight={800}>BaCl₂</text>
+                    <text x={0} y={34} textAnchor="middle" fill="#991b1b" fontSize="3" fontFamily="var(--font-sans)" fontWeight={600}>{language === 'hi' ? '⚠️ विषैला' : language === 'mr' ? '⚠️ विषारी' : '⚠️ Toxic'}</text>
+                  </g>
                 </g>
-                <line x1={-8} y1={25} x2={-16} y2={55} stroke="#3b82f6" strokeWidth={2} strokeLinecap="round">
-                  <animate attributeName="strokeDasharray" values="1,3;4,2;2,2" dur="0.15s" repeatCount="indefinite" />
-                </line>
-                <rect x={-5} y={-15} width={85} height={18} rx={4} fill="#ffffff" stroke="#ef4444" strokeWidth={0.8} />
-                <text x={37.5} y={-3} textAnchor="middle" fill="#dc2626" fontSize="6" fontFamily="var(--font-mono)" fontWeight={700}>
-                  {language === 'hi' ? 'BaCl₂ से भरा जा रहा है...' : language === 'mr' ? 'BaCl₂ ने भरले जात आहे...' : 'Filling with BaCl₂...'}
-                </text>
+
+                {/* Fluid stream into ignition tube */}
+                <g>
+                  <path
+                    d="M 39 308 Q 33 314 29 322 L 29 365"
+                    stroke="url(#na2so4StreamGrad)"
+                    strokeWidth={2.6}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <path
+                    d="M 38.5 309 Q 32.5 314 28.5 322 L 28.5 365"
+                    stroke="url(#streamShimmerGrad)"
+                    strokeWidth={1}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                  <circle cx={39} cy={308} r={1.8} fill="#38bdf8" opacity={0.95} />
+                  <ellipse cx={29} cy={365} rx={2.5} ry={0.8} fill="none" stroke="rgba(56, 189, 248, 0.85)" strokeWidth={1}>
+                    <animate attributeName="rx" values="1;6" dur="0.5s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.9;0" dur="0.5s" repeatCount="indefinite" />
+                  </ellipse>
+                </g>
+
+                <foreignObject x={-15} y={260} width={130} height={32} style={{ pointerEvents: 'none' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 5,
+                      padding: '4px 10px',
+                      background: 'rgba(255, 255, 255, 0.96)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1.2px solid rgba(220, 38, 38, 0.45)',
+                      borderRadius: 16,
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      color: '#dc2626',
+                    }}
+                  >
+                    <span>🧴</span>
+                    <span>
+                      {language === 'hi'
+                        ? 'BaCl₂ भरा जा रहा है...'
+                        : language === 'mr'
+                          ? 'BaCl₂ भरले जात आहे...'
+                          : 'Filling with BaCl₂...'}
+                    </span>
+                  </div>
+                </foreignObject>
               </g>
             )}
 

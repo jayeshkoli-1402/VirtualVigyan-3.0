@@ -715,6 +715,34 @@ const Beaker: React.FC<ApparatusProps> = ({
           </g>
         )}
 
+        {/* ── Immersed Glass Electrode (pH sensor) ── */}
+        {(Boolean(flags.electrodeImmersed) || Boolean(flags.phMeterPlaced) || Boolean(flags.hasGlassElectrode) || Boolean(extraProps?.hasGlassElectrode)) && (
+          <g id={`beaker-glass-electrode-${id || 'def'}`}>
+            {/* Top BNC shielded lead cable leading to pH meter */}
+            <path d="M 66 -22 C 78 -10 66 0 66 12" stroke="#1e293b" strokeWidth="3" fill="none" />
+            <path d="M 66 -22 C 78 -10 66 0 66 12" stroke="#64748b" strokeWidth="1" fill="none" />
+            {/* Electrode upper protective collar */}
+            <rect x="61" y="8" width="10" height="15" rx="2" fill="#334155" stroke="#475569" strokeWidth="1" />
+            {/* Glass electrode cylindrical shaft dipping into liquid */}
+            <rect
+              x="62.5"
+              y="23"
+              width="7"
+              height="75"
+              rx="1.5"
+              fill="rgba(241, 245, 249, 0.75)"
+              stroke="#94a3b8"
+              strokeWidth="1.2"
+            />
+            {/* Internal Ag/AgCl reference wire */}
+            <line x1="66" y1="18" x2="66" y2="90" stroke="#64748b" strokeWidth="1" strokeDasharray="3 1" />
+            <circle cx="66" cy="45" r="1.4" fill="#f59e0b" />
+            {/* Blue sensitive glass membrane bulb submerged in solution */}
+            <ellipse cx="66" cy="98" rx="6" ry="7" fill="#0284c7" stroke="#0369a1" strokeWidth="1.2" />
+            <circle cx="64.5" cy="96.5" r="2" fill="rgba(255, 255, 255, 0.7)" />
+          </g>
+        )}
+
         {/* ── Solid Salt Crystals (NaCl) at bottom before dissolution ── */}
         {isSaltVisible && (
           <g id={`beaker-salt-crystals-${id || 'def'}`} clipPath={`url(#beakerInnerClip-${id || 'def'})`}>
@@ -7028,9 +7056,10 @@ const PHMeter: React.FC<ApparatusProps> = ({
   variables = {},
   flags = {},
 }) => {
-  const currentPH = variables.pH !== undefined ? variables.pH.toFixed(2) : '7.00';
+  const rawPH = variables.pH ?? variables.phReading;
+  const currentPH = rawPH !== undefined ? Number(rawPH).toFixed(2) : '7.00';
   const temp = variables.temperature ?? 25.0;
-  const isCalibrated = flags.calibrated ?? true;
+  const isCalibrated = flags.calibrated ?? flags.calibrated4 ?? flags.calibrated9 ?? true;
 
   return (
     <svg width={width} height={height} viewBox="0 0 160 140" fill="none">
@@ -7130,6 +7159,120 @@ const PHMeter: React.FC<ApparatusProps> = ({
             fontWeight="700"
             fill="var(--text-secondary, #334155)"
             letterSpacing="0.02em"
+          >
+            {label}
+          </text>
+        </g>
+      )}
+    </svg>
+  );
+};
+
+// ── Combined Glass Electrode Probe ──────────────────────────────
+
+const GlassElectrode: React.FC<ApparatusProps> = ({
+  label = 'Glass Electrode',
+  highlighted = false,
+  width = 50,
+  height = 145,
+}) => {
+  return (
+    <svg width={width} height={height} viewBox="0 0 50 145" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="electrodeShaftGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="rgba(241, 245, 249, 0.75)" />
+          <stop offset="35%" stopColor="rgba(255, 255, 255, 0.95)" />
+          <stop offset="70%" stopColor="rgba(224, 242, 254, 0.65)" />
+          <stop offset="100%" stopColor="rgba(203, 213, 225, 0.85)" />
+        </linearGradient>
+        <linearGradient id="bulbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7dd3fc" />
+          <stop offset="50%" stopColor="#0284c7" />
+          <stop offset="100%" stopColor="#0369a1" />
+        </linearGradient>
+        <linearGradient id="capGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#1e293b" />
+          <stop offset="50%" stopColor="#334155" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </linearGradient>
+      </defs>
+
+      {/* Flexible BNC Lead Wire trailing upward */}
+      <path
+        d="M 25 15 C 25 -5 40 -15 35 -28"
+        stroke="#1e293b"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M 25 15 C 25 -5 40 -15 35 -28"
+        stroke="#475569"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+
+      {/* Upper Protective Cap / Collar */}
+      <rect x="18" y="10" width="14" height="18" rx="2.5" fill="url(#capGrad)" stroke="#475569" strokeWidth="1" />
+      <rect x="20" y="24" width="10" height="4" rx="1" fill="#64748b" />
+
+      {/* Slender Glass Cylinder Shaft */}
+      <rect
+        x="20.5"
+        y="28"
+        width="9"
+        height="88"
+        rx="1.5"
+        fill="url(#electrodeShaftGrad)"
+        stroke={highlighted ? '#2563eb' : '#94a3b8'}
+        strokeWidth={highlighted ? 2 : 1.2}
+      />
+
+      {/* Internal Ag/AgCl Reference Wire */}
+      <line x1="25" y1="22" x2="25" y2="114" stroke="#94a3b8" strokeWidth="1.2" strokeDasharray="3 1" />
+      <circle cx="25" cy="50" r="1.5" fill="#f59e0b" />
+
+      {/* Internal Reference Solution Meniscus */}
+      <rect x="22" y="45" width="6" height="68" fill="rgba(224, 242, 254, 0.45)" rx="1" />
+
+      {/* Porous Ceramic Liquid Junction */}
+      <rect x="28" y="108" width="2" height="3" fill="#ffffff" stroke="#64748b" strokeWidth="0.5" />
+
+      {/* Sensitive pH Glass Membrane Bulb at the bottom */}
+      <ellipse
+        cx="25"
+        cy="124"
+        rx="7.5"
+        ry="8.5"
+        fill="url(#bulbGrad)"
+        stroke={highlighted ? '#2563eb' : '#0284c7'}
+        strokeWidth="1.4"
+      />
+      {/* Glass Bulb Specular Reflection Highlight */}
+      <ellipse cx="23" cy="122" rx="2.8" ry="3.5" fill="rgba(255, 255, 255, 0.75)" />
+
+      {/* Identification Label */}
+      {label && (
+        <g transform="translate(25, 142)">
+          <rect
+            x={-Math.min(50, Math.max(30, (label.length * 3.0) + 4))}
+            y="-6"
+            width={Math.min(100, Math.max(60, (label.length * 6.0) + 8))}
+            height="12"
+            rx="4"
+            fill="var(--bg-card, rgba(255, 255, 255, 0.96))"
+            stroke="var(--border, rgba(203, 213, 225, 0.85))"
+            strokeWidth="0.8"
+            filter="drop-shadow(0 1px 3px rgba(0,0,0,0.1))"
+          />
+          <text
+            x="0"
+            y="2.5"
+            textAnchor="middle"
+            fontSize="6.5"
+            fontWeight="700"
+            fill="#334155"
           >
             {label}
           </text>
@@ -8649,6 +8792,7 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   Thermometer,
   Stopwatch,
   PHMeter,
+  GlassElectrode,
   ConductivityBridge,
 
   // Mechanical / Support

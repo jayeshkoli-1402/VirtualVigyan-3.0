@@ -236,7 +236,7 @@ const topics: Topic[] = [
     id: 'acid-value',
     title: 'Acid Value of Vegetable Oil',
     classLevel: 'F.Y. B.Tech / Engineering Chemistry',
-    expId: 'fy-chem-acid-value-oil',
+    expId: 'acid-value-oil',
     formulaTex: '\\text{Acid Value} = \\frac{V \\times N \\times 56.1}{W}',
     secondaryFormulas: [
       { label: '% Free Fatty Acid (as Oleic)', tex: '\\%\\text{FFA} = \\frac{V \\times N \\times 28.2}{W}' },

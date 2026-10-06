@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "npx tsx scripts/test_engine.ts && npx tsx scripts/test_stoichiometry.mjs && npx tsx scripts/test_class10.ts",
+    "test": "npx tsx scripts/test_engine.ts && npx tsx scripts/test_stoichiometry.mjs && npx tsx scripts/test_class10.ts && npx tsx scripts/check_ids.ts",
     "preview": "vite preview",
     "start": "serve -s dist -l $PORT"
   },

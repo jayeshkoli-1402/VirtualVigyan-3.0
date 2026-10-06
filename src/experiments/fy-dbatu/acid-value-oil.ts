@@ -1,7 +1,7 @@
 import type { ExperimentConfig } from '../../engine/experimentConfig';
 
 export const acidValueOil: ExperimentConfig = {
-  id: 'fy-chem-acid-value-oil',
+  id: 'acid-value-oil',
   title: 'Acid Value of Vegetable Oil',
   subtitle: 'RCOOH + KOH → RCOOK + H₂O',
   description:

@@ -2088,19 +2088,38 @@ const TestTube: React.FC<ApparatusProps> = ({
         </g>
       )}
 
-      {/* Label under tube */}
+      {/* Label under tube or frosted badge on tube */}
       {label && (
-        <text
-          x="38"
-          y="226"
-          textAnchor="middle"
-          fontSize="9"
-          fontWeight="600"
-          fill="var(--text-secondary)"
-          fontFamily="var(--font-sans)"
-        >
-          {label}
-        </text>
+        <g id="test-tube-label-badge">
+          {label.length <= 3 ? (
+            <g>
+              <circle cx="38" cy="42" r="7.5" fill="rgba(255, 255, 255, 0.9)" stroke="#475569" strokeWidth="0.9" />
+              <text
+                x="38"
+                y="45"
+                textAnchor="middle"
+                fontSize="8"
+                fontWeight="800"
+                fill="#0f172a"
+                fontFamily="var(--font-sans)"
+              >
+                {label}
+              </text>
+            </g>
+          ) : (
+            <text
+              x="38"
+              y="226"
+              textAnchor="middle"
+              fontSize="9"
+              fontWeight="600"
+              fill="var(--text-secondary)"
+              fontFamily="var(--font-sans)"
+            >
+              {label}
+            </text>
+          )}
+        </g>
       )}
 
       {/* ── Interactive Action Pills for Shaking & Settling ── */}
@@ -6282,118 +6301,170 @@ const TestTubeStand: React.FC<ApparatusProps> = ({
   highlighted = false,
   width = 240,
   height = 150,
-}) => (
-  <svg width={width} height={height} viewBox="0 0 240 150" fill="none" style={{ overflow: 'visible' }}>
-    <defs>
-      {/* Wood dark gradient */}
-      <linearGradient id="woodDark" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#78350f" />
-        <stop offset="50%" stopColor="#92400e" />
-        <stop offset="100%" stopColor="#451a03" />
-      </linearGradient>
+  ...props
+}) => {
+  const p = props as Record<string, unknown>;
+  const slotCount = p.slots === 4 ? 4 : 6;
+  const positions =
+    slotCount === 4
+      ? [
+          { x: 60, label: '1' },
+          { x: 100, label: '2' },
+          { x: 140, label: '3' },
+          { x: 180, label: '4' },
+        ]
+      : [
+          { x: 48, label: 'A' },
+          { x: 76, label: 'B' },
+          { x: 104, label: 'C' },
+          { x: 132, label: 'D' },
+          { x: 160, label: 'E' },
+          { x: 188, label: 'F' },
+        ];
 
-      {/* Wood top surface gradient */}
-      <linearGradient id="woodTop" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#a16207" />
-        <stop offset="40%" stopColor="#b45309" />
-        <stop offset="70%" stopColor="#92400e" />
-        <stop offset="100%" stopColor="#78350f" />
-      </linearGradient>
+  return (
+    <svg width={width} height={height} viewBox="0 0 240 150" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Wood dark gradient */}
+        <linearGradient id="woodDark" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#78350f" />
+          <stop offset="50%" stopColor="#92400e" />
+          <stop offset="100%" stopColor="#451a03" />
+        </linearGradient>
 
-      {/* Wood post gradient */}
-      <linearGradient id="woodPost" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#92400e" />
-        <stop offset="30%" stopColor="#b45309" />
-        <stop offset="100%" stopColor="#78350f" />
-      </linearGradient>
+        {/* Wood top surface gradient */}
+        <linearGradient id="woodTop" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#a16207" />
+          <stop offset="40%" stopColor="#b45309" />
+          <stop offset="70%" stopColor="#92400e" />
+          <stop offset="100%" stopColor="#78350f" />
+        </linearGradient>
 
-      {/* Hole inner depth */}
-      <radialGradient id="holeDepth" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stopColor="#1e1b18" />
-        <stop offset="75%" stopColor="#451a03" />
-        <stop offset="100%" stopColor="#78350f" />
-      </radialGradient>
-    </defs>
+        {/* Wood post gradient */}
+        <linearGradient id="woodPost" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#92400e" />
+          <stop offset="30%" stopColor="#b45309" />
+          <stop offset="100%" stopColor="#78350f" />
+        </linearGradient>
 
-    {/* Drop shadow on table */}
-    <ellipse cx="120" cy="142" rx="105" ry="8" fill="rgba(0,0,0,0.2)" filter="blur(3px)" />
+        {/* Hole inner depth */}
+        <radialGradient id="holeDepth" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#1e1b18" />
+          <stop offset="75%" stopColor="#451a03" />
+          <stop offset="100%" stopColor="#78350f" />
+        </radialGradient>
+      </defs>
 
-    {/* Rear drying pegs (typical NCERT wooden rack feature) */}
-    {[55, 95, 145, 185].map((x) => (
-      <g key={`peg-${x}`}>
-        <rect x={x - 2.5} y="15" width="5" height="50" rx="2" fill="#78350f" stroke="#451a03" strokeWidth="0.8" />
-        <circle cx={x} cy="15" r="3.5" fill="#a16207" stroke="#451a03" strokeWidth="0.8" />
-      </g>
-    ))}
+      {/* Drop shadow on table */}
+      <ellipse cx="120" cy="142" rx="105" ry="8" fill="rgba(0,0,0,0.2)" filter="blur(3px)" />
 
-    {/* Bottom Base Shelf */}
-    {/* Base main body */}
-    <rect
-      x="18"
-      y="125"
-      width="204"
-      height="18"
-      rx="4"
-      fill="url(#woodDark)"
-      stroke={highlighted ? '#2563eb' : '#451a03'}
-      strokeWidth={highlighted ? 2 : 1}
-    />
-    {/* Base top highlight bevel */}
-    <rect x="18" y="125" width="204" height="3" rx="1" fill="rgba(255,255,255,0.2)" />
-    {/* Rubber feet */}
-    <rect x="28" y="143" width="16" height="4" rx="1" fill="#1e293b" />
-    <rect x="196" y="143" width="16" height="4" rx="1" fill="#1e293b" />
+      {/* Rear drying pegs (NCERT wooden rack feature) */}
+      {positions.map((pos) => (
+        <g key={`peg-${pos.x}`}>
+          <rect x={pos.x - 2.5} y="15" width="5" height="50" rx="2" fill="#78350f" stroke="#451a03" strokeWidth="0.8" />
+          <circle cx={pos.x} cy="15" r="3.5" fill="#a16207" stroke="#451a03" strokeWidth="0.8" />
+        </g>
+      ))}
 
-    {/* Recessed bottom cups for test tube rounded ends */}
-    {[60, 100, 140, 180].map((x) => (
-      <ellipse key={`cup-${x}`} cx={x} cy="128" rx="15" ry="3.5" fill="url(#holeDepth)" stroke="#451a03" strokeWidth="0.8" />
-    ))}
+      {/* Bottom Base Shelf */}
+      {/* Base main body */}
+      <rect
+        x="18"
+        y="125"
+        width="204"
+        height="18"
+        rx="4"
+        fill="url(#woodDark)"
+        stroke={highlighted ? '#2563eb' : '#451a03'}
+        strokeWidth={highlighted ? 2 : 1}
+      />
+      {/* Base top highlight bevel */}
+      <rect x="18" y="125" width="204" height="3" rx="1" fill="rgba(255,255,255,0.2)" />
+      {/* Rubber feet */}
+      <rect x="28" y="143" width="16" height="4" rx="1" fill="#1e293b" />
+      <rect x="196" y="143" width="16" height="4" rx="1" fill="#1e293b" />
 
-    {/* Left Upright Support Post */}
-    <rect x="24" y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
-    <line x1="26" y1="46" x2="26" y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-    {/* Brass screws */}
-    <circle cx="30" cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
-    <circle cx="30" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
-
-    {/* Right Upright Support Post */}
-    <rect x="204" y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
-    <line x1="206" y1="46" x2="206" y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
-    {/* Brass screws */}
-    <circle cx="210" cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
-    <circle cx="210" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
-
-    {/* Middle Upper Shelf with Test Tube Holes */}
-    {/* Shelf body */}
-    <rect
-      x="20"
-      y="50"
-      width="200"
-      height="14"
-      rx="3"
-      fill="url(#woodTop)"
-      stroke={highlighted ? '#2563eb' : '#451a03'}
-      strokeWidth={highlighted ? 2 : 1}
-    />
-    {/* Shelf top highlight */}
-    <rect x="20" y="50" width="200" height="2.5" rx="1" fill="rgba(255,255,255,0.25)" />
-
-    {/* 4 Test Tube Holes on Upper Shelf */}
-    {[60, 100, 140, 180].map((x) => (
-      <g key={`hole-${x}`}>
-        {/* Hole opening with inner shadow */}
-        <ellipse cx={x} cy="57" rx="16" ry="5" fill="url(#holeDepth)" stroke="#451a03" strokeWidth="1" />
-        {/* Inner rim highlight */}
-        <path
-          d={`M ${x - 14} 58 A 14 4 0 0 0 ${x + 14} 58`}
-          stroke="rgba(255,255,255,0.2)"
+      {/* Recessed bottom cups for test tube rounded ends */}
+      {positions.map((pos) => (
+        <ellipse
+          key={`cup-${pos.x}`}
+          cx={pos.x}
+          cy="128"
+          rx={slotCount === 4 ? 15 : 12.5}
+          ry="3.5"
+          fill="url(#holeDepth)"
+          stroke="#451a03"
           strokeWidth="0.8"
-          fill="none"
         />
-      </g>
-    ))}
-  </svg>
-);
+      ))}
+
+      {/* Left Upright Support Post */}
+      <rect x="24" y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
+      <line x1="26" y1="46" x2="26" y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      {/* Brass screws */}
+      <circle cx="30" cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+      <circle cx="30" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+
+      {/* Right Upright Support Post */}
+      <rect x="204" y="45" width="12" height="82" rx="2" fill="url(#woodPost)" stroke="#451a03" strokeWidth="1" />
+      <line x1="206" y1="46" x2="206" y2="126" stroke="rgba(255,255,255,0.25)" strokeWidth="1" />
+      {/* Brass screws */}
+      <circle cx="210" cy="53" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+      <circle cx="210" cy="118" r="2" fill="#d97706" stroke="#78350f" strokeWidth="0.5" />
+
+      {/* Middle Upper Shelf with Test Tube Holes */}
+      {/* Shelf body */}
+      <rect
+        x="20"
+        y="50"
+        width="200"
+        height="14"
+        rx="3"
+        fill="url(#woodTop)"
+        stroke={highlighted ? '#2563eb' : '#451a03'}
+        strokeWidth={highlighted ? 2 : 1}
+      />
+      {/* Shelf top highlight */}
+      <rect x="20" y="50" width="200" height="2.5" rx="1" fill="rgba(255,255,255,0.25)" />
+
+      {/* Test Tube Holes & Slot Engravings on Upper Shelf */}
+      {positions.map((pos) => (
+        <g key={`hole-${pos.x}`}>
+          {/* Hole opening with inner shadow */}
+          <ellipse
+            cx={pos.x}
+            cy="57"
+            rx={slotCount === 4 ? 16 : 12.5}
+            ry="4.5"
+            fill="url(#holeDepth)"
+            stroke="#451a03"
+            strokeWidth="1"
+          />
+          {/* Inner rim highlight */}
+          <path
+            d={`M ${pos.x - (slotCount === 4 ? 14 : 11)} 58 A ${slotCount === 4 ? 14 : 11} 3.8 0 0 0 ${pos.x + (slotCount === 4 ? 14 : 11)} 58`}
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="0.8"
+            fill="none"
+          />
+          {/* Slot Letter Engraving on Rack Bevel */}
+          <text
+            x={pos.x}
+            y="63"
+            textAnchor="middle"
+            fontSize="5.5"
+            fontWeight="800"
+            fill="#fde047"
+            opacity="0.85"
+            fontFamily="var(--font-sans)"
+          >
+            {pos.label}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+};
 
 
 

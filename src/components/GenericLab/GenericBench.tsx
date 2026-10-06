@@ -1606,46 +1606,6 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       </div>
       )}
 
-      {/* ── Single Central Workbench Apparatus & Chemicals Inspector Button ── */}
-      <button
-        type="button"
-        id="btn-bench-inspect-all-apparatus"
-        onClick={() => {
-          const firstVessel = vesselsList[0]?.id ?? primaryVesselId;
-          dispatch({ type: 'INSPECT_VESSEL', payload: { vesselId: firstVessel } });
-        }}
-        title={t('bench.inspectAllApparatus', 'Inspect all apparatus and chemicals on the bench')}
-        style={{
-          position: 'absolute',
-          top: 12,
-          right: (hasBurette && (isBuretteFilled || (state.variables['volumeAdded'] ?? 0) > 0) ? 140 : 12) + 115,
-          zIndex: 25,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '5px 12px',
-          borderRadius: 'var(--radius-md)',
-          background: 'linear-gradient(135deg, rgba(238, 242, 255, 0.95), rgba(224, 231, 255, 0.95))',
-          border: '1.5px solid #6366f1',
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          color: '#4338ca',
-          cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.20)',
-          backdropFilter: 'blur(8px)',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-1px)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
-      >
-        <span style={{ fontSize: '0.85rem' }}>🧪</span>
-        <span>{t('bench.inspectApparatus', 'Inspect Chemicals & Apparatus')}</span>
-      </button>
-
       {/* Quick Workbench Table Surface Corner Toggle */}
       <button
         type="button"

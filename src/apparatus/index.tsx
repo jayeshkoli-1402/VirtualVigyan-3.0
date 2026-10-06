@@ -2913,17 +2913,19 @@ const BunsenBurner: React.FC<ApparatusProps> = ({
   ...rest
 }) => {
   const p = rest as Record<string, unknown>;
-  // Explicit isLit prop takes absolute precedence, or checks extraProps, flags, or defaults to true
+  // Dynamic flags/extraProps take precedence, or checks prop isLit, defaulting to false
   const isLit =
-    typeof p.isLit === 'boolean'
-      ? (p.isLit as boolean)
-      : typeof extraProps?.['isLit'] === 'boolean'
+    typeof extraProps?.['isLit'] === 'boolean'
       ? (extraProps['isLit'] as boolean)
       : typeof extraProps?.burnerLit === 'boolean'
       ? (extraProps.burnerLit as boolean)
-      : flags?.burnerLit !== undefined
-      ? Boolean(flags.burnerLit)
-      : true;
+      : typeof flags?.burnerLit === 'boolean'
+      ? (flags.burnerLit as boolean)
+      : typeof flags?.isLit === 'boolean'
+      ? (flags.isLit as boolean)
+      : typeof p.isLit === 'boolean'
+      ? (p.isLit as boolean)
+      : false;
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();

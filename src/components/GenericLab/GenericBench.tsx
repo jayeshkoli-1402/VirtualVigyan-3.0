@@ -1122,16 +1122,18 @@ const GenericBench: React.FC<GenericBenchProps> = ({
           >
             <Component
               id={`bg-${elem.component}-${i}`}
-              flags={{ ...state.flags, isLit: state.flags['burnerLit'] ?? true, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
+              flags={{ ...state.flags, isLit: state.flags['burnerLit'] ?? false, burnerLit: state.flags['burnerLit'] ?? false, isTitrating: stopcockOpen > 0 || state.flags['isTitrating'] }}
               variables={{ ...state.variables, stopcockOpen }}
               extraProps={{
                 stopcockOpen,
+                isLit: state.flags['burnerLit'] ?? false,
+                burnerLit: state.flags['burnerLit'] ?? false,
                 onSetStopcock: (val: number) => {
                   setStopcockOpen(val);
                   dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
                 },
                 onToggleBurner: () => {
-                  const currentLit = state.flags['burnerLit'] ?? true;
+                  const currentLit = state.flags['burnerLit'] ?? false;
                   dispatch({ type: 'SET_FLAG', payload: { flag: 'burnerLit', value: !currentLit } });
                   dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: !currentLit ? 'ignite-burner' : 'stop-burner' } });
                 },
@@ -1260,8 +1262,10 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                     setStopcockOpen(val);
                     dispatch({ type: 'SET_STOPCOCK', payload: { apparatusId: 'burette', openAmount: val } });
                   },
+                  isLit: state.flags['burnerLit'] ?? false,
+                  burnerLit: state.flags['burnerLit'] ?? false,
                   onToggleBurner: () => {
-                    const currentLit = state.flags['burnerLit'] ?? true;
+                    const currentLit = state.flags['burnerLit'] ?? false;
                     dispatch({ type: 'SET_FLAG', payload: { flag: 'burnerLit', value: !currentLit } });
                     dispatch({ type: 'CLICK_ELEMENT', payload: { elementId: !currentLit ? 'ignite-burner' : 'stop-burner' } });
                   },

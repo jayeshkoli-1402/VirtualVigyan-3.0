@@ -186,8 +186,6 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     difficulty: 'Easy',
     thumbnailType: 'water-acidity',
     order: 15,
-    underDevelopment: true,
-    adminOnly: true,
   },
   {
     id: 'melting-ice-boiling-water',
@@ -199,8 +197,6 @@ export const ALL_EXPERIMENTS: ExperimentItem[] = [
     difficulty: 'Easy',
     thumbnailType: 'viscosity-ostwald',
     order: 17,
-    underDevelopment: true,
-    adminOnly: true,
   },
 ];
 

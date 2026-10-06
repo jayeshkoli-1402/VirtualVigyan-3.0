@@ -1,7 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════
  *  VirtualVigyan — CBSE Class 9 Science Practicals (Stage 1)
- *  (Under Development / Admin Preview Only)
  * ═══════════════════════════════════════════════════════════════════
  */
 

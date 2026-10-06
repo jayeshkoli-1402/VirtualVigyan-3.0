@@ -26,8 +26,8 @@ export const meltingIceBoilingWater: ExperimentConfig = {
   themeColor: '#0ea5e9',
   icon: '🧊',
   estimatedMinutes: 30,
-  underDevelopment: true,
-  adminOnly: true,
+  underDevelopment: false,
+  adminOnly: false,
 
   // ── Apparatus ──
   apparatus: [

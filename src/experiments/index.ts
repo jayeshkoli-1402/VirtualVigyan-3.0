@@ -10,6 +10,7 @@ import type { ExperimentConfig } from '../engine/experimentConfig';
 import { zincAcidReaction } from './zinc-acid-reaction';
 import { dbatuExperiments } from './fy-dbatu';
 import { cbseClass9Experiments } from './cbse-class9';
+import { cbseClass10Experiments } from './cbse-class10';
 
 // ── Registry ─────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ const experiments: ExperimentConfig[] = [
   zincAcidReaction,
   ...dbatuExperiments,
   ...cbseClass9Experiments,
+  ...cbseClass10Experiments,
 ];
 
 /**

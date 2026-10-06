@@ -48,7 +48,12 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
   }, [stopcockOpen, dispatch]);
 
   const stepUpFlow = useCallback(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('burette_empty_click'));
+      }
+      return;
+    }
     let nextOpen = 0.25;
     if (stopcockOpen === 0) nextOpen = 0.25;
     else if (stopcockOpen < 0.45) nextOpen = 0.50;
@@ -72,7 +77,12 @@ const StopcockControl: React.FC<StopcockControlProps> = ({ enabled, stopcockOpen
   // Pointer event handlers supporting both seamless click and smooth drag
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (!enabled) return;
+      if (!enabled) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('burette_empty_click'));
+        }
+        return;
+      }
       e.stopPropagation();
       isPointerDownRef.current = true;
       hasMovedRef.current = false;

@@ -116,6 +116,48 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     state.flags['burette-filled'] !== false
   );
 
+  // Auto-hiding warning state when user attempts to use burette without filling
+  const [showBuretteEmptyWarning, setShowBuretteEmptyWarning] = React.useState(false);
+  const emptyWarningTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerBuretteEmptyWarning = React.useCallback(() => {
+    setShowBuretteEmptyWarning(true);
+    if (emptyWarningTimerRef.current) {
+      clearTimeout(emptyWarningTimerRef.current);
+    }
+    emptyWarningTimerRef.current = setTimeout(() => {
+      setShowBuretteEmptyWarning(false);
+    }, 4000);
+  }, []);
+
+  // Cleanup warning timer on unmount
+  React.useEffect(() => {
+    return () => {
+      if (emptyWarningTimerRef.current) {
+        clearTimeout(emptyWarningTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Hide empty warning immediately if burette gets filled
+  React.useEffect(() => {
+    if (isBuretteFilled) {
+      setShowBuretteEmptyWarning(false);
+      if (emptyWarningTimerRef.current) {
+        clearTimeout(emptyWarningTimerRef.current);
+      }
+    }
+  }, [isBuretteFilled]);
+
+  // Listen for burette empty click / action attempts
+  React.useEffect(() => {
+    const handleEmptyClick = () => {
+      triggerBuretteEmptyWarning();
+    };
+    window.addEventListener('burette_empty_click', handleEmptyClick);
+    return () => window.removeEventListener('burette_empty_click', handleEmptyClick);
+  }, [triggerBuretteEmptyWarning]);
+
   // Listen for burette stopcock rotation events from SVG interactive cork handles
   React.useEffect(() => {
     const handler = (e: Event) => {
@@ -123,6 +165,9 @@ const GenericBench: React.FC<GenericBenchProps> = ({
       if (typeof custom.detail?.open === 'number') {
         if (!hasBurette || !isBuretteFilled) {
           setStopcockOpen(0);
+          if (custom.detail.open > 0) {
+            triggerBuretteEmptyWarning();
+          }
           return;
         }
         const newOpen = custom.detail.open;
@@ -132,7 +177,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     };
     window.addEventListener('burette_stopcock_change', handler);
     return () => window.removeEventListener('burette_stopcock_change', handler);
-  }, [dispatch, hasBurette, isBuretteFilled]);
+  }, [dispatch, hasBurette, isBuretteFilled, triggerBuretteEmptyWarning]);
 
   // Continuous flow animation and titration variable advancement when stopcock is open
   React.useEffect(() => {
@@ -1363,7 +1408,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         )}
 
         {/* Real-time titration technique guidance banners */}
-        {Boolean(state.flags.buretteEmpty || (!state.flags.buretteFilled && hasBurette && ((state.apparatusProps['burette']?.liquidLevel as number ?? 0) <= 0.02))) && (
+        {showBuretteEmptyWarning && !isBuretteFilled && (
           <div
             id="titration-burette-empty-warning"
             className="animate-fade-in"

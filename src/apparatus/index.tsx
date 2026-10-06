@@ -2302,6 +2302,9 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     if (!isBuretteFilled && openVal > 0) {
       setEmptyWarning(true);
       setTimeout(() => setEmptyWarning(false), 2500);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('burette_empty_click'));
+      }
       return;
     }
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
@@ -2318,6 +2321,9 @@ const BuretteSVG: React.FC<ApparatusProps> = ({
     if (!isBuretteFilled) {
       setEmptyWarning(true);
       setTimeout(() => setEmptyWarning(false), 2500);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('burette_empty_click'));
+      }
       return;
     }
     let nextOpen: number;
@@ -3420,6 +3426,9 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     if (!isBuretteFilled && openVal > 0) {
       setEmptyWarning(true);
       setTimeout(() => setEmptyWarning(false), 2500);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('burette_empty_click'));
+      }
       return;
     }
     const clamped = Math.max(0, Math.min(1, Math.round(openVal * 100) / 100));
@@ -3436,6 +3445,9 @@ const BuretteStand: React.FC<ApparatusProps> = ({
     if (!isBuretteFilled) {
       setEmptyWarning(true);
       setTimeout(() => setEmptyWarning(false), 2500);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('burette_empty_click'));
+      }
       return;
     }
     let nextOpen: number;

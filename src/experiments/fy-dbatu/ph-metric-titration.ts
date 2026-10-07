@@ -25,6 +25,19 @@ export const phMetricTitration: ExperimentConfig = {
   icon: '⚡',
   estimatedMinutes: 20,
 
+  initialFlags: {
+    burettePlaced: false,
+    buretteFilled: false,
+    stirrerPlaced: false,
+    beakerPlaced: false,
+    phMeterPlaced: false,
+  },
+  initialVariables: {
+    volumeAdded: 0,
+    stopcockOpen: 0,
+    pH: 1.85,
+  },
+
   // ── Apparatus ──
   apparatus: [
     {
@@ -103,19 +116,26 @@ export const phMetricTitration: ExperimentConfig = {
     {
       id: 'clamp-zone',
       label: 'Clamp Burette on Retort Stand',
-      accepts: ['burette'],
+      accepts: ['burette', 'naoh-titrant'],
       position: { x: 50, y: 30 },
       size: { width: 22, height: 44 },
       rejectMessage: 'Mount the 50 mL burette onto the retort stand clamp.',
+      visibleWhen: { type: 'flag', key: 'burettePlaced', equals: false },
     },
     {
       id: 'burette-top-zone',
       label: 'Fill Burette with 0.1 M NaOH',
       accepts: ['naoh-titrant'],
-      position: { x: 50, y: 12 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Pour 0.1 M NaOH titrant into the top of the burette.',
-      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'burette' },
+      position: { x: 50, y: 5 },
+      size: { width: 10, height: 8 },
+      rejectMessage: 'Pour 0.1 M NaOH titrant into the top opening of the burette.',
+      visibleWhen: {
+        type: 'and',
+        conditions: [
+          { type: 'apparatusPlaced', apparatusId: 'burette' },
+          { type: 'flag', key: 'buretteFilled', equals: false },
+        ],
+      },
     },
     {
       id: 'stirrer-zone',
@@ -124,14 +144,22 @@ export const phMetricTitration: ExperimentConfig = {
       position: { x: 50, y: 74 },
       size: { width: 24, height: 22 },
       rejectMessage: 'Place the magnetic stirrer plate on the bench beneath the burette.',
+      visibleWhen: { type: 'flag', key: 'stirrerPlaced', equals: false },
     },
     {
       id: 'stirrer-plate-zone',
       label: 'Place Beaker on Stirrer',
-      accepts: ['beaker', 'stirrer'],
+      accepts: ['beaker'],
       position: { x: 50, y: 62 },
       size: { width: 24, height: 35 },
       rejectMessage: 'Place the reaction beaker onto the magnetic stirrer plate beneath the burette.',
+      visibleWhen: {
+        type: 'and',
+        conditions: [
+          { type: 'apparatusPlaced', apparatusId: 'stirrer' },
+          { type: 'flag', key: 'beakerPlaced', equals: false },
+        ],
+      },
     },
     {
       id: 'ph-meter-zone',
@@ -140,6 +168,7 @@ export const phMetricTitration: ExperimentConfig = {
       position: { x: 78, y: 64 },
       size: { width: 24, height: 28 },
       rejectMessage: 'Place the digital pH meter console on the bench beside the titration assembly.',
+      visibleWhen: { type: 'flag', key: 'phMeterPlaced', equals: false },
     },
     {
       id: 'beaker-zone',
@@ -247,6 +276,20 @@ export const phMetricTitration: ExperimentConfig = {
     {
       id: 'inter-fill-burette',
       trigger: { type: 'drop', source: 'naoh-titrant', target: 'burette-top-zone' },
+      conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
+      blockMessage: 'Clamp the burette on the retort stand before filling it.',
+      effects: [
+        { type: 'setFlag', key: 'buretteFilled', value: true },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidLevel', value: 1.0 },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'liquidColor', value: 'rgba(224, 242, 254, 0.7)' },
+        { type: 'setApparatusProp', apparatusId: 'burette', prop: 'label', value: '0.1 M NaOH Burette' },
+      ],
+      completesAction: 'fill-burette',
+      animation: { type: 'pour', durationMs: 2000, animatingFlag: 'isPouring' },
+    },
+    {
+      id: 'inter-fill-burette-clamp',
+      trigger: { type: 'drop', source: 'naoh-titrant', target: 'clamp-zone' },
       conditions: [{ type: 'flag', key: 'burettePlaced', equals: true }],
       blockMessage: 'Clamp the burette on the retort stand before filling it.',
       effects: [

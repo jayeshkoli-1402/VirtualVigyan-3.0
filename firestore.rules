@@ -17,12 +17,15 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && (
         request.auth.token.admin == true ||
-        request.auth.token.email in [
-          'jayeshkoli106@gmail.com',
-          'omchaudhari0365@gmail.com',
-          'dipaliishi2006@gmail.com',
-          'vaishnavigirase802@gmail.com'
-        ]
+        (
+          request.auth.token.email_verified == true &&
+          request.auth.token.email in [
+            'jayeshkoli106@gmail.com',
+            'omchaudhari0365@gmail.com',
+            'dipaliishi2006@gmail.com',
+            'vaishnavigirase802@gmail.com'
+          ]
+        )
       );
     }
 
@@ -32,8 +35,10 @@ service cloud.firestore {
       // Users can read their own profile; admins can read any profile
       allow read: if isOwner(userId) || isAdmin();
 
-      // Users can create their own profile document
-      allow create: if isOwner(userId);
+      // Users can create their own profile document, but cannot grant themselves admin role or permissions
+      allow create: if isOwner(userId)
+        && (!request.resource.data.keys().hasAny(['permissions']) || isAdmin())
+        && (request.resource.data.role != 'admin' || isAdmin());
 
       // Users can update their own profile, BUT cannot self-escalate role or permissions
       // Only admins can modify the 'role' and 'permissions' fields
@@ -64,11 +69,15 @@ service cloud.firestore {
         && request.resource.data.teacherId == request.auth.uid;
 
       // Teachers who own the lab or admins can update any field;
-      // Students can only update 'enrolledStudents' and 'submissions' arrays
+      // Students can only append to 'enrolledStudents' or 'submissions' (mass wipe/shrink is forbidden)
       allow update: if isAuthenticated() && (
         resource.data.teacherId == request.auth.uid ||
         isAdmin() ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledStudents', 'submissions'])
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['enrolledStudents', 'submissions']) &&
+          request.resource.data.submissions.size() >= resource.data.submissions.size() &&
+          request.resource.data.enrolledStudents.size() >= resource.data.enrolledStudents.size()
+        )
       );
 
       // Only the owning teacher or an admin can delete a lab

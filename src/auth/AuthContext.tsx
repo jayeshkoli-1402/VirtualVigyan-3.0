@@ -122,7 +122,13 @@ interface AuthContextType {
 // ── Admin Emails Whitelist ──
 // NOTE: This list is used for client-side admin badge display only.
 // Actual authorization is enforced by Firestore Security Rules and Firebase Auth Custom Claims.
-export const ADMIN_EMAILS: string[] = [
+const envAuth = (typeof import.meta !== 'undefined' && (import.meta as any).env) || {};
+const configuredAdminEmails = (envAuth.VITE_ADMIN_EMAILS || '')
+  .split(',')
+  .map((e: string) => e.trim().toLowerCase())
+  .filter(Boolean);
+
+export const ADMIN_EMAILS: string[] = configuredAdminEmails.length > 0 ? configuredAdminEmails : [
   'jayeshkoli106@gmail.com',
   'omchaudhari0365@gmail.com',
   'dipaliishi2006@gmail.com',
@@ -502,12 +508,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, message: 'Password must be at least 6 characters long (Firebase requirement).' };
     }
 
-    // Non-admin emails can NEVER register with admin role
-    if (!isSpecialAdmin && (data.role as string) === 'admin') {
+    // Administrator role cannot be self-assigned through the registration form
+    if ((data.role as string) === 'admin') {
       return { success: false, message: 'Unauthorized role assignment. Administrator accounts cannot be self-assigned.' };
     }
 
-    if (!isSpecialAdmin && data.role !== 'student' && data.role !== 'teacher') {
+    if (data.role !== 'student' && data.role !== 'teacher') {
       return { success: false, message: 'Invalid registration role.' };
     }
 

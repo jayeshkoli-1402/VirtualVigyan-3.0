@@ -86,9 +86,9 @@ export const waterAlkalinity: ExperimentConfig = {
       id: 'burette-top-zone',
       label: 'Fill Burette with 0.02 N H₂SO₄',
       accepts: ['h2so4-titrant'],
-      position: { x: 50, y: 14 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Pour 0.02 N H₂SO₄ titrant into the top of the burette.',
+      position: { x: 50, y: 5 },
+      size: { width: 10, height: 8 },
+      rejectMessage: 'Pour 0.02 N H₂SO₄ titrant into the top opening of the burette.',
       visibleWhen: {
         type: 'and',
         conditions: [

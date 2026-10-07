@@ -183,6 +183,11 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
     [config, state],
   );
 
+  const handleDragCancel = useCallback(() => {
+    setActiveDragId(null);
+    setActiveDropZone(null);
+  }, []);
+
   // Determine current view
   const currentStep = config.steps[state.currentStepIndex];
   const isCalcStep = currentStep?.type === 'calculation';
@@ -205,6 +210,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       <div
         className={isMixtureCompound ? 'mixture-compound-iron-sulphur-lab' : undefined}

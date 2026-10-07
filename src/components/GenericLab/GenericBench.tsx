@@ -41,6 +41,9 @@ const GenericBench: React.FC<GenericBenchProps> = ({
     return stored !== null ? stored === 'true' : true;
   });
 
+  // Track which placed apparatus is currently hovered to show its title tag cleanly only on hover
+  const [hoveredApparatusId, setHoveredApparatusId] = React.useState<string | null>(null);
+
   const handleToggleTable = React.useCallback(() => {
     setShowTableSurface((prev) => {
       const next = !prev;
@@ -1267,6 +1270,8 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         return (
           <div
             key={`placed-${apparatusId}`}
+            onMouseEnter={() => setHoveredApparatusId(apparatusId)}
+            onMouseLeave={() => setHoveredApparatusId(null)}
             style={{
               position: 'absolute',
               left: `${zone.position.x}%`,
@@ -1278,6 +1283,7 @@ const GenericBench: React.FC<GenericBenchProps> = ({
                 : 'drop-shadow(0 14px 14px rgba(0,0,0,0.25))',
               zIndex: apparatusZIndex,
               transition: 'transform 0.2s ease',
+              cursor: 'pointer',
             }}
           >
             <div
@@ -1320,38 +1326,44 @@ const GenericBench: React.FC<GenericBenchProps> = ({
               />
             </div>
 
-            {/* Clean, Non-Colliding Apparatus Title Badge in Empty Space Below Instrument */}
-            {apparatusConfig.label && !isHardware && !isBurette && apparatusConfig.component !== 'Thermometer' && !config.hidePlacedApparatusLabels && apparatusConfig.showPlacedLabel !== false && (
+            {/* Clean, Floating Apparatus Title Badge Shown ONLY on Hover */}
+            {apparatusConfig.label && !config.hidePlacedApparatusLabels && apparatusConfig.showPlacedLabel !== false && (
               <div
                 style={{
                   position: 'absolute',
                   top: '100%',
                   left: '50%',
-                  transform: 'translateX(-50%) translateY(4px)',
+                  transform: hoveredApparatusId === apparatusId
+                    ? 'translateX(-50%) translateY(6px)'
+                    : 'translateX(-50%) translateY(14px)',
+                  opacity: hoveredApparatusId === apparatusId ? 1 : 0,
                   whiteSpace: 'nowrap',
-                  zIndex: 30,
+                  zIndex: 35,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 5,
-                  pointerEvents: 'auto',
+                  pointerEvents: 'none',
+                  transition: 'opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
                 <span
                   style={{
-                    display: 'inline-block',
-                    fontSize: '0.62rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: '0.64rem',
                     fontWeight: 700,
-                    color: 'var(--text-secondary, #334155)',
-                    background: 'var(--bg-card, rgba(255, 255, 255, 0.96))',
-                    padding: '2px 8px',
+                    color: '#0f172a',
+                    background: 'rgba(255, 255, 255, 0.98)',
+                    padding: '3px 10px',
                     borderRadius: 12,
-                    border: '1px solid var(--border, rgba(203, 213, 225, 0.8))',
-                    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.08)',
+                    border: '1.5px solid rgba(59, 130, 246, 0.45)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                     letterSpacing: '0.02em',
-                    pointerEvents: 'none',
                   }}
                 >
-                  {tDynamic((dynamicProps.label as string) || apparatusConfig.label)}
+                  <span>{apparatusConfig.icon}</span>
+                  <span>{tDynamic((dynamicProps.label as string) || apparatusConfig.label)}</span>
                 </span>
               </div>
             )}
@@ -1792,48 +1804,173 @@ const DropZone: React.FC<DropZoneProps> = ({
   config,
 }) => {
   const { tDynamic } = useLanguage();
-  const hasItem = Object.values(state.placedApparatus).includes(zone.id);
+
+  // Helper to determine if an apparatus is a reagent, tool, or consumable rather than stationary bench equipment
+  const isReagentOrConsumable = (app: ApparatusConfig) => {
+    const comp = app.component;
+    if (
+      [
+        'ReagentBottle',
+        'Dropper',
+        'Matchstick',
+        'GlassRod',
+        'RubberCork',
+        'Spatula',
+        'WashBottle',
+        'TestPaper',
+        'LitmusPaper',
+        'UniversalIndicatorPaper',
+        'WatchGlassTool',
+        'FilterPaper',
+      ].includes(comp)
+    ) {
+      return true;
+    }
+    const id = app.id.toLowerCase();
+    const lbl = (app.label || '').toLowerCase();
+    return (
+      id.includes('bottle') ||
+      id.includes('titrant') ||
+      id.includes('sample') ||
+      id.includes('indicator') ||
+      id.includes('buffer') ||
+      id.includes('acid') ||
+      id.includes('base') ||
+      id.includes('water') ||
+      id.includes('granules') ||
+      id.includes('powder') ||
+      id.includes('solution') ||
+      lbl.includes('titrant') ||
+      lbl.includes('solution') ||
+      lbl.includes('indicator') ||
+      lbl.includes('buffer') ||
+      lbl.includes('sample')
+    );
+  };
 
   // Look up accepted apparatus details from config
   const acceptedApparatuses = (zone.accepts ?? [])
     .map(id => config?.apparatus?.find(a => a.id === id))
     .filter(Boolean) as ApparatusConfig[];
 
-  const primaryApparatus = acceptedApparatuses[0];
+  const placeableApparatuses = acceptedApparatuses.filter(app => !isReagentOrConsumable(app));
+  const primaryApparatus = placeableApparatuses[0] ?? acceptedApparatuses[0];
+
+  // 1. Direct placement match: an apparatus is placed directly in this specific zone
+  const hasDirectPlacedApparatus = Object.values(state.placedApparatus).includes(zone.id);
+
+  // 2. Check if all equipment that this zone is meant to receive have already been placed on the bench
+  const allAcceptedApparatusPlaced =
+    placeableApparatuses.length > 0 &&
+    placeableApparatuses.every(
+      app =>
+        app.id in state.placedApparatus ||
+        Boolean(state.flags[`${app.id}Placed`]) ||
+        Boolean(state.flags[`${app.id.replace(/-/g, '')}Placed`])
+    );
+
+  const hasApparatusPlaced = hasDirectPlacedApparatus || allAcceptedApparatusPlaced;
+
+  // 3. Chemical / Reagent placed check:
+  // Once a chemical is placed / poured / added, or action is completed, it should be marked as placed!
+  const isChemicalPlaced = (() => {
+    // Burette filling zones (e.g. 'burette-top-zone'):
+    if (zone.id.includes('burette') && (zone.id.includes('top') || zone.id.includes('fill'))) {
+      const buretteFilled =
+        Boolean(state.flags['buretteFilled']) ||
+        Boolean(state.flags['burette-filled']) ||
+        (Number(state.apparatusProps['burette']?.liquidLevel) >= 0.9);
+      // In EDTA titration there is a refill step when v1 is complete and v2 is starting
+      const isRefillStep = Boolean(state.flags['v1EndpointBlue'] && !state.flags['v2EndpointBlue'] && !zone.id.includes('top'));
+      if (buretteFilled && !isRefillStep) {
+        return true;
+      }
+    }
+
+    // Check completed actions and flags for chemical drop interactions on this zone:
+    const interactionsForZone = config?.interactions?.filter(
+      i =>
+        i.trigger.type === 'drop' &&
+        i.trigger.target === zone.id &&
+        !i.effects?.some(e => e.type === 'placeApparatus')
+    ) ?? [];
+
+    if (interactionsForZone.length > 0) {
+      const actionsForZone = interactionsForZone
+        .map(i => i.completesAction)
+        .filter(Boolean) as string[];
+
+      if (actionsForZone.length > 0 && actionsForZone.every(act => state.completedActions.includes(act))) {
+        return true;
+      }
+
+      const flagsSet = interactionsForZone.flatMap(i =>
+        (i.effects ?? []).filter(e => e.type === 'setFlag' && e.value === true).map(e => (e as any).key)
+      );
+      if (flagsSet.length > 0 && flagsSet.every(f => state.flags[f] === true)) {
+        return true;
+      }
+    }
+
+    return false;
+  })();
+
+  const hasItem = hasApparatusPlaced || isChemicalPlaced;
 
   const isMouthOrOpening =
     zone.id.includes('mouth') ||
     zone.id.includes('opening') ||
     zone.id.includes('neck') ||
-    (!zone.id.includes('top-zone') && zone.id.includes('top'));
+    zone.id.includes('top') ||
+    zone.id.includes('beaker-zone') ||
+    zone.id.includes('tube-zone') ||
+    zone.id.includes('flask-zone');
 
-  const reagentComponentTypes = ['ReagentBottle', 'Dropper', 'Matchstick', 'GlassRod', 'RubberCork'];
-
-  // A zone is an apparatus placement zone if:
-  // 1. It explicitly accepts non-reagent apparatus equipment, OR
-  // 2. Its ID indicates a bench/stand placement position (e.g. bench-zone-a, balance-zone, stand-tube-zone, burner-top-zone)
-  // 3. And it is not an opening/mouth of an already-placed vessel
+  // A zone is an apparatus placement zone ONLY if:
+  // 1. It is not an opening/mouth for adding reagents
+  // 2. It accepts at least one real piece of stationary apparatus
+  // 3. And it is designated for equipment placement on stand/bench
   const isBenchPlacementZone =
     !isMouthOrOpening &&
+    placeableApparatuses.length > 0 &&
     (
-      acceptedApparatuses.some(app => !reagentComponentTypes.includes(app.component)) ||
       zone.id.startsWith('bench-') ||
-      zone.id.endsWith('-zone')
+      zone.id.includes('stand') ||
+      zone.id.includes('clamp') ||
+      zone.id.includes('plate') ||
+      zone.id.includes('slot') ||
+      zone.id.includes('rack') ||
+      (config?.interactions?.some(i => i.trigger.target === zone.id && i.effects?.some(e => e.type === 'placeApparatus')) ?? false)
     );
+
+  const acceptsAnyReagents = acceptedApparatuses.some(app => isReagentOrConsumable(app));
+
+  const [isHovered, setIsHovered] = React.useState(false);
 
   const { setNodeRef, isOver } = useDroppable({
     id: zone.id,
-    disabled: Boolean(hasItem && isBenchPlacementZone),
+    disabled: Boolean(hasItem && isBenchPlacementZone && !acceptsAnyReagents),
   });
 
-  const isTargetOfCurrentDrag = Boolean(activeDragId && zone.accepts?.includes(activeDragId));
-  // Bench placement zones waiting for apparatus are always visible so students know where to place items!
-  const isZoneVisible = isOver || isActive || isDragCompatible || isTargetOfCurrentDrag || (!hasItem && isBenchPlacementZone);
+  const isTargetOfCurrentDrag = Boolean(activeDragId && zone.accepts?.includes(activeDragId) && !hasItem);
+
+  // When an apparatus or chemical has already been placed in its place, the indication border is hidden!
+  // When idle (not dragging), chemical zones never show indication borders; only unplaced bench equipment zones show faint placement guides.
+  const isZoneVisible =
+    !hasItem &&
+    (
+      isOver ||
+      isActive ||
+      Boolean(activeDragId && (isDragCompatible || isTargetOfCurrentDrag)) ||
+      (!activeDragId && isBenchPlacementZone)
+    );
 
   return (
     <div
       ref={setNodeRef}
       id={`dropzone-${zone.id}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         position: 'absolute',
         left: `${zone.position.x - zone.size.width / 2}%`,
@@ -1844,26 +1981,24 @@ const DropZone: React.FC<DropZoneProps> = ({
         border: `2px dashed ${
           isOver
             ? '#2563eb'
-            : isActive || isDragCompatible || isTargetOfCurrentDrag
+            : isActive || (activeDragId && (isDragCompatible || isTargetOfCurrentDrag))
               ? '#3b82f6'
-              : isBenchPlacementZone && !hasItem
-                ? 'rgba(59, 130, 246, 0.55)'
-                : hasItem || !isZoneVisible
-                  ? 'transparent'
-                  : 'rgba(148, 163, 184, 0.22)'
+              : !activeDragId && isBenchPlacementZone && !hasItem
+                ? isHovered ? 'rgba(59, 130, 246, 0.45)' : 'rgba(59, 130, 246, 0.18)'
+                : 'transparent'
         }`,
         background: isOver
           ? 'rgba(37, 99, 235, 0.18)'
-          : isActive || isDragCompatible || isTargetOfCurrentDrag
+          : isActive || (activeDragId && (isDragCompatible || isTargetOfCurrentDrag))
             ? 'rgba(59, 130, 246, 0.12)'
-            : isBenchPlacementZone && !hasItem
-              ? 'rgba(59, 130, 246, 0.04)'
+            : !activeDragId && isBenchPlacementZone && !hasItem && isHovered
+              ? 'rgba(59, 130, 246, 0.03)'
               : 'transparent',
         boxShadow: isOver
           ? '0 0 20px rgba(37, 99, 235, 0.45)'
-          : isActive || isDragCompatible || isTargetOfCurrentDrag
+          : isActive || (activeDragId && (isDragCompatible || isTargetOfCurrentDrag))
             ? '0 0 16px rgba(59, 130, 246, 0.35)'
-            : isBenchPlacementZone && !hasItem
+            : !activeDragId && isBenchPlacementZone && !hasItem && isHovered
               ? '0 2px 10px rgba(59, 130, 246, 0.08)'
               : 'none',
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -1871,11 +2006,11 @@ const DropZone: React.FC<DropZoneProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: isOver || isActive || isTargetOfCurrentDrag ? 24 : isBenchPlacementZone && !hasItem ? 12 : 5,
-        pointerEvents: hasItem && !isActive ? 'none' : 'auto',
+        pointerEvents: hasItem && !isActive && !isTargetOfCurrentDrag ? 'none' : 'auto',
       }}
     >
-      {/* Drop Zone Label: Dedicated opaque pill pinned above the zone */}
-      {!hasItem && isZoneVisible && (
+      {/* Drop Zone Label: Dedicated opaque pill pinned above the zone, visible ONLY on hover or when dragging over */}
+      {!hasItem && isZoneVisible && (isHovered || isOver || isActive) && (
         <div
           style={{
             position: 'absolute',
@@ -1913,8 +2048,8 @@ const DropZone: React.FC<DropZoneProps> = ({
         </div>
       )}
 
-      {/* Central placement watermark & apparatus silhouette */}
-      {!hasItem && isBenchPlacementZone && (
+      {/* Central placement watermark & apparatus silhouette, visible ONLY on hover or when dragging */}
+      {!hasItem && isBenchPlacementZone && isZoneVisible && (isHovered || isOver || Boolean(activeDragId)) && (
         <div
           style={{
             display: 'flex',

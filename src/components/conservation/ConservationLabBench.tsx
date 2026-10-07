@@ -1151,7 +1151,7 @@ const DropZoneOverlay: React.FC<{
       ? '#3b82f6'
       : isRelevant
         ? 'rgba(59, 130, 246, 0.45)'
-        : 'rgba(148, 163, 184, 0.22)';
+        : 'transparent';
   const bgColor = isOver
     ? 'rgba(37, 99, 235, 0.12)'
     : isRelevant

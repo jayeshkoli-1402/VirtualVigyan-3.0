@@ -123,9 +123,9 @@ export const waterHardnessEdta: ExperimentConfig = {
       id: 'burette-top-zone',
       label: 'Fill Burette with 0.01 M EDTA',
       accepts: ['edta-titrant'],
-      position: { x: 50, y: 14 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Pour 0.01 M EDTA titrant into the top of the burette.',
+      position: { x: 50, y: 5 },
+      size: { width: 10, height: 8 },
+      rejectMessage: 'Pour 0.01 M EDTA titrant into the top opening of the burette.',
       visibleWhen: {
         type: 'and',
         conditions: [
@@ -138,9 +138,9 @@ export const waterHardnessEdta: ExperimentConfig = {
       id: 'burette-refill-zone',
       label: 'Refill Burette with 0.01 M EDTA',
       accepts: ['edta-titrant'],
-      position: { x: 50, y: 14 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Pour 0.01 M EDTA titrant into the top of the burette to refill to 0.0 mL.',
+      position: { x: 50, y: 5 },
+      size: { width: 10, height: 8 },
+      rejectMessage: 'Pour 0.01 M EDTA titrant into the top opening of the burette to refill to 0.0 mL.',
       visibleWhen: {
         type: 'and',
         conditions: [

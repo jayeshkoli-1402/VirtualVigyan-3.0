@@ -740,7 +740,7 @@ const DropZoneOverlay: React.FC<{
   if (hidden) return null;
 
   const isRelevant = step === targetStep;
-  const isHighlighted = isOver || isActive || isRelevant;
+  const isHighlighted = isRelevant && (isOver || isActive);
 
   return (
     <div

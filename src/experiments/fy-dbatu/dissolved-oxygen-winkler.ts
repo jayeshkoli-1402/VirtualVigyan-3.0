@@ -125,10 +125,16 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
       id: 'burette-top-zone',
       label: 'Fill Burette with N/50 Na₂S₂O₃',
       accepts: ['thiosulphate-titrant'],
-      position: { x: 65, y: 14 },
-      size: { width: 18, height: 20 },
-      rejectMessage: 'Pour N/50 Na₂S₂O₃ titrant into the top of the burette.',
-      visibleWhen: { type: 'apparatusPlaced', apparatusId: 'burette' },
+      position: { x: 65, y: 5 },
+      size: { width: 10, height: 8 },
+      rejectMessage: 'Pour N/50 Na₂S₂O₃ titrant into the top opening of the burette.',
+      visibleWhen: {
+        type: 'and',
+        conditions: [
+          { type: 'apparatusPlaced', apparatusId: 'burette' },
+          { type: 'flag', key: 'buretteFilled', equals: false },
+        ],
+      },
     },
     {
       id: 'bod-bench-zone',

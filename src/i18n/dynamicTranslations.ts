@@ -552,6 +552,10 @@ const DYNAMIC_MESSAGES: Record<string, Record<Exclude<Language, 'en'>, string>> 
     hi: 'चीन की मिट्टी की प्याली (China Dish) को बंसन बर्नर की ज्वाला पर रखें।',
     mr: 'चायना डिश (बाष्पन पात्र) बुन्सेन बर्नरच्या ज्वालेवर ठेवा.',
   },
+  'Click the Bunsen burner to ignite the flame before heating.': {
+    hi: 'गर्म करने से पहले ज्वाला प्रज्वलित करने के लिए बुन्सन बर्नर पर क्लिक करें।',
+    mr: 'गरम करण्यापूर्वी ज्वाला प्रज्वलित करण्यासाठी बुन्सेन बर्नरवर क्लिक करा.',
+  },
   'Add CuSO₄ solution or Iron nail into Test Tube A.': {
     hi: 'टेस्ट ट्यूब A में कॉपर सल्फेट का घोल या लोहे की कील डालें।',
     mr: 'चाचणी नळी A मध्ये कॉपर सल्फेटचे द्रावण किंवा लोखंडी खिळा टाका.',

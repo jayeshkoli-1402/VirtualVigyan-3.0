@@ -62,10 +62,10 @@ export const physicalChemicalChanges: ExperimentConfig = {
     },
     {
       id: 'mg-ribbon',
-      component: 'Matchstick',
+      component: 'MagnesiumRibbon',
       label: 'Clean Magnesium Ribbon',
       icon: '✨',
-      initialProps: { isLit: true, label: 'Mg Ribbon' },
+      initialProps: { width: 55, height: 130, label: 'Mg Ribbon' },
     },
     {
       id: 'zinc-granules',
@@ -93,7 +93,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       component: 'BunsenBurner',
       label: 'Bunsen Burner Flame',
       icon: '🔥',
-      initialProps: { width: 75, height: 125, isLit: true },
+      initialProps: { width: 75, height: 125, isLit: false },
     },
     {
       id: 'tripod-stand',
@@ -283,11 +283,16 @@ export const physicalChemicalChanges: ExperimentConfig = {
       trigger: { type: 'drop', source: 'cuso4-bottle', target: 'tube-mouth' },
       effects: [
         { type: 'setFlag', key: 'hasCuSO4', value: true },
-        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidLevel', value: 0.5 },
-        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidColor', value: 'rgba(37, 99, 235, 0.85)' },
+        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidLevel', value: 0.52 },
+        { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'liquidColor', value: 'rgba(30, 64, 175, 0.88)' },
         { type: 'setApparatusProp', apparatusId: 'tube-displacement', prop: 'label', value: 'CuSO₄ Solution (Blue)' },
       ],
       completesAction: 'added-cuso4',
+      animation: {
+        type: 'pour',
+        durationMs: 2200,
+        animatingFlag: 'isPouringCuSO4',
+      },
     },
     {
       id: 'dip-nail-act',
@@ -316,7 +321,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       trigger: { type: 'drop', source: 'mg-ribbon', target: 'dish-mouth' },
       guard: {
         condition: { type: 'flag', key: 'burnerLit', equals: false },
-        message: 'Start the Bunsen burner flame using the START button first.',
+        message: 'Click the Bunsen burner to ignite the flame before heating.',
       },
       effects: [
         { type: 'setFlag', key: 'mgBurned', value: true },
@@ -334,7 +339,7 @@ export const physicalChemicalChanges: ExperimentConfig = {
       trigger: { type: 'drop', source: 'nh4cl-bottle', target: 'dish-mouth' },
       guard: {
         condition: { type: 'flag', key: 'burnerLit', equals: false },
-        message: 'Start the Bunsen burner flame using the START button first to heat the China dish.',
+        message: 'Click the Bunsen burner to ignite the flame before heating.',
       },
       effects: [
         { type: 'setFlag', key: 'nh4clSublimed', value: true },
@@ -358,85 +363,140 @@ export const physicalChemicalChanges: ExperimentConfig = {
 
   // ── Calculation / Observation Form ──
   calculation: {
-    title: 'Classification of Changes Matrix',
+    title: 'Classification of Physical & Chemical Changes',
+    sectionTitle: 'CLASSIFICATION & ANALYSIS',
+    recordedValuesTitle: 'OBSERVATIONS RECORDED',
     instruction:
-      'Classify each transformation as Chemical (Enter 1) or Physical (Enter 2) based on whether a new substance is formed.',
+      'Classify each transformation as Chemical (1) or Physical (2) based on whether a new substance is formed.',
+    recordedValues: [
+      {
+        label: 'Fe + CuSO₄ Reaction',
+        value: 'Solution turned pale green; reddish-brown Cu deposited on iron nail',
+      },
+      {
+        label: 'Burning Magnesium Ribbon',
+        value: 'Dazzling white flame observed; white powder/ash of MgO formed',
+      },
+      {
+        label: 'Zn + Dilute H₂SO₄ Reaction',
+        value: 'Effervescence observed; colourless H₂ gas liberated',
+      },
+      {
+        label: 'Sublimation of NH₄Cl',
+        value: 'Dense white vapours formed directly; solid deposited on cooler surface',
+      },
+    ],
     fields: [
       {
         id: 'changeA',
-        label: 'Fe + CuSO4: 1=Chemical, 2=Physical',
+        label: '1. Fe + CuSO₄ → FeSO₄ + Cu',
         unit: '',
         expectedValue: 1,
         tolerance: 0.1,
         toleranceType: 'absolute',
+        options: ['1 — Chemical Change', '2 — Physical Change'],
+        explanation:
+          'Iron displaces copper forming pale green FeSO₄ and a reddish-brown copper deposit. Since a new substance is formed with different chemical properties, it is a Chemical Change.',
       },
       {
         id: 'changeB',
-        label: 'Burning Magnesium Ribbon: 1=Chemical, 2=Physical',
+        label: '2. Burning Magnesium Ribbon',
         unit: '',
         expectedValue: 1,
         tolerance: 0.1,
         toleranceType: 'absolute',
+        options: ['1 — Chemical Change', '2 — Physical Change'],
+        explanation:
+          'Magnesium reacts with atmospheric oxygen to form magnesium oxide (MgO) ash with emission of intense white light. It is an irreversible Chemical Change.',
       },
       {
         id: 'changeC',
-        label: 'Zn + Dilute H2SO4: 1=Chemical, 2=Physical',
+        label: '3. Zn + Dilute H₂SO₄',
         unit: '',
         expectedValue: 1,
         tolerance: 0.1,
         toleranceType: 'absolute',
+        options: ['1 — Chemical Change', '2 — Physical Change'],
+        explanation:
+          'Zinc reacts with dilute sulphuric acid to produce zinc sulphate (ZnSO₄) and liberate flammable hydrogen gas (H₂). A new substance is formed, so it is a Chemical Change.',
       },
       {
         id: 'changeD',
-        label: 'Sublimation of NH4Cl: 1=Chemical, 2=Physical',
+        label: '4. Sublimation of NH₄Cl',
         unit: '',
         expectedValue: 2,
         tolerance: 0.1,
         toleranceType: 'absolute',
+        options: ['1 — Chemical Change', '2 — Physical Change'],
+        explanation:
+          'Solid ammonium chloride converts directly to vapour upon heating and re-condenses without changing chemical composition (NH₄Cl(s) ⇌ NH₄Cl(g)). It is a Physical Change.',
       },
     ],
   },
 
   // ── Viva ──
   viva: {
+    title: 'Viva Voce — Conceptual Examination',
     questions: [
       {
         id: 'q1',
         question: 'Why does the blue colour of CuSO₄ solution fade to pale green when an iron nail is immersed in it?',
         options: [
-          'Iron metal dissolves physical colour',
           'Iron displaces copper from CuSO₄, forming pale green FeSO₄',
+          'Iron metal dissolves physical colour',
           'Copper transforms directly into iron',
           'It is purely a reversible physical change',
         ],
-        correctIndex: 1,
-        explanation: 'Iron is more electropositive than copper in the reactivity series. It undergoes single displacement: Fe + CuSO₄ → FeSO₄ (pale green) + Cu (red-brown deposit).',
+        correctIndex: 0,
+        explanation: 'Iron is more electropositive (reactive) than copper. It undergoes single displacement: Fe + CuSO₄ → FeSO₄ (pale green) + Cu (reddish-brown deposit).',
       },
       {
         id: 'q2',
-        question: 'Which of the following transformations is strictly a PHYSICAL change?',
+        question: 'Which of the following observations confirms that burning of magnesium ribbon is a chemical change?',
         options: [
-          'Burning of magnesium ribbon in air',
-          'Reaction of zinc granules with dilute sulphuric acid',
-          'Sublimation of ammonium chloride upon heating',
-          'Displacement of copper by an iron nail',
+          'The magnesium ribbon becomes hot and melts',
+          'A new substance (white magnesium oxide ash) with different properties is formed',
+          'The ribbon changes shape reversibly',
+          'Only physical state change occurs',
         ],
-        correctIndex: 2,
-        explanation: 'Sublimation involves only a change of state from solid to vapour (NH₄Cl(s) ⇌ NH₄Cl(g)) without chemical bond cleavage or new chemical substance formation.',
+        correctIndex: 1,
+        explanation: 'Burning magnesium combines chemically with oxygen to produce magnesium oxide (2Mg + O₂ → 2MgO), which has completely different chemical properties from magnesium metal.',
       },
       {
         id: 'q3',
         question: 'What flammable gas is liberated when zinc granules react with dilute sulphuric acid?',
-        options: ['Oxygen gas', 'Carbon dioxide', 'Hydrogen gas (burns with a pop sound)', 'Sulphur dioxide'],
+        options: [
+          'Oxygen gas (O₂)',
+          'Carbon dioxide gas (CO₂)',
+          'Hydrogen gas (H₂) which burns with a pop sound',
+          'Sulphur dioxide gas (SO₂)',
+        ],
         correctIndex: 2,
-        explanation: 'Zn + H₂SO₄ → ZnSO₄ + H₂↑. Hydrogen gas burns with a characteristic pop sound when tested with a burning splinter.',
+        explanation: 'Zn + Dilute H₂SO₄ → ZnSO₄ + H₂↑. Hydrogen gas burns with a characteristic pop sound when tested with a burning splinter.',
       },
       {
         id: 'q4',
-        question: 'What is the colour of anhydrous copper sulphate formed upon heating hydrated crystals?',
-        options: ['Deep blue', 'Pure white', 'Emerald green', 'Jet black'],
-        correctIndex: 1,
-        explanation: 'Heating CuSO₄·5H₂O expels water of crystallisation, forming white anhydrous CuSO₄. Adding water restores the hydrated blue colour.',
+        question: 'Why is the sublimation of ammonium chloride classified as a physical change?',
+        options: [
+          'A new chemical bond is permanently formed',
+          'It requires no heat energy',
+          'It changes state from solid to gas and vice versa without altering chemical composition',
+          'It is an irreversible chemical oxidation',
+        ],
+        correctIndex: 2,
+        explanation: 'NH₄Cl sublimes directly from solid to vapour upon heating and condenses back as pure NH₄Cl upon cooling without altering its chemical identity (NH₄Cl(s) ⇌ NH₄Cl(g)).',
+      },
+      {
+        id: 'q5',
+        question: 'When dilute sulphuric acid is added to zinc granules, what type of chemical reaction takes place?',
+        options: [
+          'Combination reaction',
+          'Decomposition reaction',
+          'Single displacement reaction',
+          'Double displacement reaction',
+        ],
+        correctIndex: 2,
+        explanation: 'Zinc displaces hydrogen from dilute sulphuric acid (Zn + H₂SO₄ → ZnSO₄ + H₂), which is a single displacement (redox) reaction.',
       },
     ],
   },
@@ -444,8 +504,8 @@ export const physicalChemicalChanges: ExperimentConfig = {
   // ── Scoring ──
   scoring: [
     {
-      name: 'Apparatus Setup & Heating Assembly',
-      maxPoints: 20,
+      name: 'Lab Procedure & Correct Actions',
+      maxPoints: 40,
       evaluator: {
         type: 'multiCheck',
         checks: [
@@ -453,34 +513,39 @@ export const physicalChemicalChanges: ExperimentConfig = {
           { label: 'Bunsen burner positioned on table', points: 5, flag: 'burnerPlaced' },
           { label: 'Tripod stand & wire gauze mounted over burner', points: 5, flag: 'tripodPlaced' },
           { label: 'China dish mounted securely on tripod stand', points: 5, flag: 'dishPlaced' },
+          { label: 'Blue CuSO₄ solution added to test tube', points: 10, flag: 'hasCuSO4' },
+          { label: 'Bunsen burner flame lit before heating', points: 10, flag: 'burnerLit' },
         ],
       },
     },
     {
-      name: 'Chemical Transformations (Fe + CuSO₄)',
-      maxPoints: 35,
-      evaluator: {
-        type: 'multiCheck',
-        checks: [
-          { label: 'Blue CuSO₄ solution added to test tube', points: 15, flag: 'hasCuSO4' },
-          { label: 'Iron nail dipped & copper displacement observed', points: 20, flag: 'nailDipped' },
-        ],
-      },
-    },
-    {
-      name: 'Combustion & Sublimation Tests',
-      maxPoints: 30,
-      evaluator: {
-        type: 'multiCheck',
-        checks: [
-          { label: 'Magnesium ribbon burned (dazzling white flame & MgO ash)', points: 15, flag: 'mgBurned' },
-          { label: 'Ammonium chloride heated & sublimed (Physical change)', points: 15, flag: 'nh4clSublimed' },
-        ],
-      },
-    },
-    {
-      name: 'Viva Voce Conceptual Examination',
+      name: 'Observations Recorded',
       maxPoints: 15,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Iron nail dipped & copper displacement observed', points: 5, flag: 'nailDipped' },
+          { label: 'Magnesium ribbon burned (dazzling white flame & MgO ash)', points: 5, flag: 'mgBurned' },
+          { label: 'Ammonium chloride heated & sublimed (Physical change)', points: 5, flag: 'nh4clSublimed' },
+        ],
+      },
+    },
+    {
+      name: 'Classification & Analysis',
+      maxPoints: 20,
+      evaluator: {
+        type: 'multiCheck',
+        checks: [
+          { label: 'Fe + CuSO₄ classified as Chemical Change', points: 5, calcFieldId: 'changeA', expectedValue: 1 },
+          { label: 'Burning Magnesium Ribbon classified as Chemical Change', points: 5, calcFieldId: 'changeB', expectedValue: 1 },
+          { label: 'Zn + Dilute H₂SO₄ classified as Chemical Change', points: 5, calcFieldId: 'changeC', expectedValue: 1 },
+          { label: 'Sublimation of NH₄Cl classified as Physical Change', points: 5, calcFieldId: 'changeD', expectedValue: 2 },
+        ],
+      },
+    },
+    {
+      name: 'Viva Voce — Conceptual Examination',
+      maxPoints: 25,
       evaluator: { type: 'vivaQuiz' },
     },
   ],
@@ -497,6 +562,20 @@ export const physicalChemicalChanges: ExperimentConfig = {
       trigger: 'drop:china-dish→burner-dish-zone',
       condition: { type: 'flag', key: 'tripodPlaced', equals: false },
       message: 'Safety rule: Place the Bunsen burner and Tripod stand on the heating station first before mounting the China dish.',
+      blocking: true,
+    },
+    {
+      id: 'burner-lit-before-mg',
+      trigger: 'drop:mg-ribbon→dish-mouth',
+      condition: { type: 'flag', key: 'burnerLit', equals: false },
+      message: 'Click the Bunsen burner to ignite the flame before heating.',
+      blocking: true,
+    },
+    {
+      id: 'burner-lit-before-nh4cl',
+      trigger: 'drop:nh4cl-bottle→dish-mouth',
+      condition: { type: 'flag', key: 'burnerLit', equals: false },
+      message: 'Click the Bunsen burner to ignite the flame before heating.',
       blocking: true,
     },
   ],

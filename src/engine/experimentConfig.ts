@@ -91,6 +91,7 @@ export type ExperimentConfig = {
 
   /** Viva questions for post-lab testing */
   viva?: {
+    title?: string;
     questions: Array<{
       id: string;
       question: string;
@@ -432,6 +433,12 @@ export type CalculationConfig = {
   /** Title shown above the calculation form */
   title: string;
 
+  /** Optional section title for the inputs card (e.g. 'Classification & Analysis') */
+  sectionTitle?: string;
+
+  /** Optional title for the recorded values / observations card (e.g. 'OBSERVATIONS RECORDED') */
+  recordedValuesTitle?: string;
+
   /** Instructional text */
   instruction: string;
 
@@ -469,6 +476,9 @@ export type CalculationField = {
 
   /** Optional example showing how to compute or determine this value */
   helperExample?: string;
+
+  /** Optional scientific explanation shown after assessment submission */
+  explanation?: string;
 
   /** Unit label shown after the input */
   unit: string;

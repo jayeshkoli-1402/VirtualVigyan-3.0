@@ -1552,7 +1552,7 @@ const TestTube: React.FC<ApparatusProps> = ({
   // Liquid geometry
   // Tube body: x from 22 to 54 (width 32). Tube height: 18 to 195 (lip at 18, bottom curved at 195).
   // Total tube height is ~175.
-  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel));
+  const effectiveLevel = Math.min(1, Math.max(0, liquidLevel > 0 ? liquidLevel : (flags?.hasCuSO4 ? 0.52 : 0)));
   const maxFill = 150;
   const fillHeight = maxFill * effectiveLevel;
   const liquidTopY = 195 - fillHeight;
@@ -1591,12 +1591,12 @@ const TestTube: React.FC<ApparatusProps> = ({
           <stop offset="100%" stopColor="rgba(255,255,255,0.2)" />
         </linearGradient>
 
-        {/* Liquid depth gradient with 4.0s progressive color shift */}
+        {/* Liquid depth gradient with progressive color shift */}
         <linearGradient id={gradId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.8" />
-          <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.88" />
-          <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="0.95" />
-          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 4.0s cubic-bezier(0.4, 0, 0.2, 1)' }} stopOpacity="1" />
+          <stop offset="0%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 1.5s ease' }} stopOpacity="0.85" />
+          <stop offset="35%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 1.5s ease' }} stopOpacity="0.92" />
+          <stop offset="85%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 1.5s ease' }} stopOpacity="0.96" />
+          <stop offset="100%" stopColor={liquidColor} style={{ stopColor: liquidColor, transition: 'stop-color 1.5s ease' }} stopOpacity="1" />
         </linearGradient>
 
         {/* Zinc metallic gradient */}
@@ -1667,7 +1667,7 @@ const TestTube: React.FC<ApparatusProps> = ({
 
       {/* ── Liquid Fill with Meniscus ── */}
       {effectiveLevel > 0 && (
-        <g>
+        <g id="test-tube-liquid-volume">
           {/* Main liquid body */}
           <path
             d={`M 23 ${liquidTopY}
@@ -1677,7 +1677,7 @@ const TestTube: React.FC<ApparatusProps> = ({
                 L 53 ${liquidTopY}
                 Z`}
             fill={`url(#${gradId})`}
-            style={{ transition: 'd 2.0s cubic-bezier(0.25, 1, 0.5, 1), fill 2.2s cubic-bezier(0.4, 0, 0.2, 1)' }}
+            style={{ transition: 'd 0.8s cubic-bezier(0.25, 1, 0.5, 1), fill 1.2s ease' }}
           />
           {/* Curved Meniscus surface */}
           <ellipse
@@ -1685,11 +1685,11 @@ const TestTube: React.FC<ApparatusProps> = ({
             cy={liquidTopY}
             rx="15"
             ry="3.5"
-            fill="rgba(255, 255, 255, 0.4)"
+            fill="rgba(255, 255, 255, 0.45)"
             stroke={liquidColor}
             strokeWidth="0.8"
-            opacity="0.85"
-            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+            opacity="0.9"
+            style={{ transition: 'cy 0.8s cubic-bezier(0.25, 1, 0.5, 1), stroke 1.2s ease' }}
           />
           {/* Liquid highlight line */}
           <line
@@ -1698,7 +1698,7 @@ const TestTube: React.FC<ApparatusProps> = ({
             x2="50"
             y2={liquidTopY + 2}
             stroke="rgba(255, 255, 255, 0.6)"
-            style={{ transition: 'all 2.0s cubic-bezier(0.25, 1, 0.5, 1)' }}
+            style={{ transition: 'y1 0.8s cubic-bezier(0.25, 1, 0.5, 1), y2 0.8s cubic-bezier(0.25, 1, 0.5, 1)' }}
             strokeWidth="1"
           />
         </g>
@@ -2988,7 +2988,14 @@ const BunsenBurner: React.FC<ApparatusProps> = ({
   };
 
   return (
-    <svg width={width} height={height} viewBox="0 0 75 125" fill="none" style={{ overflow: 'visible' }}>
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 75 125"
+      fill="none"
+      style={{ overflow: 'visible', cursor: 'pointer', pointerEvents: 'auto' }}
+      onClick={handleToggle}
+    >
       <defs>
         {/* Stainless steel / chrome barrel gradient */}
         <linearGradient id="burnerBarrelGrad" x1="0" y1="0" x2="1" y2="0">
@@ -4550,7 +4557,7 @@ const Tripod: React.FC<ApparatusProps> = ({
   const isHeating = Boolean(flags?.burnerLit ?? flags?.isHeating ?? extraProps?.isHeating);
 
   return (
-    <svg width={width} height={height} viewBox="0 0 110 115" fill="none" style={{ overflow: 'visible' }}>
+    <svg width={width} height={height} viewBox="0 0 110 115" fill="none" style={{ overflow: 'visible', pointerEvents: 'none' }}>
       <defs>
         {/* Cast iron metallic gradient for legs */}
         <linearGradient id="tripodLegGrad" x1="0" y1="0" x2="1" y2="0">
@@ -4687,8 +4694,8 @@ const EvaporatingDish: React.FC<ApparatusProps> = ({
         </linearGradient>
 
         {/* NH4Cl sublimation fume blur filter */}
-        <filter id="fumeBlur" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="3.5" />
+        <filter id="fumeBlur" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="4.0" />
         </filter>
         <filter id="starBurstGlow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
@@ -4707,30 +4714,38 @@ const EvaporatingDish: React.FC<ApparatusProps> = ({
       {/* ── Sublimation White Fumes / Dense Vapours (Rising Clouds) ── */}
       {isSubliming && (
         <g id="nh4cl-sublimation-fumes">
-          {/* Cloud Billow 1 (Left puff) */}
-          <circle cx="36" cy="18" r="14" fill="rgba(255, 255, 255, 0.85)" filter="url(#fumeBlur)">
-            <animate attributeName="cy" values="24;8;-2" dur="2.0s" repeatCount="indefinite" />
-            <animate attributeName="r" values="10;16;22" dur="2.0s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.85;0.6;0" dur="2.0s" repeatCount="indefinite" />
+          {/* Cloud Billow 1 (Left-leaning puff) */}
+          <circle cx="34" cy="18" r="14" fill="rgba(255, 255, 255, 0.9)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="24;4;-12" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="36;30;24" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="r" values="10;18;26" dur="2.4s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;0.7;0" dur="2.4s" repeatCount="indefinite" />
           </circle>
-          {/* Cloud Billow 2 (Center dense puff) */}
-          <circle cx="50" cy="14" r="16" fill="rgba(255, 255, 255, 0.9)" filter="url(#fumeBlur)">
-            <animate attributeName="cy" values="22;6;-6" dur="1.7s" repeatCount="indefinite" />
-            <animate attributeName="r" values="12;18;26" dur="1.7s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.9;0.7;0" dur="1.7s" repeatCount="indefinite" />
+          {/* Cloud Billow 2 (Center dense ascending puff) */}
+          <circle cx="50" cy="14" r="16" fill="rgba(255, 255, 255, 0.95)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="22;2;-16" dur="2.0s" repeatCount="indefinite" />
+            <animate attributeName="r" values="12;20;30" dur="2.0s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.95;0.75;0" dur="2.0s" repeatCount="indefinite" />
           </circle>
-          {/* Cloud Billow 3 (Right puff) */}
-          <circle cx="64" cy="16" r="13" fill="rgba(255, 255, 255, 0.85)" filter="url(#fumeBlur)">
-            <animate attributeName="cy" values="23;7;-3" dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="r" values="9;15;21" dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.85;0.6;0" dur="2.2s" repeatCount="indefinite" />
+          {/* Cloud Billow 3 (Right-leaning puff) */}
+          <circle cx="66" cy="16" r="13" fill="rgba(255, 255, 255, 0.9)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="23;5;-10" dur="2.6s" repeatCount="indefinite" />
+            <animate attributeName="cx" values="64;70;76" dur="2.6s" repeatCount="indefinite" />
+            <animate attributeName="r" values="9;17;25" dur="2.6s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.9;0.65;0" dur="2.6s" repeatCount="indefinite" />
+          </circle>
+          {/* Cloud Billow 4 (Upper billow layer) */}
+          <circle cx="48" cy="8" r="18" fill="rgba(248, 250, 252, 0.85)" filter="url(#fumeBlur)">
+            <animate attributeName="cy" values="16;-6;-24" dur="2.2s" begin="0.6s" repeatCount="indefinite" />
+            <animate attributeName="r" values="14;22;32" dur="2.2s" begin="0.6s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.85;0.6;0" dur="2.2s" begin="0.6s" repeatCount="indefinite" />
           </circle>
 
           {/* Sublimation reaction status banner */}
-          <rect x="10" y="-18" width="80" height="15" rx="4" fill="rgba(15, 23, 42, 0.88)" stroke="#38bdf8" strokeWidth="0.8" />
-          <text x="50" y="-8" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#38bdf8" fontFamily="var(--font-sans)">
-            NH₄Cl Subliming: Solid ➔ Vapours
-            <animate attributeName="opacity" values="0.6;1;0.6" dur="1s" repeatCount="indefinite" />
+          <rect x="8" y="-22" width="84" height="16" rx="4" fill="rgba(15, 23, 42, 0.92)" stroke="#38bdf8" strokeWidth="0.8" />
+          <text x="50" y="-11" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#38bdf8" fontFamily="var(--font-sans)">
+            ☁️ Dense White Vapours (NH₄Cl Sublimation)
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="1s" repeatCount="indefinite" />
           </text>
         </g>
       )}
@@ -4739,22 +4754,22 @@ const EvaporatingDish: React.FC<ApparatusProps> = ({
       {isBurningMg && (
         <g id="mg-dazzling-burn">
           {/* Blinding white starburst flash */}
-          <circle cx="50" cy="30" r="24" fill="rgba(255, 255, 255, 0.95)" filter="url(#starBurstGlow)">
-            <animate attributeName="r" values="22;28;22" dur="0.2s" repeatCount="indefinite" />
+          <circle cx="50" cy="30" r="26" fill="rgba(255, 255, 255, 0.95)" filter="url(#starBurstGlow)">
+            <animate attributeName="r" values="22;30;22" dur="0.2s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.9;1;0.9" dur="0.15s" repeatCount="indefinite" />
           </circle>
           {/* Spark rays */}
-          <path d="M 50 2 L 53 27 L 78 30 L 53 33 L 50 58 L 47 33 L 22 30 L 47 27 Z" fill="#ffffff" filter="url(#starBurstGlow)">
+          <path d="M 50 0 L 53 27 L 80 30 L 53 33 L 50 60 L 47 33 L 20 30 L 47 27 Z" fill="#ffffff" filter="url(#starBurstGlow)">
             <animate attributeName="opacity" values="0.8;1;0.8" dur="0.2s" repeatCount="indefinite" />
           </path>
-          <path d="M 32 12 L 48 28 L 68 12 L 52 32 L 68 48 L 48 32 L 32 48 L 48 28 Z" fill="#e0e7ff" opacity="0.9">
+          <path d="M 30 10 L 48 28 L 70 10 L 52 32 L 70 50 L 48 32 L 30 50 L 48 28 Z" fill="#e0e7ff" opacity="0.9">
             <animate attributeName="opacity" values="0.7;1;0.7" dur="0.25s" repeatCount="indefinite" />
           </path>
 
           {/* Burning Mg reaction banner */}
-          <rect x="10" y="-18" width="80" height="15" rx="4" fill="rgba(15, 23, 42, 0.9)" stroke="#f59e0b" strokeWidth="0.8" />
-          <text x="50" y="-8" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#fde047" fontFamily="var(--font-sans)">
-            ✨ Dazzling Flame: 2Mg + O₂ ➔ 2MgO
+          <rect x="8" y="-22" width="84" height="16" rx="4" fill="rgba(15, 23, 42, 0.92)" stroke="#f59e0b" strokeWidth="0.8" />
+          <text x="50" y="-11" textAnchor="middle" fontSize="5.5" fontWeight="bold" fill="#fde047" fontFamily="var(--font-sans)">
+            ✨ Dazzling Flame: 2Mg + O₂ ➔ 2MgO (Ash)
             <animate attributeName="opacity" values="0.7;1;0.7" dur="0.6s" repeatCount="indefinite" />
           </text>
         </g>
@@ -4801,38 +4816,45 @@ const EvaporatingDish: React.FC<ApparatusProps> = ({
         <g id="nh4cl-solid-and-crystals">
           {/* White crystalline powder layer resting at bottom */}
           <polygon
-            points="24,42 76,42 70,55 30,55"
-            fill="#f8fafc"
+            points="22,41 78,41 72,55 28,55"
+            fill="#ffffff"
             stroke="#e2e8f0"
             strokeWidth="0.8"
-            filter="drop-shadow(0 1px 2px rgba(0,0,0,0.1))"
+            filter="drop-shadow(0 1px 3px rgba(0,0,0,0.12))"
           />
           {/* Crystal grains and texture facets */}
-          <circle cx="34" cy="46" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="42" cy="49" r="1.5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="50" cy="46" r="1.4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="58" cy="48" r="1.6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="66" cy="46" r="1.3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="46" cy="52" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
-          <circle cx="54" cy="52" r="1.3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.4" />
+          <circle cx="34" cy="45" r="1.4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="42" cy="48" r="1.6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="50" cy="45" r="1.5" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="58" cy="47" r="1.7" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="66" cy="45" r="1.4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="46" cy="51" r="1.3" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="54" cy="51" r="1.4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="38" cy="51" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
+          <circle cx="62" cy="51" r="1.2" fill="#ffffff" stroke="#cbd5e1" strokeWidth="0.5" />
 
-          {/* Sublimate crystalline crust along upper cooler dish rim */}
-          <path d="M 12 28 Q 25 31 35 28" stroke="#ffffff" strokeWidth="2" strokeDasharray="1.5,1.5" fill="none" opacity="0.9" />
-          <path d="M 65 28 Q 75 31 88 28" stroke="#ffffff" strokeWidth="2" strokeDasharray="1.5,1.5" fill="none" opacity="0.9" />
+          {/* Sublimate crystalline crust along upper cooler dish rim and walls */}
+          <path d="M 10 27 Q 25 30 38 27" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="2,1.5" fill="none" opacity="0.95" />
+          <path d="M 62 27 Q 75 30 90 27" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="2,1.5" fill="none" opacity="0.95" />
+          <ellipse cx="25" cy="33" rx="8" ry="3" fill="#ffffff" opacity="0.8" />
+          <ellipse cx="75" cy="33" rx="8" ry="3" fill="#ffffff" opacity="0.8" />
         </g>
       )}
 
       {/* White Magnesium Oxide (MgO) Ash Powder Bed */}
       {hasMgAsh && !isBurningMg && (
         <g id="mgo-ash-powder">
-          <ellipse cx="50" cy="48" rx="22" ry="7" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="0.8" />
+          <ellipse cx="50" cy="48" rx="24" ry="8" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="0.8" filter="drop-shadow(0 1px 3px rgba(0,0,0,0.15))" />
           {/* Powdery fluffy ash mounds and texture */}
-          <ellipse cx="44" cy="47" rx="9" ry="4" fill="#ffffff" opacity="0.9" />
-          <ellipse cx="56" cy="48" rx="10" ry="4" fill="#ffffff" opacity="0.9" />
-          <circle cx="48" cy="49" r="1.5" fill="#94a3b8" opacity="0.5" />
-          <circle cx="52" cy="46" r="1.2" fill="#94a3b8" opacity="0.4" />
-          <circle cx="41" cy="48" r="1.4" fill="#94a3b8" opacity="0.4" />
-          <circle cx="59" cy="49" r="1.3" fill="#94a3b8" opacity="0.4" />
+          <ellipse cx="43" cy="47" rx="11" ry="5" fill="#ffffff" opacity="0.95" />
+          <ellipse cx="57" cy="48" rx="12" ry="5" fill="#ffffff" opacity="0.95" />
+          <ellipse cx="50" cy="46" rx="9" ry="4" fill="#ffffff" opacity="0.98" />
+          <circle cx="48" cy="49" r="1.6" fill="#94a3b8" opacity="0.55" />
+          <circle cx="52" cy="46" r="1.3" fill="#94a3b8" opacity="0.45" />
+          <circle cx="41" cy="48" r="1.5" fill="#94a3b8" opacity="0.45" />
+          <circle cx="59" cy="49" r="1.4" fill="#94a3b8" opacity="0.45" />
+          <circle cx="36" cy="49" r="1.2" fill="#64748b" opacity="0.4" />
+          <circle cx="64" cy="48" r="1.2" fill="#64748b" opacity="0.4" />
         </g>
       )}
 
@@ -6059,6 +6081,157 @@ const GlassRod: React.FC<ApparatusProps> = ({
     <circle cx="5" cy="115" r="2.5" fill="#cbd5e1" />
   </svg>
 );
+
+
+// ── Magnesium Ribbon (Held by Crucible Tongs) ────────────────────
+
+const MagnesiumRibbon: React.FC<ApparatusProps> = ({
+  highlighted = false,
+  width = 55,
+  height = 130,
+  label,
+  flags = {},
+  extraProps = {},
+}) => {
+  const isBurning = Boolean(flags?.isBurningMg || extraProps?.isBurningMg);
+  const isBurned = Boolean(flags?.mgBurned || extraProps?.hasMgAsh);
+
+  return (
+    <svg width={width} height={height} viewBox="0 0 60 130" fill="none" style={{ overflow: 'visible' }}>
+      <defs>
+        {/* Silvery magnesium metallic ribbon gradient */}
+        <linearGradient id="mgRibbonGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="25%" stopColor="#f8fafc" />
+          <stop offset="55%" stopColor="#e2e8f0" />
+          <stop offset="85%" stopColor="#cbd5e1" />
+          <stop offset="100%" stopColor="#64748b" />
+        </linearGradient>
+
+        {/* Crucible Tongs stainless steel gradient */}
+        <linearGradient id="tongsMetalGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#334155" />
+          <stop offset="35%" stopColor="#94a3b8" />
+          <stop offset="65%" stopColor="#f1f5f9" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </linearGradient>
+
+        {/* Dazzling starburst filter for burning Mg */}
+        <filter id="mgDazzleGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Highlight glow */}
+      {highlighted && (
+        <rect x="15" y="4" width="30" height="118" rx="8" stroke="#3b82f6" strokeWidth="4" opacity="0.6" filter="blur(2px)" />
+      )}
+
+      {/* ── Crucible Tongs (Laboratory Tongs holding Ribbon at upper section) ── */}
+      <g id="crucible-tongs">
+        {/* Left Arm / Scissor arm */}
+        <path
+          d="M 16 6 C 14 18, 18 36, 26 48 L 29 48 C 22 36, 18 18, 20 6 Z"
+          fill="url(#tongsMetalGrad)"
+          stroke="#1e293b"
+          strokeWidth="0.8"
+        />
+        {/* Right Arm / Scissor arm */}
+        <path
+          d="M 44 6 C 46 18, 42 36, 34 48 L 31 48 C 38 36, 42 18, 40 6 Z"
+          fill="url(#tongsMetalGrad)"
+          stroke="#1e293b"
+          strokeWidth="0.8"
+        />
+        {/* Scissor Pivot Rivet */}
+        <circle cx="30" cy="28" r="3.2" fill="#475569" stroke="#0f172a" strokeWidth="0.8" />
+        <circle cx="30" cy="28" r="1.5" fill="#cbd5e1" />
+
+        {/* Tongs Grip Jaws clamping the ribbon */}
+        <rect x="25" y="46" width="10" height="5" rx="1.5" fill="#334155" stroke="#0f172a" strokeWidth="0.8" />
+        <line x1="27" y1="48.5" x2="33" y2="48.5" stroke="#cbd5e1" strokeWidth="0.8" />
+      </g>
+
+      {/* ── Magnesium Ribbon Strip ── */}
+      {!isBurned ? (
+        <g id="mg-ribbon-strip">
+          {/* Silvery metallic coiled/twisted ribbon strip extending from tongs jaws */}
+          <path
+            d="M 27 50 Q 25 65 33 80 Q 37 92 28 105 L 34 106 Q 43 92 39 80 Q 31 65 33 50 Z"
+            fill="url(#mgRibbonGrad)"
+            stroke="#64748b"
+            strokeWidth="0.8"
+            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
+          />
+
+          {/* Longitudinal metallic specular sheen */}
+          <path
+            d="M 29 52 Q 27 65 35 80 Q 38 92 30 104"
+            stroke="rgba(255, 255, 255, 0.85)"
+            strokeWidth="1.2"
+            fill="none"
+          />
+
+          {/* Flexible ribbon edge fold creases */}
+          <line x1="26" y1="68" x2="34" y2="67" stroke="rgba(100, 116, 139, 0.6)" strokeWidth="0.6" />
+          <line x1="32" y1="88" x2="40" y2="87" stroke="rgba(100, 116, 139, 0.6)" strokeWidth="0.6" />
+
+          {/* Dazzling combustion flash if burning */}
+          {isBurning && (
+            <g id="mg-burning-flame-tip">
+              {/* Starburst rays */}
+              <path
+                d="M 31 82 L 34 100 L 52 103 L 34 106 L 31 124 L 28 106 L 10 103 L 28 100 Z"
+                fill="#ffffff"
+                filter="url(#mgDazzleGlow)"
+              >
+                <animate attributeName="opacity" values="0.8;1;0.8" dur="0.15s" repeatCount="indefinite" />
+              </path>
+              <circle cx="31" cy="103" r="14" fill="rgba(255, 255, 255, 0.95)" filter="url(#mgDazzleGlow)">
+                <animate attributeName="r" values="12;16;12" dur="0.15s" repeatCount="indefinite" />
+              </circle>
+              {/* Sparks */}
+              <circle cx="20" cy="94" r="1.5" fill="#fef08a">
+                <animate attributeName="opacity" values="1;0;1" dur="0.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="42" cy="96" r="1.2" fill="#fef08a">
+                <animate attributeName="opacity" values="0;1;0" dur="0.2s" repeatCount="indefinite" />
+              </circle>
+              <circle cx="23" cy="115" r="1.3" fill="#ffffff">
+                <animate attributeName="opacity" values="1;0;1" dur="0.25s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+        </g>
+      ) : (
+        /* Burned state: charred stub + white MgO ash crust held at tip */
+        <g id="mg-burned-stub">
+          <path
+            d="M 27 50 Q 26 58 31 66 L 35 66 Q 32 58 33 50 Z"
+            fill="#475569"
+            stroke="#1e293b"
+            strokeWidth="0.8"
+          />
+          {/* Fluffy white/grey MgO ash crumb remaining on tongs */}
+          <ellipse cx="32" cy="68" rx="6" ry="4" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="0.8" />
+          <circle cx="30" cy="67" r="1.2" fill="#ffffff" />
+          <circle cx="34" cy="68" r="1.4" fill="#94a3b8" opacity="0.6" />
+        </g>
+      )}
+
+      {/* Label */}
+      {label && (
+        <text x="30" y="126" textAnchor="middle" fontSize="6.5" fontWeight="600" fill="#64748b" fontFamily="var(--font-sans)">
+          {label}
+        </text>
+      )}
+    </svg>
+  );
+};
 
 
 // ── Matchstick / Burning Splinter ────────────────────────────────
@@ -9238,6 +9411,8 @@ export const APPARATUS_REGISTRY: Record<string, React.FC<ApparatusProps>> = {
   ReagentBottle,
   GlassRod,
   IronNail,
+  MagnesiumRibbon,
+  MgRibbon: MagnesiumRibbon,
   Matchstick,
   LaserPointer,
   LaserTorch: LaserPointer,

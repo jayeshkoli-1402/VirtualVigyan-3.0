@@ -1359,6 +1359,14 @@ const GenericBench: React.FC<GenericBenchProps> = ({
         );
       })}
 
+      {/* ── Fluid Dynamics & Pouring Physics Simulation Layer ── */}
+      <FluidDynamicsLayer
+        config={config}
+        state={state}
+        solutionColor={solutionColor}
+        benchScale={benchScale}
+      />
+
       {/* ── Interactive Workbench Action Bar (Shake / Swirl, Stirrer & Burette Cork Tap) ── */}
       {hasBottomBarContent && (
         <div

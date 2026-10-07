@@ -208,7 +208,7 @@ const GenericLab: React.FC<GenericLabProps> = ({ config, onBackToSelector, priva
     >
       <div
         className={isMixtureCompound ? 'mixture-compound-iron-sulphur-lab' : undefined}
-        style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', overflow: 'hidden' }}
       >
 
         {/* Under Development Admin Preview Banner */}

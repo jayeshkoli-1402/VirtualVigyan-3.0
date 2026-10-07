@@ -27,11 +27,33 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
   const [vivaAnswers, setVivaAnswers] = useState<Record<string, number>>({});
   const [results, setResults] = useState<ReturnType<typeof validateCalculation> | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const calcConfig = config.calculation;
   if (!calcConfig) return null;
 
   const handleSubmit = () => {
+    // Validate that all calculation fields are answered
+    for (const field of calcConfig.fields) {
+      if (answers[field.id] === undefined || answers[field.id].trim() === '') {
+        setValidationError(`Please answer all questions before submitting (${field.label}).`);
+        return;
+      }
+    }
+
+    // Validate that all viva questions (if present) are answered
+    if (config.viva?.questions && config.viva.questions.length > 0) {
+      for (let i = 0; i < config.viva.questions.length; i++) {
+        const q = config.viva.questions[i];
+        if (vivaAnswers[q.id] === undefined) {
+          setValidationError(`Please answer all viva voce questions before submitting (Q${i + 1} unanswered).`);
+          return;
+        }
+      }
+    }
+
+    setValidationError(null);
+
     const numericAnswers: Record<string, number> = {};
     for (const field of calcConfig.fields) {
       numericAnswers[field.id] = parseFloat(answers[field.id] ?? '0') || 0;
@@ -56,7 +78,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
       maxWidth: 560,
       width: '100%',
       margin: '0 auto',
-      padding: '16px 12px 64px 12px',
+      padding: '16px 12px 100px 12px',
       animation: 'fadeIn 0.3s ease-out',
     }}>
       {/* Title */}
@@ -210,7 +232,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8,
         }}>
-          {t('calc.recordedValues', 'Recorded Values')}
+          {calcConfig.recordedValuesTitle ? tDynamic(calcConfig.recordedValuesTitle) : t('calc.recordedValues', 'Recorded Values')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {calcConfig.recordedValues ? (
@@ -272,7 +294,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
           fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)',
           textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12,
         }}>
-          {t('calc.yourCalculation', 'Your Calculation')}
+          {calcConfig.sectionTitle ? tDynamic(calcConfig.sectionTitle) : t('calc.yourCalculation', 'Your Calculation')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {calcConfig.fields.map((field, fIdx) => {
@@ -303,13 +325,18 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
 
                 <label style={{
                   display: 'block', fontSize: '0.78rem', fontWeight: 600,
-                  color: 'var(--text-primary)', marginBottom: 4,
+                  color: 'var(--text-primary)', marginBottom: 6,
                 }}>
                   {tDynamic(field.label)}
                 </label>
 
                 {field.options && field.options.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: field.options.length === 2 ? '1fr 1fr' : '1fr',
+                    gap: 8,
+                    marginTop: 4,
+                  }}>
                     {field.options.map((opt, optIdx) => {
                       const optVal = (optIdx + 1).toString();
                       const isSelected = answers[field.id] === optVal;
@@ -318,20 +345,25 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                           key={optIdx}
                           type="button"
                           disabled={submitted}
-                          onClick={() => setAnswers({ ...answers, [field.id]: optVal })}
+                          onClick={() => {
+                            setAnswers({ ...answers, [field.id]: optVal });
+                            if (validationError) setValidationError(null);
+                          }}
                           style={{
                             display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 10,
-                            padding: '8px 12px',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            padding: '10px 14px',
                             borderRadius: 'var(--radius-md)',
                             border: `1.5px solid ${
                               isSelected ? '#2563eb' : 'var(--border, #cbd5e1)'
                             }`,
-                            background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-card)',
-                            color: 'var(--text-primary)',
-                            textAlign: 'left',
+                            background: isSelected ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-card)',
+                            color: isSelected ? '#1d4ed8' : 'var(--text-primary)',
+                            textAlign: 'center',
                             fontSize: '0.8rem',
+                            fontWeight: isSelected ? 700 : 500,
                             cursor: submitted ? 'default' : 'pointer',
                             transition: 'all 0.15s ease',
                           }}
@@ -340,18 +372,18 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            width: 22,
-                            height: 22,
+                            width: 20,
+                            height: 20,
                             borderRadius: '50%',
-                            fontSize: '0.72rem',
+                            fontSize: '0.7rem',
                             fontWeight: 700,
                             background: isSelected ? '#2563eb' : 'var(--bg-secondary)',
                             color: isSelected ? '#ffffff' : 'var(--text-secondary)',
                             flexShrink: 0,
                           }}>
-                            {String.fromCharCode(65 + optIdx)}
+                            {optIdx + 1}
                           </span>
-                          <span style={{ lineHeight: 1.4, flex: 1 }}>{tDynamic(opt)}</span>
+                          <span style={{ lineHeight: 1.3 }}>{tDynamic(opt)}</span>
                         </button>
                       );
                     })}
@@ -363,7 +395,10 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                       step="any"
                       placeholder={field.placeholder ? tDynamic(field.placeholder) : t('calc.enterValue', 'Enter value...')}
                       value={answers[field.id] ?? ''}
-                      onChange={e => setAnswers({ ...answers, [field.id]: e.target.value })}
+                      onChange={e => {
+                        setAnswers({ ...answers, [field.id]: e.target.value });
+                        if (validationError) setValidationError(null);
+                      }}
                       disabled={submitted}
                       style={{
                         flex: 1,
@@ -422,16 +457,33 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                   }}>
                     {result.correct ? (
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
-                          <span>✓</span>
-                          <span>
-                            {field.options && field.options.length > 0
-                              ? `${t('common.correct', 'Correct!')} (Option ${String.fromCharCode(64 + Math.round(result.expectedValue))})`
-                              : field.expectedRangeLabel
-                              ? t('calc.correctRange', 'Correct — within acceptable experimental range')
-                              : `${t('common.correct', 'Correct!')} (${result.expectedValue.toFixed(2)} ${field.unit})`}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, marginBottom: 4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>✓</span>
+                            <span>
+                              {field.options && field.options.length > 0
+                                ? `${t('common.correct', 'Correct!')} (${field.options[Math.round(result.expectedValue) - 1] || `Option ${result.expectedValue}`})`
+                                : field.expectedRangeLabel
+                                ? t('calc.correctRange', 'Correct — within acceptable experimental range')
+                                : `${t('common.correct', 'Correct!')} (${result.expectedValue.toFixed(2)} ${field.unit})`}
+                            </span>
+                          </span>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: '#059669',
+                            background: 'rgba(5, 150, 105, 0.15)',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                          }}>
+                            +5 / 5 Marks
                           </span>
                         </div>
+                        {result.explanation && (
+                          <div style={{ fontSize: '0.75rem', marginTop: 4, color: '#065f46', lineHeight: 1.4 }}>
+                            {result.explanation}
+                          </div>
+                        )}
                         {field.expectedRangeLabel && (
                           <div style={{ fontSize: '0.74rem', marginTop: 3, color: '#047857' }}>
                             {t('calc.expectedRange', 'Expected range')}: <strong>{field.expectedRangeLabel}</strong>
@@ -440,36 +492,54 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                       </div>
                     ) : (
                       <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>
-                          <span>✗</span>
-                          <span>
-                            {field.options && field.options.length > 0
-                              ? `${t('common.incorrect', 'Incorrect')} (${answers[field.id] ? `Selected Option ${String.fromCharCode(64 + parseInt(answers[field.id], 10))}` : 'No answer'} — Expected: Option ${String.fromCharCode(64 + Math.round(result.expectedValue))})`
-                              : field.expectedRangeLabel
-                              ? t('calc.outsideRange', 'Outside acceptable experimental range')
-                              : `${t('common.incorrect', 'Incorrect')} (${answers[field.id] || '0'} ${field.unit} — ${t('calc.expectedRange', 'Expected')}: ${result.expectedValue.toFixed(2)} ${field.unit})`}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontWeight: 700, color: '#dc2626', marginBottom: 4 }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span>✗</span>
+                            <span>
+                              {field.options && field.options.length > 0
+                                ? `${t('common.incorrect', 'Incorrect')} (${answers[field.id] ? `${field.options[parseInt(answers[field.id], 10) - 1] || `Option ${answers[field.id]}`}` : 'No answer'} — Expected: ${field.options[Math.round(result.expectedValue) - 1] || `Option ${result.expectedValue}`})`
+                                : field.expectedRangeLabel
+                                ? t('calc.outsideRange', 'Outside acceptable experimental range')
+                                : `${t('common.incorrect', 'Incorrect')} (${answers[field.id] || '0'} ${field.unit} — ${t('calc.expectedRange', 'Expected')}: ${result.expectedValue.toFixed(2)} ${field.unit})`}
+                            </span>
+                          </span>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 700,
+                            color: '#dc2626',
+                            background: 'rgba(220, 38, 38, 0.15)',
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                          }}>
+                            0 / 5 Marks
                           </span>
                         </div>
+                        {result.explanation ? (
+                          <div style={{ fontSize: '0.75rem', marginTop: 4, color: '#991b1b', lineHeight: 1.4 }}>
+                            {result.explanation}
+                          </div>
+                        ) : (
+                          <div style={{
+                            padding: '8px 10px',
+                            background: 'var(--bg-card)',
+                            borderRadius: 6,
+                            border: '1px solid rgba(220, 38, 38, 0.2)',
+                            fontFamily: 'var(--font-mono)',
+                            fontSize: '0.72rem',
+                            color: 'var(--text-secondary)',
+                            whiteSpace: 'pre-line',
+                          }}>
+                            <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
+                              {t('calc.workedSolution', 'Worked Solution')}:
+                            </div>
+                            {result.workedFormula}
+                          </div>
+                        )}
                         {field.expectedRangeLabel && (
-                          <div style={{ fontSize: '0.74rem', color: '#b91c1c', marginBottom: 6 }}>
+                          <div style={{ fontSize: '0.74rem', color: '#b91c1c', marginTop: 4 }}>
                             {t('calc.yourCalculation', 'You entered')}: <strong>{answers[field.id] || '0'} {field.unit}</strong> — {t('calc.expectedRange', 'Expected range')}: <strong>{field.expectedRangeLabel}</strong>
                           </div>
                         )}
-                        <div style={{
-                          padding: '8px 10px',
-                          background: 'var(--bg-card)',
-                          borderRadius: 6,
-                          border: '1px solid rgba(220, 38, 38, 0.2)',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '0.72rem',
-                          color: 'var(--text-secondary)',
-                          whiteSpace: 'pre-line',
-                        }}>
-                          <div style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
-                            {t('calc.workedSolution', 'Worked Solution')}:
-                          </div>
-                          {result.workedFormula}
-                        </div>
                       </>
                     )}
                   </div>
@@ -494,7 +564,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
               margin: 0,
             }}>
               <span>🎓</span>
-              <span>Viva Voce Conceptual Examination</span>
+              <span>{config.viva.title ? tDynamic(config.viva.title) : 'Viva Voce — Conceptual Examination'}</span>
             </h3>
             <span style={{
               fontSize: '0.68rem',
@@ -504,7 +574,7 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
               padding: '3px 8px',
               borderRadius: 6,
             }}>
-              {config.viva.questions.length} Questions
+              {config.viva.questions.length} Questions (25 Marks)
             </span>
           </div>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
@@ -672,6 +742,26 @@ const GenericCalculation: React.FC<GenericCalculationProps> = ({
                 : t('calc.reviewSolutions', 'Review the correct solutions above before viewing your final score.')}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Validation error message */}
+      {!submitted && validationError && (
+        <div style={{
+          padding: '10px 14px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: 12,
+          background: 'rgba(239, 68, 68, 0.1)',
+          border: '1.5px solid #dc2626',
+          color: '#b91c1c',
+          fontSize: '0.78rem',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <span>⚠️</span>
+          <span>{validationError}</span>
         </div>
       )}
 

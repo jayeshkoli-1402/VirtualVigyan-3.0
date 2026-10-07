@@ -41,7 +41,7 @@ export type ScoreResult = {
   penalties?: TechniquePenalty[];
 
   /** Overall grade label */
-  grade: 'Excellent' | 'Good' | 'Satisfactory' | 'Needs Practice';
+  grade: 'Excellent' | 'Very Good' | 'Good' | 'Needs Improvement' | 'Requires Practice' | 'Satisfactory' | 'Needs Practice';
 
   /** Overall feedback message */
   feedback: string;
@@ -411,17 +411,21 @@ function evaluateSingle(
 // ── Grading ──────────────────────────────────────────────────────
 
 function getGrade(totalScore: number): ScoreResult['grade'] {
-  if (totalScore >= 85) return 'Excellent';
-  if (totalScore >= 65) return 'Good';
-  if (totalScore >= 45) return 'Satisfactory';
-  return 'Needs Practice';
+  if (totalScore >= 90) return 'Excellent';
+  if (totalScore >= 75) return 'Very Good';
+  if (totalScore >= 60) return 'Good';
+  if (totalScore >= 40) return 'Needs Improvement';
+  return 'Requires Practice';
 }
 
 function generateFeedback(totalScore: number, breakdown: CategoryResult[]): string {
-  if (totalScore >= 85) {
-    return 'Outstanding work! You demonstrated excellent lab technique and understanding of the experiment.';
+  if (totalScore >= 90) {
+    return 'Outstanding work! You demonstrated excellent lab technique, observation analysis, and conceptual understanding.';
   }
-  if (totalScore >= 65) {
+  if (totalScore >= 75) {
+    return 'Very good performance! You demonstrated solid understanding of chemical and physical transformations.';
+  }
+  if (totalScore >= 60) {
     const weakAreas = breakdown
       .filter(c => c.points < c.maxPoints * 0.5)
       .map(c => c.name);
@@ -430,10 +434,10 @@ function generateFeedback(totalScore: number, breakdown: CategoryResult[]): stri
     }
     return 'Good work! A few areas could use more practice.';
   }
-  if (totalScore >= 45) {
-    return 'Satisfactory effort. Review the experiment procedure and try again to improve your score.';
+  if (totalScore >= 40) {
+    return 'Needs improvement. Review the experiment procedure, observations, and classifications to improve your score.';
   }
-  return 'Keep practicing! Review each step carefully and pay attention to the observations.';
+  return 'Requires practice! Review each transformation step carefully and pay attention to whether new substances are formed.';
 }
 
 
@@ -453,6 +457,7 @@ export function validateCalculation(
   studentAnswer: number;
   expectedValue: number;
   workedFormula: string;
+  explanation?: string;
 }> {
   if (!config.calculation) return [];
 
@@ -495,7 +500,9 @@ export function validateCalculation(
     }
 
     let workedFormula = '';
-    if (field.options && field.options.length > 0) {
+    if (field.explanation) {
+      workedFormula = field.explanation;
+    } else if (field.options && field.options.length > 0) {
       const optIndex = Math.round(expectedValue) - 1;
       const correctOptText = field.options[optIndex] ?? `Option ${String.fromCharCode(65 + optIndex)}`;
       workedFormula = `Correct Answer: ${correctOptText}`;
@@ -517,6 +524,7 @@ export function validateCalculation(
       studentAnswer,
       expectedValue,
       workedFormula,
+      explanation: field.explanation,
     };
   });
 }

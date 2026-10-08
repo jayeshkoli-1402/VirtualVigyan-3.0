@@ -366,8 +366,15 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
     {
       id: 'inter-titrate-do',
       trigger: { type: 'drop', source: 'burette', target: 'flask-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'flaskPlaced', equals: true }],
-      blockMessage: 'Transfer the acidified I₂ solution into the conical flask first.',
+      conditions: [
+        { type: 'flag', key: 'starchAdded', equals: true },
+        { type: 'variable', key: 'thiosulphateVolume', op: '>=', value: 7.8 },
+      ],
+      blockMessage: 'Click the right wing of the burette stopcock to titrate with 0.025 N Na₂S₂O₃ until colorless endpoint at V₂ = 7.8 mL.',
+      guard: {
+        condition: { type: 'flag', key: 'endpointColorless', equals: true },
+        message: 'Titration is already complete and the colorless endpoint has been reached.',
+      },
       effects: [
         { type: 'setFlag', key: 'endpointColorless', value: true },
         { type: 'setVariable', key: 'thiosulphateVolume', value: 7.8 },
@@ -437,9 +444,11 @@ export const dissolvedOxygenWinkler: ExperimentConfig = {
   initialVariables: {
     thiosulphateNormality: 0.02,
     thiosulphateVolume: 0,
+    volumeAdded: 0,
     sampleAliquot: 100,
     dissolvedOxygen: 0,
     stopcockOpen: 0,
+    maxFlowRate: 1.0,
   },
   initialFlags: {
     burettePlaced: false,

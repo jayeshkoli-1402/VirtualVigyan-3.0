@@ -284,8 +284,15 @@ export const acidValueOil: ExperimentConfig = {
     {
       id: 'inter-titrate-koh',
       trigger: { type: 'drop', source: 'burette', target: 'flask-mouth-zone' },
-      conditions: [{ type: 'flag', key: 'alcoholAdded', equals: true }],
-      blockMessage: 'Dissolve oil in neutral alcohol before titrating.',
+      conditions: [
+        { type: 'flag', key: 'indicatorAdded', equals: true },
+        { type: 'variable', key: 'kohVolume', op: '>=', value: 3.5 },
+      ],
+      blockMessage: 'Click the right wing of the burette stopcock to titrate with 0.1 N KOH until faint pink endpoint (3.5 mL).',
+      guard: {
+        condition: { type: 'flag', key: 'endpointPink', equals: true },
+        message: 'Titration is already complete and the faint pink endpoint has been reached.',
+      },
       effects: [
         { type: 'setFlag', key: 'endpointPink', value: true },
         { type: 'setFlag', key: 'titrationDone', value: true },
@@ -358,9 +365,11 @@ export const acidValueOil: ExperimentConfig = {
     oilWeight: 5.0,
     kohNormality: 0.1,
     kohVolume: 0,
+    volumeAdded: 0,
     acidValue: 0,
     freeFattyAcid: 0,
     stopcockOpen: 0,
+    maxFlowRate: 1.0,
   },
   initialFlags: {
     burettePlaced: false,

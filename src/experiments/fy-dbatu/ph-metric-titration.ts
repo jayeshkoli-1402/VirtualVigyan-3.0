@@ -24,20 +24,6 @@ export const phMetricTitration: ExperimentConfig = {
   themeColor: '#10b981',
   icon: '⚡',
   estimatedMinutes: 20,
-
-  initialFlags: {
-    burettePlaced: false,
-    buretteFilled: false,
-    stirrerPlaced: false,
-    beakerPlaced: false,
-    phMeterPlaced: false,
-  },
-  initialVariables: {
-    volumeAdded: 0,
-    stopcockOpen: 0,
-    pH: 1.85,
-  },
-
   // ── Apparatus ──
   apparatus: [
     {
@@ -240,7 +226,21 @@ export const phMetricTitration: ExperimentConfig = {
     {
       id: 'titrate-naoh',
       label: '7. Titrate with 0.1 M NaOH',
-      instruction: 'Click the right wing of the burette cork to titrate with 0.1 M NaOH while stirring. Observe the sharp pH jump from ~3.5 to ~10.5 at the 20.0 mL equivalence point.',
+      instruction: 'Click the right wing of the burette cork (or use the tap buttons below) to titrate 0.1 M NaOH drop-by-drop while stirring. Observe the sharp pH jump from ~3.5 to ~10.5 at the 20.0 mL equivalence point.',
+      dynamicInstructions: [
+        {
+          condition: { type: 'flag', key: 'titrationComplete', equals: true },
+          instruction: '✓ Equivalence point reached at 20.0 mL NaOH (pH jumped sharply to ~7–11)! Close the burette stopcock and click Continue to proceed to calculations.',
+        },
+        {
+          condition: { type: 'variable', key: 'naohVolume', op: '>=', value: 18.0 },
+          instruction: '⚠️ Approaching equivalence point (pH rising quickly)! Slow down the stopcock to drop-by-drop flow to observe the sharp pH jump at 20.0 mL.',
+        },
+        {
+          condition: { type: 'variable', key: 'naohVolume', op: '>', value: 0.1 },
+          instruction: '💧 Titrating: Adding 0.1 M NaOH drop-by-drop while stirring. Watch the digital pH meter rise as NaOH neutralizes the acid.',
+        },
+      ],
       requiredActions: ['titrate-naoh'],
       advanceMode: 'button',
       type: 'lab',
@@ -443,8 +443,15 @@ export const phMetricTitration: ExperimentConfig = {
     {
       id: 'inter-titrate-ph',
       trigger: { type: 'drop', source: 'burette', target: 'beaker-zone' },
-      conditions: [{ type: 'flag', key: 'hclAdded', equals: true }],
-      blockMessage: 'Add 20 mL HCl sample into the beaker first.',
+      conditions: [
+        { type: 'flag', key: 'hclAdded', equals: true },
+        { type: 'variable', key: 'naohVolume', op: '>=', value: 20.0 },
+      ],
+      blockMessage: 'Click the right wing of the burette stopcock to titrate 0.1 M NaOH drop-by-drop until V = 20.0 mL.',
+      guard: {
+        condition: { type: 'flag', key: 'titrationComplete', equals: true },
+        message: 'Titration is already complete and the equivalence point has been reached.',
+      },
       effects: [
         { type: 'setFlag', key: 'titrationComplete', value: true },
         { type: 'setVariable', key: 'naohVolume', value: 20.0 },
@@ -463,50 +470,8 @@ export const phMetricTitration: ExperimentConfig = {
   // ── Continuous Dynamics Updates ──
   continuousUpdates: [
     {
-      condition: { type: 'flag', key: 'isTitrating', equals: true },
-      increments: {
-        naohVolume: 2.0,
-        volumeAdded: 2.0,
-      },
-      onConditionMet: [
-        {
-          condition: { type: 'variable', key: 'naohVolume', op: '>=', value: 20.0 },
-          effects: [
-            { type: 'setFlag', key: 'titrationComplete', value: true },
-            { type: 'setVariable', key: 'naohVolume', value: 20.0 },
-            { type: 'setVariable', key: 'phReading', value: 11.2 },
-            { type: 'setVariable', key: 'pH', value: 11.2 },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.70 },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.35)' },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'label', value: 'Neutralized NaCl (pH 11.2 with excess NaOH)' },
-          ],
-          completesAction: 'titrate-naoh',
-        },
-      ],
-    },
-    {
-      condition: {
-        type: 'and',
-        conditions: [
-          { type: 'flag', key: 'hclAdded', equals: true },
-          { type: 'variable', key: 'volumeAdded', op: '>=', value: 20.0 },
-        ],
-      },
-      onConditionMet: [
-        {
-          condition: { type: 'variable', key: 'volumeAdded', op: '>=', value: 20.0 },
-          effects: [
-            { type: 'setFlag', key: 'titrationComplete', value: true },
-            { type: 'setVariable', key: 'naohVolume', value: 20.0 },
-            { type: 'setVariable', key: 'phReading', value: 11.2 },
-            { type: 'setVariable', key: 'pH', value: 11.2 },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidLevel', value: 0.70 },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'liquidColor', value: 'rgba(56, 189, 248, 0.35)' },
-            { type: 'setApparatusProp', apparatusId: 'beaker', prop: 'label', value: 'Neutralized NaCl (pH 11.2 with excess NaOH)' },
-          ],
-          completesAction: 'titrate-naoh',
-        },
-      ],
+      condition: { type: 'flag', key: 'hclAdded', equals: true },
+      customFn: 'phTitrationCurve',
     },
   ],
 
@@ -570,10 +535,14 @@ export const phMetricTitration: ExperimentConfig = {
     naohVolume: 0,
     volumeAdded: 0,
     hclVolume: 20,
+    analyteVolume: 20,
     naohMolarity: 0.1,
+    titrantMolarity: 0.1,
+    analyteMolarity: 0.1,
     hclNormality: 0,
     hclStrength: 0,
     stopcockOpen: 0,
+    maxFlowRate: 1.0,
   },
   initialFlags: {
     burettePlaced: false,

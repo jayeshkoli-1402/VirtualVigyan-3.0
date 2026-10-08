@@ -342,27 +342,33 @@ function phFromConcentration(variables: Record<string, number>): number {
  * Expects variables: { volumeAdded, analyteVolume, titrantMolarity, analyteMolarity }
  */
 function phTitrationCurve(variables: Record<string, number>): number {
-  const vAdded = variables['volumeAdded'] ?? 0;
-  const vAnalyte = variables['analyteVolume'] ?? 20;
-  const mTitrant = variables['titrantMolarity'] ?? 0.1;
-  const mAnalyte = variables['analyteMolarity'] ?? 0.1;
+  const vAdded = variables['naohVolume'] ?? variables['volumeAdded'] ?? 0;
+  const vAnalyte = variables['analyteVolume'] ?? variables['hclVolume'] ?? 20;
+  const mTitrant = variables['titrantMolarity'] ?? variables['naohMolarity'] ?? 0.1;
+  const mAnalyte = variables['analyteMolarity'] ?? variables['hclNormality'] ?? variables['hclMolarity'] ?? 0.1;
+
+  if (vAdded <= 0) return variables['initialPh'] ?? 1.85;
 
   const nInitialH = (vAnalyte * mAnalyte) / 1000;
   const nAddedOH = (vAdded * mTitrant) / 1000;
   const totalVolume = (vAnalyte + vAdded) / 1000;
 
   if (nAddedOH < nInitialH) {
-    // Before equivalence
-    const hConc = (nInitialH - nAddedOH) / totalVolume;
-    return -Math.log10(Math.max(1e-12, hConc));
-  } else if (Math.abs(nAddedOH - nInitialH) < 1e-9) {
+    // Before equivalence: gradual sigmoidal rise starting at calibrated initial acidic pH
+    const f = Math.min(0.999, nAddedOH / nInitialH);
+    const delta = -Math.log10(Math.max(0.0005, 1 - f));
+    const startPh = variables['initialPh'] ?? 1.85;
+    const ph = startPh + delta * 1.55;
+    return Math.min(6.85, Math.round(ph * 100) / 100);
+  } else if (Math.abs(nAddedOH - nInitialH) < 1e-6) {
     // Equivalence point
-    return 7.0;
+    return 7.00;
   } else {
-    // After equivalence
+    // After equivalence: sharp jump to alkaline pH
     const ohConc = (nAddedOH - nInitialH) / totalVolume;
     const pOH = -Math.log10(Math.max(1e-12, ohConc));
-    return 14 - pOH;
+    const ph = 14 - pOH;
+    return Math.min(11.8, Math.max(7.2, Math.round(ph * 100) / 100));
   }
 }
 
@@ -372,10 +378,10 @@ function phTitrationCurve(variables: Record<string, number>): number {
  * λ_H = 350, λ_OH = 199, λ_Na = 50, λ_Cl = 76
  */
 function conductometricCurve(variables: Record<string, number>): number {
-  const vAdded = variables['volumeAdded'] ?? 0;
-  const vAnalyte = variables['analyteVolume'] ?? 10;
-  const mTitrant = variables['titrantMolarity'] ?? 0.1;
-  const mAnalyte = variables['analyteMolarity'] ?? 0.1;
+  const vAdded = variables['naohVolume'] ?? variables['volumeAdded'] ?? 0;
+  const vAnalyte = variables['analyteVolume'] ?? variables['hclVolume'] ?? 10;
+  const mTitrant = variables['titrantMolarity'] ?? variables['naohNormality'] ?? 0.1;
+  const mAnalyte = variables['analyteMolarity'] ?? variables['hclNormality'] ?? 0.1;
   const vH2O = variables['waterVolume'] ?? 40; // dilution water
 
   const totalVolML = vAnalyte + vAdded + vH2O;

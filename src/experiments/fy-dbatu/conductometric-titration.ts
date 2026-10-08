@@ -269,8 +269,15 @@ export const conductometricTitration: ExperimentConfig = {
     {
       id: 'inter-titrate-cond',
       trigger: { type: 'drop', source: 'burette', target: 'beaker-zone' },
-      conditions: [{ type: 'flag', key: 'acidAdded', equals: true }],
-      blockMessage: 'Add HCl sample before titrating with NaOH.',
+      conditions: [
+        { type: 'flag', key: 'acidAdded', equals: true },
+        { type: 'variable', key: 'naohVolume', op: '>=', value: 10.0 },
+      ],
+      blockMessage: 'Click the right wing of the burette stopcock to titrate NaOH drop-by-drop until V = 10.0 mL.',
+      guard: {
+        condition: { type: 'flag', key: 'vCurveDone', equals: true },
+        message: 'Titration is already complete and the V-curve equivalence point has been detected.',
+      },
       effects: [
         { type: 'setFlag', key: 'vCurveDone', value: true },
         { type: 'setVariable', key: 'naohVolume', value: 10.0 },
@@ -287,19 +294,8 @@ export const conductometricTitration: ExperimentConfig = {
   // ── Continuous Dynamics Updates ──
   continuousUpdates: [
     {
-      condition: { type: 'flag', key: 'isTitrating', equals: true },
-      increments: {
-        naohVolume: 1.5,
-      },
-      onConditionMet: [
-        {
-          condition: { type: 'variable', key: 'naohVolume', op: '>=', value: 10.0 },
-          effects: [
-            { type: 'setVariable', key: 'naohVolume', value: 10.0 },
-            { type: 'setVariable', key: 'conductance', value: 2.1 },
-          ],
-        },
-      ],
+      condition: { type: 'flag', key: 'acidAdded', equals: true },
+      customFn: 'conductometricCurve',
     },
   ],
 
@@ -360,11 +356,13 @@ export const conductometricTitration: ExperimentConfig = {
   initialVariables: {
     conductance: 8.4,
     naohVolume: 0,
+    volumeAdded: 0,
     hclVolume: 10,
     naohNormality: 0.1,
     hclNormality: 0,
     hclStrength: 0,
     stopcockOpen: 0,
+    maxFlowRate: 1.0,
   },
   initialFlags: {
     burettePlaced: false,

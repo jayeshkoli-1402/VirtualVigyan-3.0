@@ -1940,7 +1940,7 @@ const DropZone: React.FC<DropZoneProps> = ({
       zone.id.includes('plate') ||
       zone.id.includes('slot') ||
       zone.id.includes('rack') ||
-      (config?.interactions?.some(i => i.trigger.target === zone.id && i.effects?.some(e => e.type === 'placeApparatus')) ?? false)
+      (config?.interactions?.some(i => i.trigger.type === 'drop' && i.trigger.target === zone.id && i.effects?.some(e => e.type === 'placeApparatus')) ?? false)
     );
 
   const acceptsAnyReagents = acceptedApparatuses.some(app => isReagentOrConsumable(app));

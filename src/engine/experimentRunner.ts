@@ -1180,6 +1180,16 @@ export function createExperimentReducer(
           }
         }
 
+        // Live potentiometric pH curve and conductometric titration updates as titrant drops
+        if (state.flags['hclAdded'] && (config.id.includes('ph-metric') || config.continuousUpdates?.some(u => u.customFn === 'phTitrationCurve'))) {
+          const currentPH = computeFormula('phTitrationCurve', newVariables);
+          newVariables['pH'] = currentPH;
+          newVariables['phReading'] = currentPH;
+        } else if (state.flags['acidAdded'] && (config.id.includes('conductometric') || config.continuousUpdates?.some(u => u.customFn === 'conductometricCurve'))) {
+          const currentCond = computeFormula('conductometricCurve', newVariables);
+          newVariables['conductance'] = currentCond;
+        }
+
         const apparatusProps = { ...state.apparatusProps };
         apparatusProps['burette'] = {
           ...(apparatusProps['burette'] ?? {}),
@@ -1190,8 +1200,18 @@ export function createExperimentReducer(
           findTargetVesselId('flask-mouth-zone', config, state) ??
           findTargetVesselId('flask-sample-zone', config, state) ??
           findTargetVesselId('beaker-mouth-zone', config, state) ??
+          findTargetVesselId('stirrer-plate-zone', config, state) ??
+          findTargetVesselId('beaker-zone', config, state) ??
           config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
           'flask';
+
+        if (receivingVesselId === 'beaker' && apparatusProps['beaker'] && state.flags['hclAdded']) {
+          const currentNaOH = (newVariables['naohVolume'] as number) ?? (newVariables['volumeAdded'] as number) ?? 0;
+          apparatusProps['beaker'] = {
+            ...apparatusProps['beaker'],
+            liquidLevel: Math.min(0.70, 0.45 + (currentNaOH / 40) * 0.25),
+          };
+        }
 
         const mixtures = { ...(state.vesselMixtures ?? {}) };
         if (receivingVesselId) {
@@ -1386,6 +1406,16 @@ export function createExperimentReducer(
           }
         }
 
+        // Live potentiometric pH curve and conductometric titration updates on discrete drop addition
+        if (state.flags['hclAdded'] && (config.id.includes('ph-metric') || config.continuousUpdates?.some(u => u.customFn === 'phTitrationCurve'))) {
+          const currentPH = computeFormula('phTitrationCurve', newVariables);
+          newVariables['pH'] = currentPH;
+          newVariables['phReading'] = currentPH;
+        } else if (state.flags['acidAdded'] && (config.id.includes('conductometric') || config.continuousUpdates?.some(u => u.customFn === 'conductometricCurve'))) {
+          const currentCond = computeFormula('conductometricCurve', newVariables);
+          newVariables['conductance'] = currentCond;
+        }
+
         const buretteLevel = Math.max(0, Math.min(1.0, (50 - newVolume) / 50));
 
         // If burette runs dry on drop addition, stop and require refill!
@@ -1434,6 +1464,8 @@ export function createExperimentReducer(
           findTargetVesselId('flask-mouth-zone', config, state) ??
           findTargetVesselId('flask-sample-zone', config, state) ??
           findTargetVesselId('beaker-mouth-zone', config, state) ??
+          findTargetVesselId('stirrer-plate-zone', config, state) ??
+          findTargetVesselId('beaker-zone', config, state) ??
           config.apparatus.find(a => ['ConicalFlask', 'Beaker'].includes(a.component))?.id ??
           'flask';
 
@@ -1545,7 +1577,11 @@ export function createExperimentReducer(
                 if (targetVar) {
                   newState = {
                     ...newState,
-                    variables: { ...newState.variables, [targetVar]: newVal }
+                    variables: {
+                      ...newState.variables,
+                      [targetVar]: newVal,
+                      ...(targetVar === 'pH' ? { phReading: newVal } : {}),
+                    }
                   };
                   changed = true;
 
